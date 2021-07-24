@@ -53,7 +53,7 @@ namespace vk
 			func(instance, debugMessenger, pAllocator);
 	}
 
-	bool CreateInstance(VulkanApp& app)
+	bool CreateVulkanInstance(VulkanApp& app)
 	{
 		VkApplicationInfo appInfo{};
 		appInfo.pApplicationName = "";
@@ -151,6 +151,32 @@ namespace vk
 		return true;
 	}
 
+	VulkanQueueFamilies FindVulkanQueueFamilies(const VulkanApp& app, VkPhysicalDevice pd)
+	{
+		uint32_t queuesCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(pd, &queuesCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> properties(queuesCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(pd, &queuesCount, &properties[0]);
+
+		VulkanQueueFamilies qf{ -1 };
+		for (size_t i = 0; i < properties.size(); ++i)
+		{
+			if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				qf.Graphics = i;
+
+			VkBool32 presentSupport = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(pd, i, app.Surface, &presentSupport);
+			if (presentSupport)
+				qf.Present = i;
+
+			if (qf.Graphics != -1 && qf.Present != -1)
+				break;
+		}
+
+		return qf;
+	}
+
 	bool CheckDeviceExtensions(VkPhysicalDevice pd)
 	{
 		uint32_t extensionsCount = 0;
@@ -166,17 +192,6 @@ namespace vk
 
 		return requiredExtensions.empty();
 	}
-
-	struct QueueFamilies
-	{
-		int32_t Graphics;
-		int32_t Present;
-
-		inline bool IsComplete() const
-		{
-			return Graphics != -1 && Present != -1;
-		}
-	};
 
 	struct SwapChainDetails
 	{
@@ -208,32 +223,6 @@ namespace vk
 		return details;
 	}
 
-	QueueFamilies FindQueueFamilies(const VulkanApp& app, VkPhysicalDevice pd)
-	{
-		uint32_t queuesCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(pd, &queuesCount, nullptr);
-
-		std::vector<VkQueueFamilyProperties> properties(queuesCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(pd, &queuesCount, &properties[0]);
-
-		QueueFamilies qf{ -1 };
-		for (size_t i = 0; i < properties.size(); ++i)
-		{
-			if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-				qf.Graphics = i;
-
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(pd, i, app.Surface, &presentSupport);
-			if (presentSupport)
-				qf.Present = i;
-
-			if (qf.IsComplete())
-				break;
-		}
-
-		return qf;
-	}
-
 	bool IsDeviceSuitable(const VulkanApp& app, const VkPhysicalDevice& pd)
 	{
 		VkPhysicalDeviceProperties deviceProp;
@@ -242,7 +231,10 @@ namespace vk
 		auto details = QuerySwapChainDetails(app, pd);
 		bool swapChainValid = !(details.PresentModes.empty() && details.Formats.empty());
 
-		return FindQueueFamilies(app, pd).IsComplete()
+		auto qf = FindVulkanQueueFamilies(app, pd);
+		bool queueFamiliesValid = qf.Graphics != -1 & qf.Present != -1;
+
+		return queueFamiliesValid
 			&& CheckDeviceExtensions(pd)
 			&& swapChainValid;
 	}
@@ -270,7 +262,7 @@ namespace vk
 		if (app.PhysicalDevice == VK_NULL_HANDLE)
 			return false;
 
-		QueueFamilies queueFamilies = FindQueueFamilies(app, app.PhysicalDevice);
+		VulkanQueueFamilies queueFamilies = FindVulkanQueueFamilies(app, app.PhysicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<int32_t> queueFamiliesSet = { queueFamilies.Graphics, queueFamilies.Present };
@@ -367,7 +359,7 @@ namespace vk
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		auto families = FindQueueFamilies(app, app.PhysicalDevice);
+		auto families = app.QueueFamilies;
 		uint32_t queueFamilyIndices[] = { families.Graphics, families.Present };
 
 		if (families.Graphics != families.Present)
@@ -428,226 +420,12 @@ namespace vk
 		return true;
 	}
 
-	bool CreateShaderModule(const VulkanApp& app, const std::vector<char>& bytecode, VkShaderModule& outSM)
-	{
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = bytecode.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(bytecode.data());
-
-		if (vkCreateShaderModule(app.Device, &createInfo, nullptr, &outSM) != VK_SUCCESS)
-			return false;
-
-		return true;
-	}
-
-	std::vector<char> ReadFile(const std::string& filename) {
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open())
-			throw std::runtime_error("failed to open file!");
-
-		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
-
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-
-		file.close();
-
-		return buffer;
-	}
-
-	bool CreatePipeline(VulkanApp& app)
-	{
-		auto vertexShader = ReadFile("shaders/vert.spv");
-		auto fragmentShader = ReadFile("shaders/frag.spv");
-
-		VkShaderModule vertexShaderModule;
-		VkShaderModule fragmentShaderModule;
-
-		if (!CreateShaderModule(app, vertexShader, vertexShaderModule))
-			return false;
-		if (!CreateShaderModule(app, fragmentShader, fragmentShaderModule))
-			return false;
-
-		VkPipelineShaderStageCreateInfo vertShaderPipelineCI{};
-		vertShaderPipelineCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertShaderPipelineCI.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderPipelineCI.module = vertexShaderModule;
-		vertShaderPipelineCI.pName = "main";
-
-		VkPipelineShaderStageCreateInfo fragShaderPipelineCI{};
-		fragShaderPipelineCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragShaderPipelineCI.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderPipelineCI.module = fragmentShaderModule;
-		fragShaderPipelineCI.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderPipelineCI, fragShaderPipelineCI };
-
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-		VkViewport viewport;
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)app.SwapChainExtent.width;
-		viewport.height = (float)app.SwapChainExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = app.SwapChainExtent;
-
-		VkPipelineViewportStateCreateInfo viewportState{};
-		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.viewportCount = 1;
-		viewportState.pViewports = &viewport;
-		viewportState.scissorCount = 1;
-		viewportState.pScissors = &scissor;
-
-		VkPipelineRasterizationStateCreateInfo rasterizer{};
-		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-		rasterizer.depthBiasEnable = VK_FALSE;
-
-		VkPipelineMultisampleStateCreateInfo multisample{};
-		multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisample.sampleShadingEnable = VK_FALSE;
-		multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
-			| VK_COLOR_COMPONENT_G_BIT
-			| VK_COLOR_COMPONENT_B_BIT
-			| VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = VK_FALSE;
-
-		VkPipelineColorBlendStateCreateInfo colorBlending{};
-		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.logicOp = VK_LOGIC_OP_COPY;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
-		colorBlending.blendConstants[0] = 0.0f;
-		colorBlending.blendConstants[1] = 0.0f;
-		colorBlending.blendConstants[2] = 0.0f;
-		colorBlending.blendConstants[3] = 0.0f;
-
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 0;
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-		if (vkCreatePipelineLayout(app.Device, &pipelineLayoutInfo, nullptr, &app.PipelineLayout) != VK_SUCCESS)
-			return false;
-
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
-		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = &multisample;
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDynamicState = nullptr;
-		pipelineInfo.layout = app.PipelineLayout;
-		pipelineInfo.renderPass = app.RenderPass;
-		pipelineInfo.subpass = 0;
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-		if (vkCreateGraphicsPipelines(app.Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &app.GraphicsPipeline) != VK_SUCCESS)
-			return false;
-
-		vkDestroyShaderModule(app.Device, vertexShaderModule, nullptr);
-		vkDestroyShaderModule(app.Device, fragmentShaderModule, nullptr);
-
-
-		app.Framebuffers.resize(app.SwapChainImageViews.size());
-
-		for (size_t i = 0; i < app.SwapChainImageViews.size(); ++i)
-		{
-			VkFramebufferCreateInfo fboInfo{};
-			fboInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			fboInfo.renderPass = app.RenderPass;
-			fboInfo.attachmentCount = 1;
-			fboInfo.pAttachments = &app.SwapChainImageViews[i];
-			fboInfo.width = app.SwapChainExtent.width;
-			fboInfo.height = app.SwapChainExtent.height;
-			fboInfo.layers = 1;
-
-			if (vkCreateFramebuffer(app.Device, &fboInfo, nullptr, &app.Framebuffers[i]) != VK_SUCCESS)
-				return false;
-		}
-
-		return true;
-	}
-
-	bool CreateRenderPass(VulkanApp& app)
-	{
-		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = app.SwapChainFormat;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachment;
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-		if (vkCreateRenderPass(app.Device, &renderPassInfo, nullptr, &app.RenderPass) != VK_SUCCESS)
-			return false;
-
-		return true;
-	}
-
 	bool SetupVulkanApp(const uint16_t width, const uint16_t height, VulkanApp& app)
 	{
 		if (!glfwInit())
 			return false;
 
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		app.GlfwWindow = glfwCreateWindow(width, height, "Test", nullptr, nullptr);
@@ -656,7 +434,7 @@ namespace vk
 			return false;
 
 
-		if (!CreateInstance(app))
+		if (!CreateVulkanInstance(app))
 			return false;
 
 		if (glfwCreateWindowSurface(app.Instance, app.GlfwWindow, nullptr, &app.Surface) != VK_SUCCESS)
@@ -667,96 +445,12 @@ namespace vk
 
 		if (!CreateSwapChain(app))
 			return false;
-
-		if (!CreateRenderPass(app))
-			return false;
-
-		if (!CreatePipeline(app))
-			return false;
-
-
-		QueueFamilies queueFamilies = FindQueueFamilies(app, app.PhysicalDevice);
-
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = queueFamilies.Graphics;
-		poolInfo.flags = 0;
-
-		if (vkCreateCommandPool(app.Device, &poolInfo, nullptr, &app.CommandPool) != VK_SUCCESS)
-			return false;
-
-		app.CommandBuffers.resize(app.Framebuffers.size());
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = app.CommandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = app.CommandBuffers.size();
-
-		if (vkAllocateCommandBuffers(app.Device, &allocInfo, &app.CommandBuffers[0]) != VK_SUCCESS)
-			return false;
-
-		for (size_t i = 0; i < app.CommandBuffers.size(); ++i)
-		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.flags = 0;
-			beginInfo.pInheritanceInfo = nullptr;
-
-			if (vkBeginCommandBuffer(app.CommandBuffers[i], &beginInfo) != VK_SUCCESS)
-				return false;
-
-			VkRenderPassBeginInfo renderPassInfo{};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = app.RenderPass;
-			renderPassInfo.framebuffer = app.Framebuffers[i];
-			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent = app.SwapChainExtent;
-
-			VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clearColor;
-
-			vkCmdBeginRenderPass(app.CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdBindPipeline(app.CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, app.GraphicsPipeline);
-
-			vkCmdDraw(app.CommandBuffers[i], 3, 1, 0, 0);
-
-			vkCmdEndRenderPass(app.CommandBuffers[i]);
-
-			if (vkEndCommandBuffer(app.CommandBuffers[i]) != VK_SUCCESS)
-				return false;
-		}
-
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		if (vkCreateSemaphore(app.Device, &semaphoreInfo, nullptr, &app.ImageAvailableSemaphore) != VK_SUCCESS
-			|| vkCreateSemaphore(app.Device, &semaphoreInfo, nullptr, &app.RenderFinishedSemaphore) != VK_SUCCESS)
-		{
-			return false;
-		}
-
-		return true;
 	}
 
 	void CleanVulkanApp(VulkanApp& app)
 	{
-		vkDestroySemaphore(app.Device, app.ImageAvailableSemaphore, nullptr);
-		vkDestroySemaphore(app.Device, app.RenderFinishedSemaphore, nullptr);
-
-		vkDestroyCommandPool(app.Device, app.CommandPool, nullptr);
-
-		for (const auto& fbo : app.Framebuffers)
-			vkDestroyFramebuffer(app.Device, fbo, nullptr);
-
-		vkDestroyPipeline(app.Device, app.GraphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(app.Device, app.PipelineLayout, nullptr);
-		vkDestroyRenderPass(app.Device, app.RenderPass, nullptr);
-
-		for (const auto& v : app.SwapChainImageViews)
-			vkDestroyImageView(app.Device, v, nullptr);
+		for (size_t i = 0; i < app.SwapChainImageViews.size(); i++)
+			vkDestroyImageView(app.Device, app.SwapChainImageViews[i], nullptr);
 
 		vkDestroySwapchainKHR(app.Device, app.SwapChain, nullptr);
 
@@ -767,44 +461,10 @@ namespace vk
 		DestroyDebugUtilsMessengerEXT(app.Instance, app.DebugMessenger, nullptr);
 
 		vkDestroyInstance(app.Instance, nullptr);
-	}
 
-	bool DrawFrame(VulkanApp& app)
-	{
-		uint32_t imageId = 0;
-		vkAcquireNextImageKHR(app.Device, app.SwapChain, UINT64_MAX, app.ImageAvailableSemaphore, VK_NULL_HANDLE, &imageId);
+		glfwDestroyWindow(app.GlfwWindow);
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		VkSemaphore waitSemaphores[] = { app.ImageAvailableSemaphore };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &app.CommandBuffers[imageId];
-
-		VkSemaphore signalSemaphores[] = { app.RenderFinishedSemaphore };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
-
-		if (vkQueueSubmit(app.GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-			return false;
-
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapChains[] = { app.SwapChain };
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
-		presentInfo.pImageIndices = &imageId;
-
-		vkQueuePresentKHR(app.PresentQueue, &presentInfo);
-		vkQueueWaitIdle(app.PresentQueue);
+		glfwTerminate();
 	}
 
 	void RunVulkanApp(VulkanApp& app, const std::function<void()>& callback)
@@ -814,8 +474,6 @@ namespace vk
 			glfwPollEvents();
 
 			callback();
-
-			DrawFrame(app);
 		}
 	}
 }

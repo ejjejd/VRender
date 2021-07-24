@@ -3,6 +3,12 @@
 
 namespace vk
 {
+	struct VulkanQueueFamilies
+	{
+		int32_t Graphics;
+		int32_t Present;
+	};
+
 	struct VulkanApp
 	{
 		GLFWwindow* GlfwWindow;
@@ -16,6 +22,8 @@ namespace vk
 		VkPhysicalDevice PhysicalDevice;
 		VkDevice Device;
 
+		VulkanQueueFamilies QueueFamilies;
+
 		VkQueue GraphicsQueue;
 		VkQueue PresentQueue;
 
@@ -26,20 +34,6 @@ namespace vk
 
 		std::vector<VkImage> SwapChainImages;
 		std::vector<VkImageView> SwapChainImageViews;
-
-		VkRenderPass RenderPass;
-		VkPipelineLayout PipelineLayout;
-
-		VkPipeline GraphicsPipeline;
-
-		std::vector<VkFramebuffer> Framebuffers;
-
-		VkCommandPool CommandPool;
-
-		std::vector<VkCommandBuffer> CommandBuffers;
-
-		VkSemaphore ImageAvailableSemaphore;
-		VkSemaphore RenderFinishedSemaphore;
 	};
 
 	bool API SetupVulkanApp(const uint16_t width, const uint16_t height, VulkanApp& app);

@@ -8,6 +8,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/debug/logger.h"
+    "src/rendering/renderable.h"
+    "src/rendering/mesh.h"
+    "src/rendering/material.h"
+    "src/managers/scene_manager.h"
+    "src/managers/scene_manager.cpp"
+    "src/managers/render_manager.h"
+    "src/managers/render_manager.cpp"
+    "src/engine/engine.h"
     "src/vrender.h"
     "src/api.h"
     "src/vulkan/vulkan_app.h"
@@ -25,7 +34,6 @@ ENDIF(MSVC)
 
 link_directories(extern/vulkan/Lib/)
 link_directories(extern/GLFW/lib-vc2019/)
-
 
 add_executable(VRender ${SOURCE_FILES})
 
@@ -50,4 +58,4 @@ target_include_directories(VRender PRIVATE extern/glm)
 target_link_libraries(VRender glfw3)
 target_link_libraries(VRender vulkan-1)
 
-add_definitions(-GLEW_STATIC)
+target_compile_definitions(VRender PRIVATE LIB)

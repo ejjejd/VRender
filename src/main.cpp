@@ -1,22 +1,18 @@
-#include "vulkan/vulkan_app.h"
-
-constexpr uint16_t WindowWidth = 1280;
-constexpr uint16_t WindowHeight = 720;
+#include "engine/engine.h"
 
 int main()
 {
-	vk::VulkanApp vkApp;
+	app::Engine engine;
 
-	if (!vk::SetupVulkanApp(WindowWidth, WindowHeight, vkApp))
-		return -1;
+	engine.StartupEngine();
 
-	vk::RunVulkanApp(vkApp, 
-		[]()
+	engine.Run(
+		[&]()
 		{
 
 		});
 
-	vk::CleanVulkanApp(vkApp);
+	engine.CleanupEngine();
 
 	return 0;
 }

@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/graphics/buffer.h"
+    "src/graphics/buffer.cpp"
+    "src/graphics/shader.h"
+    "src/graphics/shader.cpp"
     "src/debug/logger.h"
     "src/rendering/renderable.h"
     "src/rendering/mesh.h"

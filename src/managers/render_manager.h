@@ -2,27 +2,20 @@
 #include "vrender.h"
 #include "vulkan/vulkan_app.h"
 
+#include "graphics/shader.h"
+#include "graphics/buffer.h"
+
 namespace manager
 {
-	class API RenderManager
+	struct API RenderManager
 	{
 	private:
 		VkRenderPass RenderPass;
-		VkPipelineLayout PipelineLayout;
-
-		VkPipeline GraphicsPipeline;
 
 		std::vector<VkFramebuffer> Framebuffers;
 
-		VkCommandPool CommandPool;
-
-		std::vector<VkCommandBuffer> CommandBuffers;
-
 		VkSemaphore ImageAvailableSemaphore;
 		VkSemaphore RenderFinishedSemaphore;
-
-		VkBuffer VertexBuffer;
-		VkDeviceMemory VertexBufferMemory;
 
 		bool CreatePipeline(vk::VulkanApp& app);
 		bool CreateRenderPass(vk::VulkanApp& app);
@@ -31,7 +24,17 @@ namespace manager
 
 		void Cleanup(vk::VulkanApp& app);
 
-		bool Update(vk::VulkanApp& app);
+		bool Update(vk::VulkanApp& app, const std::vector<VkCommandBuffer>& commandBuffers);
+
+		inline std::vector<VkFramebuffer> GetFBOs() const
+		{
+			return Framebuffers;
+		}
+
+		inline VkRenderPass GetRenderPass() const
+		{
+			return RenderPass;
+		}
 	};
 
 }

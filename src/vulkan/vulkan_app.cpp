@@ -262,10 +262,10 @@ namespace vk
 		if (app.PhysicalDevice == VK_NULL_HANDLE)
 			return false;
 
-		VulkanQueueFamilies queueFamilies = FindVulkanQueueFamilies(app, app.PhysicalDevice);
+		app.QueueFamilies = FindVulkanQueueFamilies(app, app.PhysicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<int32_t> queueFamiliesSet = { queueFamilies.Graphics, queueFamilies.Present };
+		std::set<int32_t> queueFamiliesSet = { app.QueueFamilies.Graphics, app.QueueFamilies.Present };
 
 		float queuePriority = 1.0f;
 
@@ -293,8 +293,8 @@ namespace vk
 		if (vkCreateDevice(app.PhysicalDevice, &deviceCreateInfo, nullptr, &app.Device) != VK_SUCCESS)
 			return false;
 
-		vkGetDeviceQueue(app.Device, queueFamilies.Graphics, 0, &app.GraphicsQueue);
-		vkGetDeviceQueue(app.Device, queueFamilies.Present, 0, &app.PresentQueue);
+		vkGetDeviceQueue(app.Device, app.QueueFamilies.Graphics, 0, &app.GraphicsQueue);
+		vkGetDeviceQueue(app.Device, app.QueueFamilies.Present, 0, &app.PresentQueue);
 	}
 
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)

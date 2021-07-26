@@ -5,6 +5,8 @@
 #include "graphics/shader.h"
 #include "graphics/buffer.h"
 
+#include "rendering/renderable.h"
+
 namespace manager
 {
 	struct API RenderManager
@@ -17,14 +19,16 @@ namespace manager
 		VkSemaphore ImageAvailableSemaphore;
 		VkSemaphore RenderFinishedSemaphore;
 
-		bool CreatePipeline(vk::VulkanApp& app);
-		bool CreateRenderPass(vk::VulkanApp& app);
+		vk::VulkanApp* VulkanApp;
+
+		bool CreatePipeline();
+		bool CreateRenderPass();
 	public:
 		bool Setup(vk::VulkanApp& app);
 
-		void Cleanup(vk::VulkanApp& app);
+		void Cleanup();
 
-		bool Update(vk::VulkanApp& app, const std::vector<VkCommandBuffer>& commandBuffers);
+		bool Update(const std::vector<render::Renderable>& renderables);
 
 		inline std::vector<VkFramebuffer> GetFBOs() const
 		{

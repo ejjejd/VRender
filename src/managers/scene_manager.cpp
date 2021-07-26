@@ -2,7 +2,7 @@
 
 namespace manager
 {
-	bool SceneManager::CreatePipeline(graphics::Shader& shader)
+	bool SceneManager::CreatePipeline(VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader)
 	{
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -66,7 +66,7 @@ namespace manager
 		pipelineLayoutInfo.setLayoutCount = 0;
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-		if (vkCreatePipelineLayout(VulkanApp->Device, &pipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
+		if (vkCreatePipelineLayout(VulkanApp->Device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 			return false;
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -80,107 +80,118 @@ namespace manager
 		pipelineInfo.pMultisampleState = &multisample;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = nullptr;
-		pipelineInfo.layout = PipelineLayout;
+		pipelineInfo.layout = pipelineLayout;
 		pipelineInfo.renderPass = RM->GetRenderPass();
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		if (vkCreateGraphicsPipelines(VulkanApp->Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &GraphicsPipeline) != VK_SUCCESS)
+		if (vkCreateGraphicsPipelines(VulkanApp->Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
 			return false;
+
+		return true;
 	}
 
-	bool SceneManager::Setup(vk::VulkanApp& app, RenderManager& rm)
+	bool SceneManager::CreateCommandBuffers(const graphics::Buffer& buffer, const VkPipeline& pipeline, std::vector<VkCommandBuffer>& commandBuffers)
 	{
-		VulkanApp = &app;
-		RM = &rm;
-
-		glm::vec3 positions[] =
-		{
-			{ -0.5f, 0.5f, 0.0f },
-			{ 0.0f, -0.5f, 0.0f },
-			{ 0.5f, 0.5f, 0.0f }
-		};
-
-		VertexBuffer = std::make_unique<graphics::Buffer>(app);
-		VertexBuffer->Init(positions, sizeof(glm::vec3), 3);
-
-		graphics::Shader shader(app);
-		shader.AddStage("shaders/vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shader.AddStage("shaders/frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-
-		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, VertexBuffer->GetStride());
-
-		if (CreatePipeline(shader))
-			return false;
-
-		vk::VulkanQueueFamilies queueFamilies = app.QueueFamilies;
+		vk::VulkanQueueFamilies queueFamilies = VulkanApp->QueueFamilies;
 
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = queueFamilies.Graphics;
 		poolInfo.flags = 0;
 
-		if (vkCreateCommandPool(app.Device, &poolInfo, nullptr, &CommandPool) != VK_SUCCESS)
+		if (vkCreateCommandPool(VulkanApp->Device, &poolInfo, nullptr, &CommandPool) != VK_SUCCESS)
 			return false;
 
-		CommandBuffers.resize(rm.GetFBOs().size());
+		commandBuffers.resize(RM->GetFBOs().size());
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = CommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = CommandBuffers.size();
+		allocInfo.commandBufferCount = commandBuffers.size();
 
-		if (vkAllocateCommandBuffers(app.Device, &allocInfo, &CommandBuffers[0]) != VK_SUCCESS)
+		if (vkAllocateCommandBuffers(VulkanApp->Device, &allocInfo, &commandBuffers[0]) != VK_SUCCESS)
 			return false;
 
-		for (size_t i = 0; i < CommandBuffers.size(); ++i)
+		for (size_t i = 0; i < commandBuffers.size(); ++i)
 		{
 			VkCommandBufferBeginInfo beginInfo{};
 			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			beginInfo.flags = 0;
 			beginInfo.pInheritanceInfo = nullptr;
 
-			if (vkBeginCommandBuffer(CommandBuffers[i], &beginInfo) != VK_SUCCESS)
+			if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS)
 				return false;
 
 			VkRenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = rm.GetRenderPass();
-			renderPassInfo.framebuffer = rm.GetFBOs()[i];
+			renderPassInfo.renderPass = RM->GetRenderPass();
+			renderPassInfo.framebuffer = RM->GetFBOs()[i];
 			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent = app.SwapChainExtent;
+			renderPassInfo.renderArea.extent = VulkanApp->SwapChainExtent;
 
 			VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 			renderPassInfo.clearValueCount = 1;
 			renderPassInfo.pClearValues = &clearColor;
 
-			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-			VkBuffer vertexBuffers[] = { VertexBuffer->GetHandler() };
+			VkBuffer vertexBuffers[] = { buffer.GetHandler() };
 			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(CommandBuffers[i], 0, 1, vertexBuffers, offsets);
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-			vkCmdDraw(CommandBuffers[i], 3, 1, 0, 0);
+			vkCmdDraw(commandBuffers[i], buffer.GetElementsCount(), 1, 0, 0);
 
-			vkCmdEndRenderPass(CommandBuffers[i]);
+			vkCmdEndRenderPass(commandBuffers[i]);
 
-			if (vkEndCommandBuffer(CommandBuffers[i]) != VK_SUCCESS)
+			if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
 				return false;
 		}
 
 		return true;
 	}
 
-	void SceneManager::Cleanup(const vk::VulkanApp& app)
+	void SceneManager::Cleanup()
 	{
-		vkFreeCommandBuffers(app.Device, CommandPool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
+		for (auto vbo : MeshBuffers)
+			vbo.Cleanup();
 
-		vkDestroyCommandPool(app.Device, CommandPool, nullptr);
+		for (auto r : Renderables)
+			render::CleanupRenderable(*VulkanApp, CommandPool, r);
 
-		vkDestroyPipeline(app.Device, GraphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(app.Device, PipelineLayout, nullptr);
+		vkDestroyCommandPool(VulkanApp->Device, CommandPool, nullptr);
+	}
+
+	void SceneManager::RegisterMesh(render::Mesh& mesh)
+	{
+		RegisteredMeshes.push_back(mesh);
+
+		render::Renderable renderable;
+
+		graphics::Shader shader;
+		shader.Setup(*VulkanApp);
+
+		shader.AddStage(mesh.VertexShader, VK_SHADER_STAGE_VERTEX_BIT);
+		shader.AddStage(mesh.FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+		graphics::Buffer positionBuffer;
+		positionBuffer.Setup(*VulkanApp , &mesh.Positions[0], sizeof(mesh.Positions[0]), mesh.Positions.size());
+
+		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, positionBuffer.GetStride());
+
+		if (!CreatePipeline(renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
+			return;
+
+		if (!CreateCommandBuffers(positionBuffer, renderable.GraphicsPipeline, renderable.CommandBuffers))
+			return;
+
+		MeshBuffers.push_back(positionBuffer);
+
+		Renderables.push_back(renderable);
+
+		shader.Cleanup();
 	}
 }

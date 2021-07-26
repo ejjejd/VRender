@@ -10,21 +10,18 @@ namespace graphics
 		VkBuffer BufferH;
 		VkDeviceMemory BufferMemory;
 
-		std::reference_wrapper<vk::VulkanApp> VulkanApp;
+		vk::VulkanApp* VulkanApp;
 
 		size_t ElementsCount;
 		size_t Stride;
 	public:
-		inline Buffer(vk::VulkanApp& app)
-			: VulkanApp(app) {}
+		void Setup(vk::VulkanApp& app, void* data, const size_t stride, const size_t elementsCount);
 
-		inline ~Buffer()
+		inline void Cleanup()
 		{
-			vkDestroyBuffer(VulkanApp.get().Device, BufferH, nullptr);
-			vkFreeMemory(VulkanApp.get().Device, BufferMemory, nullptr);
+			vkDestroyBuffer(VulkanApp->Device, BufferH, nullptr);
+			vkFreeMemory(VulkanApp->Device, BufferMemory, nullptr);
 		}
-
-		void Init(void* data, const size_t stride, const size_t elementsCount);
 
 		inline VkBuffer GetHandler() const
 		{

@@ -22,18 +22,20 @@ namespace app
 
 		inline void StartupEngine()
 		{
-			vk::SetupVulkanApp(WindowWidth, WindowHeight, VulkanApp);
+			if (!vk::SetupVulkanApp(WindowWidth, WindowHeight, VulkanApp))
+				return;
 
-			RenderManager.Setup(VulkanApp);
+			if (!RenderManager.Setup(VulkanApp))
+				return;
 
 			SceneManager.Setup(VulkanApp, RenderManager);
 		}
 
 		inline void CleanupEngine()
 		{
-			SceneManager.Cleanup(VulkanApp);
+			SceneManager.Cleanup();
 
-			RenderManager.Cleanup(VulkanApp);
+			RenderManager.Cleanup();
 
 			vk::CleanVulkanApp(VulkanApp);
 		}
@@ -45,7 +47,7 @@ namespace app
 				{
 					userMainLoop();
 
-					RenderManager.Update(VulkanApp, SceneManager.GetCommandBuffers());
+					RenderManager.Update(SceneManager.GetRenderables());
 				});
 		}
 	};

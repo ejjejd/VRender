@@ -5,10 +5,10 @@
 
 namespace manager
 {
-	bool RenderManager::CreateRenderPass(vk::VulkanApp& app)
+	bool RenderManager::CreateRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = app.SwapChainFormat;
+		colorAttachment.format = VulkanApp->SwapChainFormat;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -44,23 +44,23 @@ namespace manager
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		if (vkCreateRenderPass(app.Device, &renderPassInfo, nullptr, &RenderPass) != VK_SUCCESS)
+		if (vkCreateRenderPass(VulkanApp->Device, &renderPassInfo, nullptr, &RenderPass) != VK_SUCCESS)
 			return false;
 
-		Framebuffers.resize(app.SwapChainImageViews.size());
+		Framebuffers.resize(VulkanApp->SwapChainImageViews.size());
 
-		for (size_t i = 0; i < app.SwapChainImageViews.size(); ++i)
+		for (size_t i = 0; i < VulkanApp->SwapChainImageViews.size(); ++i)
 		{
 			VkFramebufferCreateInfo fboInfo{};
 			fboInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			fboInfo.renderPass = RenderPass;
 			fboInfo.attachmentCount = 1;
-			fboInfo.pAttachments = &app.SwapChainImageViews[i];
-			fboInfo.width = app.SwapChainExtent.width;
-			fboInfo.height = app.SwapChainExtent.height;
+			fboInfo.pAttachments = &VulkanApp->SwapChainImageViews[i];
+			fboInfo.width = VulkanApp->SwapChainExtent.width;
+			fboInfo.height = VulkanApp->SwapChainExtent.height;
 			fboInfo.layers = 1;
 
-			if (vkCreateFramebuffer(app.Device, &fboInfo, nullptr, &Framebuffers[i]) != VK_SUCCESS)
+			if (vkCreateFramebuffer(VulkanApp->Device, &fboInfo, nullptr, &Framebuffers[i]) != VK_SUCCESS)
 				return false;
 		}
 
@@ -69,10 +69,10 @@ namespace manager
 
 	bool RenderManager::Setup(vk::VulkanApp& app)
 	{
-		if (!CreateRenderPass(app))
-			return false;
+		VulkanApp = &app;
 
-		
+		if (!CreateRenderPass())
+			return false;
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -86,53 +86,56 @@ namespace manager
 		return true;
 	}
 
-	void RenderManager::Cleanup(vk::VulkanApp& app)
+	void RenderManager::Cleanup()
 	{
 		for (size_t i = 0; i < Framebuffers.size(); i++)
-			vkDestroyFramebuffer(app.Device, Framebuffers[i], nullptr);
+			vkDestroyFramebuffer(VulkanApp->Device, Framebuffers[i], nullptr);
 
-		vkDestroyRenderPass(app.Device, RenderPass, nullptr);
+		vkDestroyRenderPass(VulkanApp->Device, RenderPass, nullptr);
 
-		vkDestroySemaphore(app.Device, ImageAvailableSemaphore, nullptr);
-		vkDestroySemaphore(app.Device, RenderFinishedSemaphore, nullptr);
+		vkDestroySemaphore(VulkanApp->Device, ImageAvailableSemaphore, nullptr);
+		vkDestroySemaphore(VulkanApp->Device, RenderFinishedSemaphore, nullptr);
 	}
 
-	bool RenderManager::Update(vk::VulkanApp& app, const std::vector<VkCommandBuffer>& commandBuffers)
+	bool RenderManager::Update(const std::vector<render::Renderable>& renderables)
 	{
-		uint32_t imageId = 0;
-		VkResult acqResult = vkAcquireNextImageKHR(app.Device, app.SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageId);
+		for (auto r : renderables)
+		{
+			uint32_t imageId = 0;
+			VkResult acqResult = vkAcquireNextImageKHR(VulkanApp->Device, VulkanApp->SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageId);
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			VkSubmitInfo submitInfo{};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore waitSemaphores[] = { ImageAvailableSemaphore };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+			VkSemaphore waitSemaphores[] = { ImageAvailableSemaphore };
+			VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffers[imageId];
+			submitInfo.waitSemaphoreCount = 1;
+			submitInfo.pWaitSemaphores = waitSemaphores;
+			submitInfo.pWaitDstStageMask = waitStages;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &r.CommandBuffers[imageId];
 
-		VkSemaphore signalSemaphores[] = { RenderFinishedSemaphore };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
+			VkSemaphore signalSemaphores[] = { RenderFinishedSemaphore };
+			submitInfo.signalSemaphoreCount = 1;
+			submitInfo.pSignalSemaphores = signalSemaphores;
 
-		if (vkQueueSubmit(app.GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-			return false;
+			if (vkQueueSubmit(VulkanApp->GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+				return false;
 
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-		
-		VkSwapchainKHR swapChains[] = { app.SwapChain };
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
-		presentInfo.pImageIndices = &imageId;
+			VkPresentInfoKHR presentInfo{};
+			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+			presentInfo.waitSemaphoreCount = 1;
+			presentInfo.pWaitSemaphores = signalSemaphores;
 
-		vkQueuePresentKHR(app.PresentQueue, &presentInfo);
-		vkQueueWaitIdle(app.PresentQueue);
+			VkSwapchainKHR swapChains[] = { VulkanApp->SwapChain };
+			presentInfo.swapchainCount = 1;
+			presentInfo.pSwapchains = swapChains;
+			presentInfo.pImageIndices = &imageId;
+
+			vkQueuePresentKHR(VulkanApp->PresentQueue, &presentInfo);
+			vkQueueWaitIdle(VulkanApp->PresentQueue);
+		}
 
 		return true;
 	}

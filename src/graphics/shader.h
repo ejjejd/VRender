@@ -18,15 +18,17 @@ namespace graphics
 
 		ShaderInput Input;
 
-		std::reference_wrapper<vk::VulkanApp> VulkanApp;
+		vk::VulkanApp* VulkanApp;
 	public:
-		inline Shader(vk::VulkanApp& app)
-			: VulkanApp(app) {}
+		inline void Setup(vk::VulkanApp& app)
+		{
+			VulkanApp = &app;
+		}
 
-		inline ~Shader()
+		inline void Cleanup()
 		{
 			for (auto m : ShaderModules)
-				vkDestroyShaderModule(VulkanApp.get().Device, m, nullptr);
+				vkDestroyShaderModule(VulkanApp->Device, m, nullptr);
 		}
 
 		void AddStage(const std::string filepath, const VkShaderStageFlagBits type);

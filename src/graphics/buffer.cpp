@@ -19,8 +19,10 @@ namespace graphics
 		return -1;
 	}
 
-	void Buffer::Init(void* data, const size_t stride, const size_t elementsCount)
+	void Buffer::Setup(vk::VulkanApp& app, void* data, const size_t stride, const size_t elementsCount)
 	{
+		VulkanApp = &app;
+
 		ElementsCount = elementsCount;
 		Stride = stride;
 
@@ -30,33 +32,33 @@ namespace graphics
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (vkCreateBuffer(VulkanApp.get().Device, &bufferCreateInfo, nullptr, &BufferH) != VK_SUCCESS)
+		if (vkCreateBuffer(VulkanApp->Device, &bufferCreateInfo, nullptr, &BufferH) != VK_SUCCESS)
 		{
 			LOG("Buffer creation error!");
 			return;
 		}
 
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(VulkanApp.get().Device, BufferH, &memRequirements);
+		vkGetBufferMemoryRequirements(VulkanApp->Device, BufferH, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(VulkanApp, memRequirements.memoryTypeBits, 
+		allocInfo.memoryTypeIndex = FindMemoryType(*VulkanApp, memRequirements.memoryTypeBits, 
 												   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 												   | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-		if (vkAllocateMemory(VulkanApp.get().Device, &allocInfo, nullptr, &BufferMemory) != VK_SUCCESS)
+		if (vkAllocateMemory(VulkanApp->Device, &allocInfo, nullptr, &BufferMemory) != VK_SUCCESS)
 		{
 			LOG("Couldn't allocate buffer memory!");
 			return;
 		}
 
-		vkBindBufferMemory(VulkanApp.get().Device, BufferH, BufferMemory, 0);
+		vkBindBufferMemory(VulkanApp->Device, BufferH, BufferMemory, 0);
 
 		void* mapPtr;
-		vkMapMemory(VulkanApp.get().Device, BufferMemory, 0, bufferCreateInfo.size, 0, &mapPtr);
+		vkMapMemory(VulkanApp->Device, BufferMemory, 0, bufferCreateInfo.size, 0, &mapPtr);
 		memcpy(mapPtr, data, bufferCreateInfo.size);
-		vkUnmapMemory(VulkanApp.get().Device, BufferMemory);
+		vkUnmapMemory(VulkanApp->Device, BufferMemory);
 	}
 }

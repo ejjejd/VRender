@@ -38,7 +38,7 @@ namespace graphics
 
 		ShaderModules.push_back(VkShaderModule{});
 
-		if (vkCreateShaderModule(VulkanApp.get().Device, &moduleCreateInfo, nullptr, &ShaderModules[ShaderModules.size() - 1]) != VK_SUCCESS)
+		if (vkCreateShaderModule(VulkanApp->Device, &moduleCreateInfo, nullptr, &ShaderModules[ShaderModules.size() - 1]) != VK_SUCCESS)
 		{
 			LOG("Couldn't create shader module %s\n", filepath)
 			return;

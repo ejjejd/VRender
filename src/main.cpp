@@ -6,6 +6,18 @@ int main()
 
 	engine.StartupEngine();
 
+	render::Mesh mesh;
+	mesh.Positions =
+	{
+		{ -0.5f, 0.5f, 0.0f },
+		{ 0.0f, -0.5f, 0.0f },
+		{ 0.5f, 0.5f, 0.0f }
+	};
+	mesh.VertexShader = "shaders/vert.spv";
+	mesh.FragmentShader = "shaders/frag.spv";
+
+	engine.SceneManager.RegisterMesh(mesh);
+
 	engine.Run(
 		[&]()
 		{

@@ -5,35 +5,40 @@
 #include "graphics/shader.h"
 #include "graphics/buffer.h"
 
-#include "scene_manager.h"
+#include "rendering/mesh.h"
+#include "rendering/renderable.h"
 
 namespace manager
 {
 	class API SceneManager
 	{
 	private:
-		VkPipelineLayout PipelineLayout;
-
-		VkPipeline GraphicsPipeline;
-
 		VkCommandPool CommandPool;
-
-		std::vector<VkCommandBuffer> CommandBuffers;
-
-		std::unique_ptr<graphics::Buffer> VertexBuffer;
 
 		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
+		
+		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
+		std::vector<graphics::Buffer> MeshBuffers;
 
-		bool CreatePipeline(graphics::Shader& shader);
+		std::vector<render::Renderable> Renderables;
+
+		bool CreatePipeline(VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader);
+		bool CreateCommandBuffers(const graphics::Buffer& buffer, const VkPipeline& pipeline, std::vector<VkCommandBuffer>& commandBuffers);
 	public:
-		bool Setup(vk::VulkanApp& app, RenderManager& rm);
-
-		void Cleanup(const vk::VulkanApp& app);
-
-		inline std::vector<VkCommandBuffer> GetCommandBuffers() const
+		inline void Setup(vk::VulkanApp& app, RenderManager& rm)
 		{
-			return CommandBuffers;
+			VulkanApp = &app;
+			RM = &rm;
+		}
+
+		void Cleanup();
+
+		void RegisterMesh(render::Mesh& mesh);
+
+		inline std::vector<render::Renderable> GetRenderables() const
+		{
+			return Renderables;
 		}
 	};
 }

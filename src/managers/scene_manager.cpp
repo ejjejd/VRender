@@ -91,78 +91,13 @@ namespace manager
 		return true;
 	}
 
-	bool SceneManager::CreateCommandBuffers(const graphics::Buffer& buffer, const VkPipeline& pipeline, std::vector<VkCommandBuffer>& commandBuffers)
-	{
-		vk::VulkanQueueFamilies queueFamilies = VulkanApp->QueueFamilies;
-
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = queueFamilies.Graphics;
-		poolInfo.flags = 0;
-
-		if (vkCreateCommandPool(VulkanApp->Device, &poolInfo, nullptr, &CommandPool) != VK_SUCCESS)
-			return false;
-
-		commandBuffers.resize(RM->GetFBOs().size());
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = CommandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = commandBuffers.size();
-
-		if (vkAllocateCommandBuffers(VulkanApp->Device, &allocInfo, &commandBuffers[0]) != VK_SUCCESS)
-			return false;
-
-		for (size_t i = 0; i < commandBuffers.size(); ++i)
-		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.flags = 0;
-			beginInfo.pInheritanceInfo = nullptr;
-
-			if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS)
-				return false;
-
-			VkRenderPassBeginInfo renderPassInfo{};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = RM->GetRenderPass();
-			renderPassInfo.framebuffer = RM->GetFBOs()[i];
-			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent = VulkanApp->SwapChainExtent;
-
-			VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clearColor;
-
-			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-			VkBuffer vertexBuffers[] = { buffer.GetHandler() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-
-			vkCmdDraw(commandBuffers[i], buffer.GetElementsCount(), 1, 0, 0);
-
-			vkCmdEndRenderPass(commandBuffers[i]);
-
-			if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
-				return false;
-		}
-
-		return true;
-	}
-
 	void SceneManager::Cleanup()
 	{
 		for (auto vbo : MeshBuffers)
 			vbo.Cleanup();
 
 		for (auto r : Renderables)
-			render::CleanupRenderable(*VulkanApp, CommandPool, r);
-
-		vkDestroyCommandPool(VulkanApp->Device, CommandPool, nullptr);
+			render::CleanupRenderable(*VulkanApp, r);
 	}
 
 	void SceneManager::RegisterMesh(render::Mesh& mesh)
@@ -180,12 +115,11 @@ namespace manager
 		graphics::Buffer positionBuffer;
 		positionBuffer.Setup(*VulkanApp , &mesh.Positions[0], sizeof(mesh.Positions[0]), mesh.Positions.size());
 
+		renderable.PositionsVertexBuffer = positionBuffer;
+
 		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, positionBuffer.GetStride());
 
 		if (!CreatePipeline(renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
-			return;
-
-		if (!CreateCommandBuffers(positionBuffer, renderable.GraphicsPipeline, renderable.CommandBuffers))
 			return;
 
 		MeshBuffers.push_back(positionBuffer);

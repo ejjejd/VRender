@@ -14,6 +14,9 @@ namespace manager
 	private:
 		VkRenderPass RenderPass;
 
+		VkCommandPool CommandPool;
+		std::vector<VkCommandBuffer> CommandBuffers;
+
 		std::vector<VkFramebuffer> Framebuffers;
 
 		VkSemaphore ImageAvailableSemaphore;

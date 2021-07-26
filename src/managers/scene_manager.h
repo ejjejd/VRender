@@ -13,18 +13,15 @@ namespace manager
 	class API SceneManager
 	{
 	private:
-		VkCommandPool CommandPool;
-
-		RenderManager* RM;
-		vk::VulkanApp* VulkanApp;
-		
 		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
 		std::vector<graphics::Buffer> MeshBuffers;
 
 		std::vector<render::Renderable> Renderables;
 
+		RenderManager* RM;
+		vk::VulkanApp* VulkanApp;
+
 		bool CreatePipeline(VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader);
-		bool CreateCommandBuffers(const graphics::Buffer& buffer, const VkPipeline& pipeline, std::vector<VkCommandBuffer>& commandBuffers);
 	public:
 		inline void Setup(vk::VulkanApp& app, RenderManager& rm)
 		{

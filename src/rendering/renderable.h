@@ -10,14 +10,12 @@ namespace render
 		VkPipelineLayout GraphicsPipelineLayout;
 		VkPipeline GraphicsPipeline;
 
-		std::vector<VkCommandBuffer> CommandBuffers;
+		graphics::Buffer PositionsVertexBuffer;
 	};
 
-	inline void CleanupRenderable(const vk::VulkanApp& app, const VkCommandPool& cp, const Renderable& renderable)
+	inline void CleanupRenderable(const vk::VulkanApp& app, const Renderable& renderable)
 	{
 		vkDestroyPipelineLayout(app.Device, renderable.GraphicsPipelineLayout, nullptr);
 		vkDestroyPipeline(app.Device, renderable.GraphicsPipeline, nullptr);
-
-		vkFreeCommandBuffers(app.Device, cp, renderable.CommandBuffers.size(), &renderable.CommandBuffers[0]);
 	}
 }

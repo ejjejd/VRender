@@ -74,6 +74,27 @@ namespace manager
 		if (!CreateRenderPass())
 			return false;
 
+
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.queueFamilyIndex = VulkanApp->QueueFamilies.Graphics;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+		if (vkCreateCommandPool(VulkanApp->Device, &poolInfo, nullptr, &CommandPool) != VK_SUCCESS)
+			return false;
+
+		CommandBuffers.resize(Framebuffers.size());
+
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = CommandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = CommandBuffers.size();
+
+		if (vkAllocateCommandBuffers(VulkanApp->Device, &allocInfo, &CommandBuffers[0]) != VK_SUCCESS)
+			return false;
+
+
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -88,6 +109,9 @@ namespace manager
 
 	void RenderManager::Cleanup()
 	{
+		vkFreeCommandBuffers(VulkanApp->Device, CommandPool, CommandBuffers.size(), &CommandBuffers[0]);
+		vkDestroyCommandPool(VulkanApp->Device, CommandPool, nullptr);
+
 		for (size_t i = 0; i < Framebuffers.size(); i++)
 			vkDestroyFramebuffer(VulkanApp->Device, Framebuffers[i], nullptr);
 
@@ -99,43 +123,80 @@ namespace manager
 
 	bool RenderManager::Update(const std::vector<render::Renderable>& renderables)
 	{
-		for (auto r : renderables)
+		for (size_t i = 0; i < CommandBuffers.size(); ++i)
 		{
-			uint32_t imageId = 0;
-			VkResult acqResult = vkAcquireNextImageKHR(VulkanApp->Device, VulkanApp->SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageId);
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = 0;
+			beginInfo.pInheritanceInfo = nullptr;
 
-			VkSubmitInfo submitInfo{};
-			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-			VkSemaphore waitSemaphores[] = { ImageAvailableSemaphore };
-			VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-			submitInfo.waitSemaphoreCount = 1;
-			submitInfo.pWaitSemaphores = waitSemaphores;
-			submitInfo.pWaitDstStageMask = waitStages;
-			submitInfo.commandBufferCount = 1;
-			submitInfo.pCommandBuffers = &r.CommandBuffers[imageId];
-
-			VkSemaphore signalSemaphores[] = { RenderFinishedSemaphore };
-			submitInfo.signalSemaphoreCount = 1;
-			submitInfo.pSignalSemaphores = signalSemaphores;
-
-			if (vkQueueSubmit(VulkanApp->GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+			if (vkBeginCommandBuffer(CommandBuffers[i], &beginInfo) != VK_SUCCESS)
 				return false;
 
-			VkPresentInfoKHR presentInfo{};
-			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-			presentInfo.waitSemaphoreCount = 1;
-			presentInfo.pWaitSemaphores = signalSemaphores;
+			VkRenderPassBeginInfo renderPassInfo{};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = RenderPass;
+			renderPassInfo.framebuffer = Framebuffers[i];
+			renderPassInfo.renderArea.offset = { 0, 0 };
+			renderPassInfo.renderArea.extent = VulkanApp->SwapChainExtent;
 
-			VkSwapchainKHR swapChains[] = { VulkanApp->SwapChain };
-			presentInfo.swapchainCount = 1;
-			presentInfo.pSwapchains = swapChains;
-			presentInfo.pImageIndices = &imageId;
+			VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+			renderPassInfo.clearValueCount = 1;
+			renderPassInfo.pClearValues = &clearColor;
 
-			vkQueuePresentKHR(VulkanApp->PresentQueue, &presentInfo);
-			vkQueueWaitIdle(VulkanApp->PresentQueue);
+			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			for (auto r : renderables)
+			{
+				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipeline);
+
+				VkBuffer vertexBuffers[] = { r.PositionsVertexBuffer.GetHandler() };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(CommandBuffers[i], 0, 1, vertexBuffers, offsets);
+
+				vkCmdDraw(CommandBuffers[i], r.PositionsVertexBuffer.GetElementsCount(), 1, 0, 0);
+			}
+
+			vkCmdEndRenderPass(CommandBuffers[i]);
+
+			if (vkEndCommandBuffer(CommandBuffers[i]) != VK_SUCCESS)
+				return false;
 		}
+
+		uint32_t imageId = 0;
+		VkResult acqResult = vkAcquireNextImageKHR(VulkanApp->Device, VulkanApp->SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageId);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkSemaphore waitSemaphores[] = { ImageAvailableSemaphore };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &CommandBuffers[imageId];
+
+		VkSemaphore signalSemaphores[] = { RenderFinishedSemaphore };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		if (vkQueueSubmit(VulkanApp->GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+			return false;
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapChains[] = { VulkanApp->SwapChain };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapChains;
+		presentInfo.pImageIndices = &imageId;
+
+		vkQueuePresentKHR(VulkanApp->PresentQueue, &presentInfo);
+		vkQueueWaitIdle(VulkanApp->PresentQueue);
 
 		return true;
 	}

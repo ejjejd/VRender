@@ -2,6 +2,8 @@
 #include "vrender.h"
 #include "graphics/shader.h"
 
+#include "managers/asset_manager.h"
+
 namespace render
 {
 	struct Mesh
@@ -9,6 +11,6 @@ namespace render
 		std::string VertexShader;
 		std::string FragmentShader;
 
-		std::vector<glm::vec3> Positions;
+		asset::MeshInfo MeshInfo;
 	};
 }

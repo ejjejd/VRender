@@ -78,7 +78,7 @@ namespace manager
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = VulkanApp->QueueFamilies.Graphics;
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
 		if (vkCreateCommandPool(VulkanApp->Device, &poolInfo, nullptr, &CommandPool) != VK_SUCCESS)
 			return false;

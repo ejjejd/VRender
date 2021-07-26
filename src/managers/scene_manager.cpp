@@ -113,7 +113,7 @@ namespace manager
 		shader.AddStage(mesh.FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT);
 
 		graphics::Buffer positionBuffer;
-		positionBuffer.Setup(*VulkanApp , &mesh.Positions[0], sizeof(mesh.Positions[0]), mesh.Positions.size());
+		positionBuffer.Setup(*VulkanApp , &mesh.MeshInfo.Positions[0], sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
 
 		renderable.PositionsVertexBuffer = positionBuffer;
 

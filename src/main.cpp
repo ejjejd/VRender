@@ -1,32 +1,21 @@
 #include "engine/engine.h"
 
+
+
 int main()
 {
 	app::Engine engine;
 
 	engine.StartupEngine();
 
+	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("models/pistol.obj");
+	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
+
 	render::Mesh mesh;
-	mesh.Positions =
-	{
-		{ -0.5f, 0.5f, 0.0f },
-		{ 0.0f, -0.5f, 0.0f },
-		{ 0.5f, 0.5f, 0.0f }
-	};
+	mesh.MeshInfo = cubeMesh;
 	mesh.VertexShader = "shaders/vert.spv";
 	mesh.FragmentShader = "shaders/frag.spv";
 
-	render::Mesh mesh1;
-	mesh1.Positions =
-	{
-		{ -1.0f, 0.0f, 0.0f },
-		{ 0.0f, -0.5f, 0.0f },
-		{ -1.0f, 0.5f, 0.0f }
-	};
-	mesh1.VertexShader = "shaders/vert.spv";
-	mesh1.FragmentShader = "shaders/frag.spv";
-
-	engine.SceneManager.RegisterMesh(mesh1);
 	engine.SceneManager.RegisterMesh(mesh);
 
 	engine.Run(

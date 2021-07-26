@@ -7,6 +7,7 @@
 
 #include "managers/scene_manager.h"
 #include "managers/render_manager.h"
+#include "managers/asset_manager.h"
 
 namespace app
 {
@@ -16,6 +17,7 @@ namespace app
 
 		manager::SceneManager SceneManager;
 		manager::RenderManager RenderManager;
+		manager::AssetManager AssetManager;
 
 		uint16_t WindowWidth = 1280;
 		uint16_t WindowHeight = 720;

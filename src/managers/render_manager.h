@@ -4,6 +4,7 @@
 
 #include "graphics/shader.h"
 #include "graphics/buffer.h"
+#include "graphics/ubo.h"
 
 #include "rendering/renderable.h"
 
@@ -27,6 +28,8 @@ namespace manager
 		bool CreatePipeline();
 		bool CreateRenderPass();
 	public:
+		graphics::UniformBuffer GlobalUBO;
+
 		bool Setup(vk::VulkanApp& app);
 
 		void Cleanup();

@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/graphics/ubo.h"
+    "src/graphics/ubo.cpp"
     "src/managers/asset_manager.h"
     "src/managers/asset_manager.cpp"
     "src/graphics/buffer.h"

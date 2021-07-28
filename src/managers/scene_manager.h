@@ -18,16 +18,15 @@ namespace manager
 
 		std::vector<render::Renderable> Renderables;
 
+		VkDescriptorPool DescriptorPool;
+
 		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
 
-		bool CreatePipeline(VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader);
+		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
+							VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader);
 	public:
-		inline void Setup(vk::VulkanApp& app, RenderManager& rm)
-		{
-			VulkanApp = &app;
-			RM = &rm;
-		}
+		void Setup(vk::VulkanApp& app, RenderManager& rm);
 
 		void Cleanup();
 

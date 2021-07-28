@@ -11,6 +11,8 @@ namespace render
 		VkPipeline GraphicsPipeline;
 
 		graphics::Buffer PositionsVertexBuffer;
+
+		std::vector<VkDescriptorSet> Descriptors;
 	};
 
 	inline void CleanupRenderable(const vk::VulkanApp& app, const Renderable& renderable)

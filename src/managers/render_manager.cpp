@@ -5,6 +5,12 @@
 
 namespace manager
 {
+	struct GlobalUboInfo
+	{
+		glm::mat4 ToCamera;
+		glm::mat4 ToClip;
+	};
+
 	bool RenderManager::CreateRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
@@ -104,11 +110,17 @@ namespace manager
 			return false;
 		}
 
+
+		//Setup ubo's
+		GlobalUBO.Setup(app, Framebuffers.size(), sizeof(GlobalUboInfo), 1);
+
 		return true;
 	}
 
 	void RenderManager::Cleanup()
 	{
+		GlobalUBO.Cleanup();
+
 		vkFreeCommandBuffers(VulkanApp->Device, CommandPool, CommandBuffers.size(), &CommandBuffers[0]);
 		vkDestroyCommandPool(VulkanApp->Device, CommandPool, nullptr);
 
@@ -154,6 +166,8 @@ namespace manager
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(CommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
+				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipelineLayout, 0, 1, r.Descriptors.data(), 0, nullptr);
+
 				vkCmdDraw(CommandBuffers[i], r.PositionsVertexBuffer.GetElementsCount(), 1, 0, 0);
 			}
 
@@ -165,6 +179,12 @@ namespace manager
 
 		uint32_t imageId = 0;
 		VkResult acqResult = vkAcquireNextImageKHR(VulkanApp->Device, VulkanApp->SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageId);
+
+		GlobalUboInfo ubo;
+		ubo.ToCamera = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+		ubo.ToClip = glm::perspective(45.0f, 1.77f, 0.1f, 1000.0f);
+
+		GlobalUBO.UpdateBuffer(imageId, &ubo, 1);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

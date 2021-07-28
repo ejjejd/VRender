@@ -2,7 +2,8 @@
 
 namespace manager
 {
-	bool SceneManager::CreatePipeline(VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader)
+	bool SceneManager::CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
+									  VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader)
 	{
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -63,8 +64,8 @@ namespace manager
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 0;
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
+		pipelineLayoutInfo.setLayoutCount = layouts.size();
+		pipelineLayoutInfo.pSetLayouts = layouts.data();
 
 		if (vkCreatePipelineLayout(VulkanApp->Device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 			return false;
@@ -91,8 +92,32 @@ namespace manager
 		return true;
 	}
 
+	void SceneManager::Setup(vk::VulkanApp& app, RenderManager& rm)
+	{
+		VulkanApp = &app;
+		RM = &rm;
+
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = RM->GetFBOs().size();
+
+		VkDescriptorPoolCreateInfo poolCreateInfo{};
+		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolCreateInfo.poolSizeCount = 1;
+		poolCreateInfo.pPoolSizes = &poolSize;
+		poolCreateInfo.maxSets = RM->GetFBOs().size();
+
+		if (vkCreateDescriptorPool(VulkanApp->Device, &poolCreateInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
+		{
+			TERMINATE_LOG("Couldn't create descriptor pool!")
+			return;
+		}
+	}
+
 	void SceneManager::Cleanup()
 	{
+		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPool, nullptr);
+
 		for (auto vbo : MeshBuffers)
 			vbo.Cleanup();
 
@@ -120,7 +145,15 @@ namespace manager
 
 		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, positionBuffer.GetStride());
 
-		if (!CreatePipeline(renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
+		std::vector<VkDescriptorSetLayout> layouts;
+
+		auto d = graphics::CreateDescriptor(*VulkanApp, RM->GlobalUBO, DescriptorPool, 0);
+
+		layouts.push_back(d.DescriptorSetLayout);
+		
+		renderable.Descriptors = d.DescriptorSets;
+
+		if (!CreatePipeline(layouts, renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
 			return;
 
 		MeshBuffers.push_back(positionBuffer);

@@ -15,7 +15,21 @@ namespace graphics
 		size_t ElementsCount;
 		size_t Stride;
 	public:
-		void Setup(vk::VulkanApp& app, void* data, const size_t stride, const size_t elementsCount);
+		void Setup(vk::VulkanApp& app, const VkBufferUsageFlags usageFlags, const size_t stride, const size_t elementsCount);
+
+		inline void Update(void* data, const size_t elementsCount)
+		{
+			if (elementsCount > ElementsCount)
+			{
+				LOG("Wrong data passed to update buffer!");
+				return;
+			}
+
+			void* mapPtr;
+			vkMapMemory(VulkanApp->Device, BufferMemory, 0, Stride * elementsCount, 0, &mapPtr);
+			memcpy(mapPtr, data, Stride * elementsCount);
+			vkUnmapMemory(VulkanApp->Device, BufferMemory);
+		}
 
 		inline void Cleanup()
 		{

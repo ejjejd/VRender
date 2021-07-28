@@ -19,7 +19,7 @@ namespace graphics
 		return -1;
 	}
 
-	void Buffer::Setup(vk::VulkanApp& app, void* data, const size_t stride, const size_t elementsCount)
+	void Buffer::Setup(vk::VulkanApp& app, const VkBufferUsageFlags usageFlags, const size_t stride, const size_t elementsCount)
 	{
 		VulkanApp = &app;
 
@@ -29,7 +29,7 @@ namespace graphics
 		VkBufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferCreateInfo.size = Stride * ElementsCount;
-		bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferCreateInfo.usage = usageFlags;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		if (vkCreateBuffer(VulkanApp->Device, &bufferCreateInfo, nullptr, &BufferH) != VK_SUCCESS)
@@ -55,10 +55,5 @@ namespace graphics
 		}
 
 		vkBindBufferMemory(VulkanApp->Device, BufferH, BufferMemory, 0);
-
-		void* mapPtr;
-		vkMapMemory(VulkanApp->Device, BufferMemory, 0, bufferCreateInfo.size, 0, &mapPtr);
-		memcpy(mapPtr, data, bufferCreateInfo.size);
-		vkUnmapMemory(VulkanApp->Device, BufferMemory);
 	}
 }

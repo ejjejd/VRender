@@ -73,6 +73,15 @@ namespace manager
 		return true;
 	}
 
+	void RenderManager::UpdateUBO(const uint8_t imageId)
+	{
+		GlobalUboInfo ubo;
+		ubo.ToCamera = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+		ubo.ToClip = glm::perspective(45.0f, 1.77f, 0.1f, 1000.0f);
+
+		GlobalUBO.Update(&ubo, 1);
+	}
+
 	bool RenderManager::Setup(vk::VulkanApp& app)
 	{
 		VulkanApp = &app;
@@ -112,7 +121,7 @@ namespace manager
 
 
 		//Setup ubo's
-		GlobalUBO.Setup(app, Framebuffers.size(), sizeof(GlobalUboInfo), 1);
+		GlobalUBO.Setup(app, graphics::UboType::Dynamic, sizeof(GlobalUboInfo), 1);
 
 		return true;
 	}
@@ -169,7 +178,14 @@ namespace manager
 
 				std::vector<VkDescriptorSet> descriptors;
 				for (auto d : r.Descriptors)
-					descriptors.push_back(d.DescriptorSets[i]);
+				{
+					if (d.DescriptorSets.size() == Framebuffers.size())
+						descriptors.push_back(d.DescriptorSets[i]);
+					else if (d.DescriptorSets.size() == 1)
+						descriptors.push_back(d.DescriptorSets[0]);
+					else
+						TERMINATE_LOG("Invalid descriptor created!")
+				}
 
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipelineLayout, 0, descriptors.size(), descriptors.data(), 0, nullptr);
 
@@ -186,11 +202,9 @@ namespace manager
 		uint32_t imageId = 0;
 		VkResult acqResult = vkAcquireNextImageKHR(VulkanApp->Device, VulkanApp->SwapChain, UINT64_MAX, ImageAvailableSemaphore, VK_NULL_HANDLE, &imageId);
 
-		GlobalUboInfo ubo;
-		ubo.ToCamera = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
-		ubo.ToClip = glm::perspective(45.0f, 1.77f, 0.1f, 1000.0f);
 
-		GlobalUBO.UpdateBuffer(imageId, &ubo, 1);
+		UpdateUBO(imageId);
+
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

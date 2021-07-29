@@ -2,6 +2,23 @@
 
 namespace graphics
 {
+	void UniformBuffer::Setup(vk::VulkanApp& app, const UboType type, const size_t stride, const size_t elementsCount)
+	{
+		VulkanApp = &app;
+		Type = type;
+
+		size_t vSize = 0;
+
+		if (type == UboType::Dynamic)
+			vSize = VulkanApp->SwapChainImageViews.size();
+		else
+			vSize = 1;
+
+		Buffers.resize(vSize);
+		for (auto& b : Buffers)
+			b.Setup(app, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, stride, elementsCount);
+	}
+
 	Descriptor UniformBuffer::CreateDescriptor(const VkDescriptorPool& descriptorPool, const uint8_t binding)
 	{
 		VkDescriptorSetLayoutBinding layoutBinding{};

@@ -25,8 +25,8 @@ namespace manager
 
 		vk::VulkanApp* VulkanApp;
 
-		bool CreatePipeline();
 		bool CreateRenderPass();
+		void UpdateUBO(const uint8_t imageId);
 	public:
 		graphics::UniformBuffer GlobalUBO;
 

@@ -9,7 +9,7 @@ namespace manager
 		for (size_t i = 0; i < assimpMesh->mNumVertices; ++i)
 		{
 			auto av = assimpMesh->mVertices[i];
-			mesh.Positions.emplace_back(av.x, av.y, av.z);
+			mesh.Positions.emplace_back(av.x, -av.y, av.z);
 		}
 
 		return mesh;

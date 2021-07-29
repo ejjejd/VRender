@@ -166,7 +166,13 @@ namespace manager
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(CommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipelineLayout, 0, 1, r.Descriptors.data(), 0, nullptr);
+
+				std::vector<VkDescriptorSet> descriptors;
+				for (auto d : r.Descriptors)
+					descriptors.push_back(d.DescriptorSets[i]);
+
+				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipelineLayout, 0, descriptors.size(), descriptors.data(), 0, nullptr);
+
 
 				vkCmdDraw(CommandBuffers[i], r.PositionsVertexBuffer.GetElementsCount(), 1, 0, 0);
 			}

@@ -23,6 +23,8 @@ namespace manager
 		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
 
+		std::vector<graphics::Descriptor> CreateDescriptors();
+
 		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
 							VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader);
 	public:

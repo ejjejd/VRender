@@ -92,6 +92,18 @@ namespace manager
 		return true;
 	}
 
+	std::vector<graphics::Descriptor> SceneManager::CreateDescriptors()
+	{
+		//TODO get this information based on shader relfection
+
+		std::vector<graphics::Descriptor> descriptors;
+
+		auto d = RM->GlobalUBO.CreateDescriptor(DescriptorPool, 0);
+		descriptors.push_back(d);
+
+		return descriptors;
+	}
+
 	void SceneManager::Setup(vk::VulkanApp& app, RenderManager& rm)
 	{
 		VulkanApp = &app;
@@ -99,13 +111,13 @@ namespace manager
 
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = RM->GetFBOs().size();
+		poolSize.descriptorCount = RM->GetFBOs().size() * 255;
 
 		VkDescriptorPoolCreateInfo poolCreateInfo{};
 		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolCreateInfo.poolSizeCount = 1;
 		poolCreateInfo.pPoolSizes = &poolSize;
-		poolCreateInfo.maxSets = RM->GetFBOs().size();
+		poolCreateInfo.maxSets = 255;
 
 		if (vkCreateDescriptorPool(VulkanApp->Device, &poolCreateInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
 		{
@@ -145,16 +157,18 @@ namespace manager
 
 		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, positionBuffer.GetStride());
 
+
+		auto descriptors = CreateDescriptors();
+
+		renderable.Descriptors = descriptors;
+
 		std::vector<VkDescriptorSetLayout> layouts;
-
-		auto d = graphics::CreateDescriptor(*VulkanApp, RM->GlobalUBO, DescriptorPool, 0);
-
-		layouts.push_back(d.DescriptorSetLayout);
-		
-		renderable.Descriptors = d.DescriptorSets;
+		for (auto& d : descriptors)
+			layouts.push_back(d.DescriptorSetLayout);
 
 		if (!CreatePipeline(layouts, renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
 			return;
+
 
 		MeshBuffers.push_back(positionBuffer);
 

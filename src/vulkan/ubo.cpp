@@ -1,6 +1,6 @@
 #include "ubo.h"
 
-namespace graphics
+namespace vk
 {
 	void UniformBuffer::Setup(vk::VulkanApp& app, const UboType type, const size_t stride, const size_t elementsCount)
 	{

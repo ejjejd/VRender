@@ -163,14 +163,14 @@ namespace vk
 		for (size_t i = 0; i < properties.size(); ++i)
 		{
 			if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-				qf.Graphics = i;
+				qf.vk = i;
 
 			VkBool32 presentSupport = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(pd, i, app.Surface, &presentSupport);
 			if (presentSupport)
 				qf.Present = i;
 
-			if (qf.Graphics != -1 && qf.Present != -1)
+			if (qf.vk != -1 && qf.Present != -1)
 				break;
 		}
 
@@ -232,7 +232,7 @@ namespace vk
 		bool swapChainValid = !(details.PresentModes.empty() && details.Formats.empty());
 
 		auto qf = FindVulkanQueueFamilies(app, pd);
-		bool queueFamiliesValid = qf.Graphics != -1 & qf.Present != -1;
+		bool queueFamiliesValid = qf.vk != -1 & qf.Present != -1;
 
 		return queueFamiliesValid
 			&& CheckDeviceExtensions(pd)
@@ -265,7 +265,7 @@ namespace vk
 		app.QueueFamilies = FindVulkanQueueFamilies(app, app.PhysicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<int32_t> queueFamiliesSet = { app.QueueFamilies.Graphics, app.QueueFamilies.Present };
+		std::set<int32_t> queueFamiliesSet = { app.QueueFamilies.vk, app.QueueFamilies.Present };
 
 		float queuePriority = 1.0f;
 
@@ -293,7 +293,7 @@ namespace vk
 		if (vkCreateDevice(app.PhysicalDevice, &deviceCreateInfo, nullptr, &app.Device) != VK_SUCCESS)
 			return false;
 
-		vkGetDeviceQueue(app.Device, app.QueueFamilies.Graphics, 0, &app.GraphicsQueue);
+		vkGetDeviceQueue(app.Device, app.QueueFamilies.vk, 0, &app.GraphicsQueue);
 		vkGetDeviceQueue(app.Device, app.QueueFamilies.Present, 0, &app.PresentQueue);
 	}
 
@@ -360,9 +360,9 @@ namespace vk
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 		auto families = app.QueueFamilies;
-		uint32_t queueFamilyIndices[] = { families.Graphics, families.Present };
+		uint32_t queueFamilyIndices[] = { families.vk, families.Present };
 
-		if (families.Graphics != families.Present)
+		if (families.vk != families.Present)
 		{
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			createInfo.queueFamilyIndexCount = 2;
@@ -433,6 +433,7 @@ namespace vk
 		if (!app.GlfwWindow)
 			return false;
 
+		glfwSetInputMode(app.GlfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		if (!CreateVulkanInstance(app))
 			return false;

@@ -9,6 +9,8 @@
 #include "managers/render_manager.h"
 #include "managers/asset_manager.h"
 
+#include "utils/timer.h"
+
 namespace app
 {
 	struct API Engine
@@ -21,6 +23,9 @@ namespace app
 
 		uint16_t WindowWidth = 1280;
 		uint16_t WindowHeight = 720;
+
+		float DeltaTime = 0.0f;
+		uint16_t Fps = 0.0f;
 
 		inline void StartupEngine()
 		{
@@ -44,12 +49,23 @@ namespace app
 
 		inline void Run(const std::function<void()>& userMainLoop)
 		{
+			utils::Timer frameTimer;
+
 			vk::RunVulkanApp(VulkanApp, 
 				[&]()
 				{
+					frameTimer.Start();
+
+
 					userMainLoop();
 
+					SceneManager.Update();
+
 					RenderManager.Update(SceneManager.GetRenderables());
+
+
+					Fps = 1000.0f / frameTimer.GetElapsedTime();
+					DeltaTime = 1.0f / Fps;
 				});
 		}
 	};

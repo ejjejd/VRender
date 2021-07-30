@@ -4,7 +4,7 @@
 #include "buffer.h"
 #include "descriptor.h"
 
-namespace graphics
+namespace vk
 {
 	//Dynamic use more buffer to properly update them in main loop
 	enum class UboType
@@ -13,7 +13,7 @@ namespace graphics
 		Dynamic
 	};
 
-	class UniformBuffer
+	class API UniformBuffer
 	{
 	private:
 		std::vector<Buffer> Buffers;

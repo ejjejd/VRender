@@ -2,7 +2,7 @@
 #include "vrender.h"
 
 #include "mesh.h"
-#include "graphics/descriptor.h"
+#include "vulkan/descriptor.h"
 
 namespace render
 {
@@ -11,9 +11,9 @@ namespace render
 		VkPipelineLayout GraphicsPipelineLayout;
 		VkPipeline GraphicsPipeline;
 
-		graphics::Buffer PositionsVertexBuffer;
+		vk::Buffer PositionsVertexBuffer;
 
-		std::vector<graphics::Descriptor> Descriptors;
+		std::vector<vk::Descriptor> Descriptors;
 	};
 
 	inline void CleanupRenderable(const vk::VulkanApp& app, const Renderable& renderable)

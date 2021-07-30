@@ -1,6 +1,6 @@
 #include "buffer.h"
 
-namespace graphics
+namespace vk
 {
 	int32_t FindMemoryType(const vk::VulkanApp& app, uint32_t typeFilter, VkMemoryPropertyFlags properties)
 	{

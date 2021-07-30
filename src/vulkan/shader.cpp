@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-namespace graphics
+namespace vk
 {
 	bool ReadShader(const std::string& filename, std::vector<char>& bytecode) 
 	{

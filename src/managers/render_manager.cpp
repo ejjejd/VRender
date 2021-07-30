@@ -76,8 +76,8 @@ namespace manager
 	void RenderManager::UpdateUBO(const uint8_t imageId)
 	{
 		GlobalUboInfo ubo;
-		ubo.ToCamera = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
-		ubo.ToClip = glm::perspective(45.0f, 1.77f, 0.1f, 1000.0f);
+		ubo.ToCamera = ActiveCamera.GetViewMatrix();
+		ubo.ToClip = ActiveCamera.GetProjection();
 
 		GlobalUBO.Update(&ubo, 1);
 	}
@@ -92,7 +92,7 @@ namespace manager
 
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = VulkanApp->QueueFamilies.Graphics;
+		poolInfo.queueFamilyIndex = VulkanApp->QueueFamilies.vk;
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
 		if (vkCreateCommandPool(VulkanApp->Device, &poolInfo, nullptr, &CommandPool) != VK_SUCCESS)
@@ -121,7 +121,7 @@ namespace manager
 
 
 		//Setup ubo's
-		GlobalUBO.Setup(app, graphics::UboType::Dynamic, sizeof(GlobalUboInfo), 1);
+		GlobalUBO.Setup(app, vk::UboType::Dynamic, sizeof(GlobalUboInfo), 1);
 
 		return true;
 	}

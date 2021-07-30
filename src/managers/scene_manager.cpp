@@ -3,7 +3,7 @@
 namespace manager
 {
 	bool SceneManager::CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
-									  VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, graphics::Shader& shader)
+									  VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader)
 	{
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -92,11 +92,11 @@ namespace manager
 		return true;
 	}
 
-	std::vector<graphics::Descriptor> SceneManager::CreateDescriptors()
+	std::vector<vk::Descriptor> SceneManager::CreateDescriptors()
 	{
 		//TODO get this information based on shader relfection
 
-		std::vector<graphics::Descriptor> descriptors;
+		std::vector<vk::Descriptor> descriptors;
 
 		auto d = RM->GlobalUBO.CreateDescriptor(DescriptorPool, 0);
 		descriptors.push_back(d);
@@ -137,19 +137,24 @@ namespace manager
 			render::CleanupRenderable(*VulkanApp, r);
 	}
 
+	void SceneManager::Update()
+	{
+		RM->SetActiveCamera(Cameras[ActiveCameraId]);
+	}
+
 	void SceneManager::RegisterMesh(render::Mesh& mesh)
 	{
 		RegisteredMeshes.push_back(mesh);
 
 		render::Renderable renderable;
 
-		graphics::Shader shader;
+		vk::Shader shader;
 		shader.Setup(*VulkanApp);
 
 		shader.AddStage(mesh.VertexShader, VK_SHADER_STAGE_VERTEX_BIT);
 		shader.AddStage(mesh.FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-		graphics::Buffer positionBuffer;
+		vk::Buffer positionBuffer;
 		positionBuffer.Setup(*VulkanApp , VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
 		positionBuffer.Update(&mesh.MeshInfo.Positions[0], mesh.MeshInfo.Positions.size());
 

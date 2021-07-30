@@ -2,7 +2,7 @@
 #include "vrender.h"
 #include "vulkan/vulkan_app.h"
 
-namespace graphics
+namespace vk
 {
 	class API Buffer
 	{

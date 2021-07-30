@@ -1,6 +1,6 @@
 #pragma once
 #include "vrender.h"
-#include "graphics/shader.h"
+#include "vulkan/shader.h"
 
 #include "managers/asset_manager.h"
 

@@ -6,10 +6,17 @@ namespace manager
 	{
 		asset::MeshInfo mesh;
 
-		for (size_t i = 0; i < assimpMesh->mNumVertices; ++i)
+		for (size_t i = 0; i < assimpMesh->mNumFaces; ++i)
 		{
-			auto av = assimpMesh->mVertices[i];
-			mesh.Positions.emplace_back(av.x, -av.y, av.z);
+			auto face = assimpMesh->mFaces[i];
+
+			for (size_t j = 0; j < face.mNumIndices; ++j)
+			{
+				auto id = face.mIndices[j];
+
+				auto av = assimpMesh->mVertices[id];
+				mesh.Positions.emplace_back(av.x, -av.y, av.z);
+			}
 		}
 
 		return mesh;

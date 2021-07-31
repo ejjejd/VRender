@@ -34,6 +34,7 @@ namespace graphics
 		float Fov = 45.0f;
 		float AspectRatio = 1.77f;
 		float Speed = 10.0f;
+		float Sensetivity = 25.0f;
 		glm::vec3 Position;
 
 		inline void SetupAsPerspective(const glm::vec3& position, const float fov, const float ar, const float speed,
@@ -70,8 +71,8 @@ namespace graphics
 
 		inline void AddRotation(const float yaw, const float pitch, const float deltaTime)
 		{
-			Yaw += yaw * deltaTime;
-			Pitch += pitch * deltaTime;
+			Yaw += yaw * Sensetivity * deltaTime;
+			Pitch += pitch * Sensetivity * deltaTime;
 
 			ComputeBasis();
 		}

@@ -12,7 +12,7 @@ layout(binding = 0) uniform UboObject
 
 void main()
 {
-	Color = position * 0.5f + 0.5f;
+	Color = vec3(0.2f);
 	
-	gl_Position = ubo.ToClip * ubo.ToCamera * vec4(position, 1.0f);
+	gl_Position = ubo.ToClip * ubo.ToCamera * vec4(vec3(position.x, position.y, position.z), 1.0f);
 }

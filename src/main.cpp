@@ -37,7 +37,10 @@ int main()
 	glfwSetCursorPosCallback(engine.VulkanApp.GlfwWindow, GlfwMouseCallback);
 
 
-	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("models/pistol.obj");
+	auto pistolMeshId = engine.AssetManager.LoadMeshInfo("models/pistol.obj");
+	auto pistolMesh = engine.AssetManager.GetMeshInfo(pistolMeshId);
+
+	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("models/cube.obj");
 	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
 
 	render::Mesh mesh;
@@ -56,8 +59,8 @@ int main()
 	cursorCallback = 
 		[&](const float x, const float y)
 		{
-			camera.AddRotation(x / 10.0f,
-							   y / 10.0f,
+			camera.AddRotation(x / engine.WindowWidth, 
+							   y / engine.WindowHeight,
 							   engine.DeltaTime);
 		};
 

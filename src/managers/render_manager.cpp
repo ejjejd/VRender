@@ -13,6 +13,20 @@ namespace manager
 
 	bool RenderManager::CreateRenderPass()
 	{
+		VkAttachmentDescription depthAttachment{};
+		depthAttachment.format = VulkanApp->DepthFormat;
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthAttachmentRef{};
+		depthAttachmentRef.attachment = 1;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = VulkanApp->SwapChainFormat;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -31,11 +45,15 @@ namespace manager
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+
+		VkAttachmentDescription attachments[2] = { colorAttachment, depthAttachment };
 
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachment;
+		renderPassInfo.attachmentCount = 2;
+		renderPassInfo.pAttachments = &attachments[0];
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
 
@@ -57,11 +75,15 @@ namespace manager
 
 		for (size_t i = 0; i < VulkanApp->SwapChainImageViews.size(); ++i)
 		{
+			VkImageView attachments[2];
+			attachments[0] = VulkanApp->SwapChainImageViews[i];
+			attachments[1] = VulkanApp->DepthImageView;
+
 			VkFramebufferCreateInfo fboInfo{};
 			fboInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			fboInfo.renderPass = RenderPass;
-			fboInfo.attachmentCount = 1;
-			fboInfo.pAttachments = &VulkanApp->SwapChainImageViews[i];
+			fboInfo.attachmentCount = 2;
+			fboInfo.pAttachments = &attachments[0];
 			fboInfo.width = VulkanApp->SwapChainExtent.width;
 			fboInfo.height = VulkanApp->SwapChainExtent.height;
 			fboInfo.layers = 1;
@@ -162,8 +184,14 @@ namespace manager
 			renderPassInfo.renderArea.extent = VulkanApp->SwapChainExtent;
 
 			VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clearColor;
+
+			VkClearValue clearDepth;
+			clearDepth.depthStencil.depth = 1.0f;
+
+			VkClearValue clearValues[2] = { clearColor, clearDepth };
+
+			renderPassInfo.clearValueCount = 2;
+			renderPassInfo.pClearValues = &clearValues[0];
 
 			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 

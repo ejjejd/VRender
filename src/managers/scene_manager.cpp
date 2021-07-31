@@ -62,6 +62,16 @@ namespace manager
 		colorBlending.blendConstants[2] = 0.0f;
 		colorBlending.blendConstants[3] = 0.0f;
 
+		VkPipelineDepthStencilStateCreateInfo depthState{};
+		depthState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthState.depthTestEnable = VK_TRUE;
+		depthState.depthWriteEnable = VK_TRUE;
+		depthState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthState.depthBoundsTestEnable = VK_FALSE;
+		depthState.minDepthBounds = 0.0f;
+		depthState.maxDepthBounds = 1.0f;
+		depthState.stencilTestEnable = VK_FALSE;
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = layouts.size();
@@ -80,6 +90,7 @@ namespace manager
 		pipelineInfo.pRasterizationState = &rasterizer;
 		pipelineInfo.pMultisampleState = &multisample;
 		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.pDepthStencilState = &depthState;
 		pipelineInfo.pDynamicState = nullptr;
 		pipelineInfo.layout = pipelineLayout;
 		pipelineInfo.renderPass = RM->GetRenderPass();

@@ -337,6 +337,85 @@ namespace vk
 		return extent;
 	}
 
+	static int32_t FindMemoryType(const vk::VulkanApp& app, uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(app.PhysicalDevice, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
+		{
+			if ((memProperties.memoryTypes[i].propertyFlags & properties) == properties
+				&& typeFilter & (1 << i))
+			{
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	bool CreateDepthImage(VulkanApp& app, const VkExtent2D& extent)
+	{
+		VkExtent3D depthExtent =
+		{
+			extent.width,
+			extent.height,
+			1
+		};
+
+		app.DepthFormat = VK_FORMAT_D32_SFLOAT;
+
+		VkImageCreateInfo imageCreateInfo{};
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = app.DepthFormat;
+		imageCreateInfo.extent = depthExtent;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		if (vkCreateImage(app.Device, &imageCreateInfo, nullptr, &app.DepthImage) != VK_SUCCESS)
+		{
+			LOG("Couldn't allocate depth buffer!")
+			return false;
+		}
+
+		VkMemoryRequirements imageMemRequirements;
+		vkGetImageMemoryRequirements(app.Device, app.DepthImage, &imageMemRequirements);
+
+		VkMemoryAllocateInfo  allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = imageMemRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(app, imageMemRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		if (vkAllocateMemory(app.Device, &allocInfo, nullptr, &app.DepthImageMemory) != VK_SUCCESS)
+		{
+			LOG("Couldn't allocate depth buffer!")
+			return false;
+		}
+
+		vkBindImageMemory(app.Device, app.DepthImage, app.DepthImageMemory, 0);
+
+		VkImageViewCreateInfo imageViewCreateInfo{};
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.image = app.DepthImage;
+		imageViewCreateInfo.format = app.DepthFormat;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+		if (vkCreateImageView(app.Device, &imageViewCreateInfo, nullptr, &app.DepthImageView) != VK_SUCCESS)
+		{
+			LOG("Couldn't allocate depth buffer!")
+			return false;
+		}
+	}
+
 	bool CreateSwapChain(VulkanApp& app)
 	{
 		auto details = QuerySwapChainDetails(app, app.PhysicalDevice);
@@ -346,6 +425,8 @@ namespace vk
 		auto presentMode = ChooseSwapPresentMode(details.PresentModes);
 
 		auto extent = ChooseSwapExtent(app, details.Capabilities);
+
+		CreateDepthImage(app, extent);
 
 		uint32_t imageCount = details.Capabilities.maxImageCount;
 
@@ -450,6 +531,10 @@ namespace vk
 
 	void CleanVulkanApp(VulkanApp& app)
 	{
+		vkDestroyImageView(app.Device, app.DepthImageView, nullptr);
+		vkDestroyImage(app.Device, app.DepthImage, nullptr);
+		vkFreeMemory(app.Device, app.DepthImageMemory, nullptr);
+
 		for (size_t i = 0; i < app.SwapChainImageViews.size(); i++)
 			vkDestroyImageView(app.Device, app.SwapChainImageViews[i], nullptr);
 

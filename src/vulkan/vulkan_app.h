@@ -29,6 +29,12 @@ namespace vk
 
 		VkSwapchainKHR SwapChain;
 
+		VkImage DepthImage;
+		VkDeviceMemory DepthImageMemory;
+		VkImageView DepthImageView;
+
+		VkFormat DepthFormat;
+
 		VkFormat SwapChainFormat;
 		VkExtent2D SwapChainExtent;
 

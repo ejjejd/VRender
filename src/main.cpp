@@ -1,41 +1,10 @@
 #include "engine/engine.h"
 
-bool keys[1024];
-
-std::function<void(float, float)> cursorCallback;
-
-void GlfwKeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
-{
-	if (action == GLFW_PRESS)
-		keys[key] = true;
-	else if (action == GLFW_RELEASE)
-		keys[key] = false;
-}
-
-void GlfwMouseCallback(GLFWwindow* w, double x, double y)
-{
-	static double lastX = x;
-	static double lastY = y;
-
-	float cursorDiffX = x - lastX;
-	float cursorDiffY = y - lastY;
-
-	if(cursorCallback)
-		cursorCallback(cursorDiffX, cursorDiffY);
-
-	lastX = x;
-	lastY = y;
-}
-
 int main()
 {
 	app::Engine engine;
 
 	engine.StartupEngine();
-
-	glfwSetKeyCallback(engine.VulkanApp.GlfwWindow, GlfwKeyCallback);
-	glfwSetCursorPosCallback(engine.VulkanApp.GlfwWindow, GlfwMouseCallback);
-
 
 	auto pistolMeshId = engine.AssetManager.LoadMeshInfo("models/pistol.obj");
 	auto pistolMesh = engine.AssetManager.GetMeshInfo(pistolMeshId);
@@ -56,28 +25,30 @@ int main()
 	engine.SceneManager.RegisterCamera(camera);
 	engine.SceneManager.SetActiveCamera(0);
 
-	cursorCallback = 
-		[&](const float x, const float y)
-		{
-			camera.AddRotation(x / engine.WindowWidth, 
-							   y / engine.WindowHeight,
-							   engine.DeltaTime);
-		};
-
 	engine.Run(
 		[&]()
 		{
-			if (keys[GLFW_KEY_W])
+			if(engine.InputManager.IsGesturePerformed(input::Gesture::MouseX)
+				|| engine.InputManager.IsGesturePerformed(input::Gesture::MouseY))
+			{
+				auto offset = engine.InputManager.GetCursorOffset();
+
+				camera.AddRotation(offset.x / engine.WindowWidth,
+								   offset.y / engine.WindowHeight,
+								   engine.DeltaTime);
+			}
+
+			if (engine.InputManager.IsKeyStillPressed(input::Key::W))
 				camera.Move(graphics::CameraMoveDirection::Forward, engine.DeltaTime);
-			if (keys[GLFW_KEY_S])
+			if (engine.InputManager.IsKeyStillPressed(input::Key::S))
 				camera.Move(graphics::CameraMoveDirection::Backward, engine.DeltaTime);
-			if (keys[GLFW_KEY_D])
+			if (engine.InputManager.IsKeyStillPressed(input::Key::D))
 				camera.Move(graphics::CameraMoveDirection::Right, engine.DeltaTime);
-			if (keys[GLFW_KEY_A])
+			if (engine.InputManager.IsKeyStillPressed(input::Key::A))
 				camera.Move(graphics::CameraMoveDirection::Left, engine.DeltaTime);
-			if (keys[GLFW_KEY_E])
+			if (engine.InputManager.IsKeyStillPressed(input::Key::E))
 				camera.Move(graphics::CameraMoveDirection::Up, engine.DeltaTime);
-			if (keys[GLFW_KEY_Q])
+			if (engine.InputManager.IsKeyStillPressed(input::Key::Q))
 				camera.Move(graphics::CameraMoveDirection::Down, engine.DeltaTime);
 		});
 

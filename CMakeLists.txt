@@ -8,6 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/managers/input_manager.h"
+    "src/managers/input_manager.cpp"
+    "src/input/input_map.h"
     "src/utils/timer.h"
     "src/graphics/camera.h"    
     "src/graphics/camera.cpp"

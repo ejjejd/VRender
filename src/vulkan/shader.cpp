@@ -109,13 +109,13 @@ namespace vk
 								const size_t offset, const size_t stride, const VkVertexInputRate inputRate)
 	{
 		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
+		bindingDescription.binding = bind;
 		bindingDescription.stride = stride;
 		bindingDescription.inputRate = inputRate;
 
 		VkVertexInputAttributeDescription attributeDescription{};
 		attributeDescription.location = location;
-		attributeDescription.binding = 0;
+		attributeDescription.binding = bind;
 		attributeDescription.format = format;
 		attributeDescription.offset = offset;
 

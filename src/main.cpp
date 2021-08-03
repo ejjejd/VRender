@@ -12,10 +12,13 @@ int main()
 	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("models/cube.obj");
 	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
 
+
+	auto material = std::make_shared<render::PbrMaterial>();
+	material->Info.Albedo = glm::vec4(0.0f, 1.0f, 0.2f, 0.0f);
+
 	render::Mesh mesh;
 	mesh.MeshInfo = cubeMesh;
-	mesh.VertexShader = "shaders/vert.spv";
-	mesh.FragmentShader = "shaders/frag.spv";
+	mesh.Material = material;
 
 	engine.SceneManager.RegisterMesh(mesh);
 	

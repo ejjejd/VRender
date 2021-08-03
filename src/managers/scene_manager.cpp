@@ -134,7 +134,10 @@ namespace manager
 	{
 		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPool, nullptr);
 
-		for (auto&[id, ubo] : MeshLookupUBOs)
+		for (auto& [id, ubo] : MaterialLookupUBOs)
+			ubo.Cleanup();
+
+		for (auto& [id, ubo] : MeshLookupUBOs)
 			ubo.Cleanup();
 
 		for (auto& vbo : MeshBuffers)
@@ -148,6 +151,8 @@ namespace manager
 	{
 		RM->SetActiveCamera(Cameras[ActiveCameraId]);
 
+
+		//Update mesh ubos
 		for (size_t i = 0; i < RegisteredMeshes.size(); ++i)
 		{
 			auto& findUbo = MeshLookupUBOs.find(i);
@@ -164,32 +169,72 @@ namespace manager
 
 			findUbo->second.Update(&transform, 1);
 		}
+
+		//Update material ubos
+		for (size_t i = 0; i < RegisteredMeshes.size(); ++i)
+		{
+			auto& findUbo = MaterialLookupUBOs.find(i);
+			if (findUbo == MaterialLookupUBOs.end())
+				continue;
+
+			auto& mesh = RegisteredMeshes[i];
+			auto& material = mesh.get().Material;
+			
+			findUbo->second.Update(material->GetMaterialData(), 1);
+		}
 	}
 
-	std::vector<vk::Descriptor> SceneManager::CreateDescriptors(const vk::Shader& shader)
+	std::vector<vk::Descriptor> SceneManager::CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
 		std::vector<vk::Descriptor> descriptors;
 
-		auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_VERTEX_BIT);
-		if (findShaderInfo == reflectMap.end())
-			return {};
-
-		for (auto d : findShaderInfo->second.DescriptorSets)
 		{
-			if (d.SetId == ShaderDescriptorSetGlobalUBO)
-			{
-				auto d = RM->GlobalUBO.CreateDescriptor(DescriptorPool, 0);
-				descriptors.push_back(d);
-			}
-			if (d.SetId == ShaderDescriptorSetMeshUBO)
-			{
-				vk::UniformBuffer meshUBO;
-				meshUBO.Setup(*VulkanApp, vk::UboType::Dynamic, sizeof(MeshUBO), 1);
-				descriptors.push_back(meshUBO.CreateDescriptor(DescriptorPool, 0));
+			auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_VERTEX_BIT);
+			if (findShaderInfo == reflectMap.end())
+				return {};
 
-				MeshLookupUBOs[RegisteredMeshes.size() - 1] = meshUBO;
+			for (auto d : findShaderInfo->second.DescriptorSets)
+			{
+				switch (d.SetId)
+				{
+				case ShaderDescriptorSetGlobalUBO:
+					{
+						auto d = RM->GlobalUBO.CreateDescriptor(DescriptorPool, 0);
+						descriptors.push_back(d);
+					} break;
+				case ShaderDescriptorSetMeshUBO:
+					{
+						vk::UniformBuffer meshUBO;
+						meshUBO.Setup(*VulkanApp, vk::UboType::Dynamic, sizeof(MeshUBO), 1);
+						descriptors.push_back(meshUBO.CreateDescriptor(DescriptorPool, 0));
+
+						MeshLookupUBOs[RegisteredMeshes.size() - 1] = meshUBO;
+					} break;
+				default:
+					{
+						continue;
+					} break;
+				}
+			}
+		}
+
+		{
+			auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_FRAGMENT_BIT);
+			if (findShaderInfo == reflectMap.end())
+				return {};
+
+			for (auto d : findShaderInfo->second.DescriptorSets)
+			{
+				if (d.SetId == ShaderDescriptorSetMaterialUBO)
+				{
+					vk::UniformBuffer materialUBO;
+					materialUBO.Setup(*VulkanApp, vk::UboType::Dynamic, material.GetMaterialInfoStride(), 1);
+					descriptors.push_back(materialUBO.CreateDescriptor(DescriptorPool, 0));
+
+					MaterialLookupUBOs[RegisteredMeshes.size() - 1] = materialUBO;
+				}
 			}
 		}
 
@@ -211,21 +256,24 @@ namespace manager
 
 	void SceneManager::RegisterMesh(render::Mesh& mesh)
 	{
+		if (!mesh.Material)
+		{
+			LOG("Couldn't register mesh without material!")
+			return;
+		}
+
+
 		RegisteredMeshes.push_back(mesh);
 
 		render::Renderable renderable;
 
-		vk::Shader shader;
-		shader.Setup(*VulkanApp);
-
-		shader.AddStage(mesh.VertexShader, VK_SHADER_STAGE_VERTEX_BIT);
-		shader.AddStage(mesh.FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT);
+		auto shader = mesh.Material->CreateShader(*VulkanApp);
 
 
 		SetupBuffers(mesh, shader, renderable);
 
 
-		auto descriptors = CreateDescriptors(shader);
+		auto descriptors = CreateDescriptors(*mesh.Material, shader);
 
 		renderable.Descriptors = descriptors;
 
@@ -234,7 +282,10 @@ namespace manager
 			layouts.push_back(d.DescriptorSetLayout);
 
 		if (!CreatePipeline(layouts, renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
+		{
+			LOG("Couldn't create pipeline for new material")
 			return;
+		}
 
 		Renderables.push_back(renderable);
 

@@ -4,6 +4,8 @@
 
 #include "managers/asset_manager.h"
 
+#include "material.h"
+
 namespace render
 {
 	struct MeshTransform
@@ -15,8 +17,7 @@ namespace render
 
 	struct Mesh
 	{
-		std::string VertexShader;
-		std::string FragmentShader;
+		std::shared_ptr<BaseMaterial> Material;
 
 		asset::MeshInfo MeshInfo;
 

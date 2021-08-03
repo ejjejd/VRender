@@ -17,7 +17,5 @@ layout(set = 1, binding = 0) uniform MeshUBO
 
 void main()
 {
-	Color = vec3(0.2f);
-	
 	gl_Position = globalUbo.ToClip * globalUbo.ToCamera * meshUbo.Transform * vec4(position, 1.0f);
 }

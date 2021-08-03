@@ -17,7 +17,7 @@ namespace manager
 
 	constexpr uint8_t ShaderDescriptorSetGlobalUBO = 0;
 	constexpr uint8_t ShaderDescriptorSetMeshUBO = 1;
-	constexpr uint8_t ShaderDescriptorSetsCount = 2;
+	constexpr uint8_t ShaderDescriptorSetMaterialUBO = 2;
 
 	class API SceneManager
 	{
@@ -27,6 +27,7 @@ namespace manager
 
 		std::vector<vk::Buffer> MeshBuffers;
 		std::unordered_map<size_t, vk::UniformBuffer> MeshLookupUBOs;
+		std::unordered_map<size_t, vk::UniformBuffer> MaterialLookupUBOs;
 
 		std::vector<render::Renderable> Renderables;
 
@@ -37,7 +38,7 @@ namespace manager
 		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
 
-		std::vector<vk::Descriptor> CreateDescriptors(const vk::Shader& shader);
+		std::vector<vk::Descriptor> CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
 		void SetupBuffers(render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);
 
 		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 

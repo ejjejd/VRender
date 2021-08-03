@@ -8,9 +8,9 @@ namespace render
 {
 	struct MeshTransform
 	{
-		glm::vec3 Translate;
-		glm::vec3 Scale;
-		glm::vec4 Rotation;
+		glm::vec3 Translate = glm::vec3(0.0f);
+		glm::vec3 Scale = glm::vec3(1.0f);
+		glm::vec4 Rotation = glm::vec4(glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 	};
 
 	struct Mesh

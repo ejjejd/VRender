@@ -13,6 +13,12 @@
 
 namespace manager
 {
+	constexpr uint8_t  ShaderInputPositionLocation = 0;
+
+	constexpr uint8_t ShaderDescriptorSetGlobalUBO = 0;
+	constexpr uint8_t ShaderDescriptorSetMeshUBO = 1;
+	constexpr uint8_t ShaderDescriptorSetsCount = 2;
+
 	class API SceneManager
 	{
 	private:
@@ -20,8 +26,7 @@ namespace manager
 		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
 
 		std::vector<vk::Buffer> MeshBuffers;
-		std::vector<vk::UniformBuffer> MeshUBOs;
-		std::vector<vk::UniformBuffer> MaterialUBOs;
+		std::unordered_map<size_t, vk::UniformBuffer> MeshLookupUBOs;
 
 		std::vector<render::Renderable> Renderables;
 
@@ -33,6 +38,7 @@ namespace manager
 		vk::VulkanApp* VulkanApp;
 
 		std::vector<vk::Descriptor> CreateDescriptors(const vk::Shader& shader);
+		void SetupBuffers(render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);
 
 		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
 							VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader);

@@ -19,5 +19,5 @@ void main()
 {
 	Color = vec3(0.2f);
 	
-	gl_Position = globalUbo.ToClip * globalUbo.ToCamera * vec4(position, 1.0f);
+	gl_Position = globalUbo.ToClip * globalUbo.ToCamera * meshUbo.Transform * vec4(position, 1.0f);
 }

@@ -2,6 +2,11 @@
 
 namespace manager
 {
+	struct MeshUBO
+	{
+		glm::mat4 Transform;
+	};
+
 	bool SceneManager::CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
 									  VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader)
 	{
@@ -103,20 +108,6 @@ namespace manager
 		return true;
 	}
 
-	std::vector<vk::Descriptor> SceneManager::CreateDescriptors(const vk::Shader& shader)
-	{
-		auto reflectMap = shader.GetReflectMap();
-
-		//TODO get this information based on shader relfection
-
-		std::vector<vk::Descriptor> descriptors;
-
-		auto d = RM->GlobalUBO.CreateDescriptor(DescriptorPool, 0);
-		descriptors.push_back(d);
-
-		return descriptors;
-	}
-
 	void SceneManager::Setup(vk::VulkanApp& app, RenderManager& rm)
 	{
 		VulkanApp = &app;
@@ -143,16 +134,79 @@ namespace manager
 	{
 		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPool, nullptr);
 
-		for (auto vbo : MeshBuffers)
+		for (auto&[id, ubo] : MeshLookupUBOs)
+			ubo.Cleanup();
+
+		for (auto& vbo : MeshBuffers)
 			vbo.Cleanup();
 
-		for (auto r : Renderables)
+		for (auto& r : Renderables)
 			render::CleanupRenderable(*VulkanApp, r);
 	}
 
 	void SceneManager::Update()
 	{
 		RM->SetActiveCamera(Cameras[ActiveCameraId]);
+
+		for (size_t i = 0; i < RegisteredMeshes.size(); ++i)
+		{
+			auto& findUbo = MeshLookupUBOs.find(i);
+			if (findUbo == MeshLookupUBOs.end())
+				continue;
+
+			auto& mesh = RegisteredMeshes[i];
+			auto& meshTransform = mesh.get().Transform;
+
+			glm::mat4 transform(1.0f);
+			transform = glm::rotate(transform, meshTransform.Rotation.w, glm::vec3(meshTransform.Rotation));
+			transform = glm::scale(transform, meshTransform.Scale);
+			transform = glm::translate(transform, meshTransform.Translate);
+
+			findUbo->second.Update(&transform, 1);
+		}
+	}
+
+	std::vector<vk::Descriptor> SceneManager::CreateDescriptors(const vk::Shader& shader)
+	{
+		auto reflectMap = shader.GetReflectMap();
+
+		std::vector<vk::Descriptor> descriptors;
+
+		auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_VERTEX_BIT);
+		if (findShaderInfo == reflectMap.end())
+			return {};
+
+		for (auto d : findShaderInfo->second.DescriptorSets)
+		{
+			if (d.SetId == ShaderDescriptorSetGlobalUBO)
+			{
+				auto d = RM->GlobalUBO.CreateDescriptor(DescriptorPool, 0);
+				descriptors.push_back(d);
+			}
+			if (d.SetId == ShaderDescriptorSetMeshUBO)
+			{
+				vk::UniformBuffer meshUBO;
+				meshUBO.Setup(*VulkanApp, vk::UboType::Dynamic, sizeof(MeshUBO), 1);
+				descriptors.push_back(meshUBO.CreateDescriptor(DescriptorPool, 0));
+
+				MeshLookupUBOs[RegisteredMeshes.size() - 1] = meshUBO;
+			}
+		}
+
+		return descriptors;
+	}
+
+	void SceneManager::SetupBuffers(render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable)
+	{
+		vk::Buffer positionBuffer;
+		positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
+		positionBuffer.Update(&mesh.MeshInfo.Positions[0], mesh.MeshInfo.Positions.size());
+
+		renderable.PositionsVertexBuffer = positionBuffer;
+
+		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, positionBuffer.GetStride());
+
+		MeshBuffers.push_back(positionBuffer);
 	}
 
 	void SceneManager::RegisterMesh(render::Mesh& mesh)
@@ -167,13 +221,8 @@ namespace manager
 		shader.AddStage(mesh.VertexShader, VK_SHADER_STAGE_VERTEX_BIT);
 		shader.AddStage(mesh.FragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-		vk::Buffer positionBuffer;
-		positionBuffer.Setup(*VulkanApp , VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
-		positionBuffer.Update(&mesh.MeshInfo.Positions[0], mesh.MeshInfo.Positions.size());
 
-		renderable.PositionsVertexBuffer = positionBuffer;
-
-		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, positionBuffer.GetStride());
+		SetupBuffers(mesh, shader, renderable);
 
 
 		auto descriptors = CreateDescriptors(shader);
@@ -186,9 +235,6 @@ namespace manager
 
 		if (!CreatePipeline(layouts, renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
 			return;
-
-
-		MeshBuffers.push_back(positionBuffer);
 
 		Renderables.push_back(renderable);
 

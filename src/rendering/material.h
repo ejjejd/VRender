@@ -2,8 +2,9 @@
 
 namespace render
 {
-	struct Material
+	class BaseMaterial
 	{
+	public:
 
 	};
 }

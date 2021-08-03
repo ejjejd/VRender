@@ -103,8 +103,10 @@ namespace manager
 		return true;
 	}
 
-	std::vector<vk::Descriptor> SceneManager::CreateDescriptors()
+	std::vector<vk::Descriptor> SceneManager::CreateDescriptors(const vk::Shader& shader)
 	{
+		auto reflectMap = shader.GetReflectMap();
+
 		//TODO get this information based on shader relfection
 
 		std::vector<vk::Descriptor> descriptors;
@@ -174,7 +176,7 @@ namespace manager
 		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, positionBuffer.GetStride());
 
 
-		auto descriptors = CreateDescriptors();
+		auto descriptors = CreateDescriptors(shader);
 
 		renderable.Descriptors = descriptors;
 

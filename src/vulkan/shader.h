@@ -2,8 +2,34 @@
 #include "vrender.h"
 #include "vulkan/vulkan_app.h"
 
+#include "spirv_reflect.h"
+
 namespace vk
 {
+	struct ShaderReflectInput
+	{
+		std::string Name;
+		uint32_t LocationId;
+	};
+
+	struct ShaderReflectDescriptorBinding
+	{
+		std::string Name;
+		uint32_t BindId;
+	};
+
+	struct ShaderReflectDescriptorSet
+	{
+		uint32_t SetId;
+		std::vector<ShaderReflectDescriptorBinding> Bindings;
+	};
+
+	struct ShaderReflectInfo
+	{
+		std::vector<ShaderReflectInput> Inputs;
+		std::vector<ShaderReflectDescriptorSet> DescriptorSets;
+	};
+
 	struct ShaderInput
 	{
 		std::vector<VkVertexInputBindingDescription> BindingDescriptions;
@@ -18,7 +44,11 @@ namespace vk
 
 		ShaderInput Input;
 
+		std::unordered_map<VkShaderStageFlagBits, ShaderReflectInfo> ReflectMap;
+
 		vk::VulkanApp* VulkanApp;
+
+		bool UpdateReflectMap(const std::vector<char>& shaderBytecode, const VkShaderStageFlagBits shaderType);
 	public:
 		inline void Setup(vk::VulkanApp& app)
 		{
@@ -31,15 +61,10 @@ namespace vk
 				vkDestroyShaderModule(VulkanApp->Device, m, nullptr);
 		}
 
-		void AddStage(const std::string filepath, const VkShaderStageFlagBits type);
+		void AddStage(const std::string& filepath, const VkShaderStageFlagBits type);
 
 		void AddInputBuffer(const VkFormat format, const uint8_t bind, const uint8_t location, 
 							const size_t offset, const size_t stride, const VkVertexInputRate inputRate = VK_VERTEX_INPUT_RATE_VERTEX);
-
-		inline void FetchStages(VkPipelineShaderStageCreateInfo* arr)
-		{
-			memcpy(arr, Stages.data(), sizeof(VkPipelineShaderStageCreateInfo) * Stages.size());
-		}
 
 		inline const std::vector<VkPipelineShaderStageCreateInfo>& GetStages() const
 		{
@@ -56,6 +81,11 @@ namespace vk
 			vertexInputInfo.pVertexAttributeDescriptions = Input.AttributeDescriptions.data();
 
 			return vertexInputInfo;
+		}
+
+		inline auto GetReflectMap() const
+		{
+			return ReflectMap;
 		}
 	};
 }

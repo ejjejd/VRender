@@ -1,31 +1,80 @@
 #include "shader.h"
 
-#include <fstream>
+#include "helpers.h"
 
 namespace vk
 {
-	bool ReadShader(const std::string& filename, std::vector<char>& bytecode) 
+	bool Shader::UpdateReflectMap(const std::vector<char>& shaderBytecode, const VkShaderStageFlagBits shaderType)
 	{
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open())
+		SpvReflectShaderModule spvModule;
+		auto res = spvReflectCreateShaderModule(shaderBytecode.size(), shaderBytecode.data(), &spvModule);
+		if (res != SPV_REFLECT_RESULT_SUCCESS)
 			return false;
 
-		size_t fileSize = (size_t)file.tellg();
-		bytecode.resize(fileSize);
+		ShaderReflectInfo reflectInfo;
 
-		file.seekg(0);
-		file.read(bytecode.data(), fileSize);
+		{
+			uint32_t objCount = 0;
+			spvReflectEnumerateInputVariables(&spvModule, &objCount, nullptr);
 
-		file.close();
+			SpvReflectInterfaceVariable** variables = new SpvReflectInterfaceVariable*[objCount];
+			spvReflectEnumerateInputVariables(&spvModule, &objCount, variables);
+
+			for (size_t i = 0; i < objCount; ++i)
+			{
+				auto input = variables[i];
+
+				ShaderReflectInput inputInfo;
+				inputInfo.LocationId = input->location;
+				inputInfo.Name = input->name;
+
+				reflectInfo.Inputs.push_back(inputInfo);
+			}
+
+			delete[] variables;
+		}
+
+		{
+			uint32_t objCount = 0;
+			spvReflectEnumerateDescriptorSets(&spvModule, &objCount, nullptr);
+
+			SpvReflectDescriptorSet** descriptors = new SpvReflectDescriptorSet*[objCount];
+			spvReflectEnumerateDescriptorSets(&spvModule, &objCount, descriptors);
+
+			for (size_t i = 0; i < objCount; ++i)
+			{
+				auto set = descriptors[i];
+
+				ShaderReflectDescriptorSet setInfo;
+				setInfo.SetId = set->set;
+
+				for (size_t j = 0; j < set->binding_count; ++j)
+				{
+					ShaderReflectDescriptorBinding bindingInfo;
+					bindingInfo.BindId = set->bindings[j]->binding;
+					bindingInfo.Name = set->bindings[j]->name;
+
+					setInfo.Bindings.push_back(bindingInfo);
+				}
+
+				reflectInfo.DescriptorSets.push_back(setInfo);
+			}
+
+			delete[] descriptors;
+		}
+
+		spvReflectDestroyShaderModule(&spvModule);
+
+
+		ReflectMap[shaderType] = reflectInfo;
 
 		return true;
 	}
 
-	void Shader::AddStage(const std::string filepath, const VkShaderStageFlagBits type)
+	void Shader::AddStage(const std::string& filepath, const VkShaderStageFlagBits type)
 	{
-		std::vector<char> shaderByteCode;
-		if (!ReadShader(filepath, shaderByteCode))
+		auto bytecode = ReadShader(filepath);
+		if(!bytecode)
 		{	
 			LOG("Couldn't read shader %s\n", filepath)
 			return;
@@ -33,8 +82,8 @@ namespace vk
 
 		VkShaderModuleCreateInfo moduleCreateInfo{};
 		moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		moduleCreateInfo.codeSize = shaderByteCode.size();
-		moduleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(shaderByteCode.data());
+		moduleCreateInfo.codeSize = bytecode->size();
+		moduleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(bytecode->data());
 
 		ShaderModules.push_back(VkShaderModule{});
 
@@ -51,6 +100,9 @@ namespace vk
 		stageCreateInfo.pName = "main";
 
 		Stages.push_back(stageCreateInfo);
+
+		if(!UpdateReflectMap(*bytecode, type))
+			LOG("Couldn't reflect shader: %s", filepath)
 	}
 
 	void Shader::AddInputBuffer(const VkFormat format, const uint8_t bind, const uint8_t location, 

@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/vulkan/helpers.h"
+    "src/vulkan/helpers.cpp"
+    "src/vendors/spirv/spirv_reflect.h"
+    "src/vendors/spirv/spirv_reflect.c"
     "src/managers/input_manager.h"
     "src/managers/input_manager.cpp"
     "src/input/input_map.h"
@@ -84,6 +88,7 @@ target_include_directories(VRender PRIVATE extern/vulkan/Include)
 target_include_directories(VRender PRIVATE extern/GLFW/include)
 target_include_directories(VRender PRIVATE extern/glm)
 target_include_directories(VRender PRIVATE extern/assimp/include)
+target_include_directories(VRender PRIVATE extern/SPIRV-Reflect)
 
 target_link_libraries(VRender glfw3)
 target_link_libraries(VRender vulkan-1)

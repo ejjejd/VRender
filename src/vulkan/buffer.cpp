@@ -1,24 +1,9 @@
 #include "buffer.h"
 
+#include "helpers.h"
+
 namespace vk
 {
-	int32_t FindMemoryType(const vk::VulkanApp& app, uint32_t typeFilter, VkMemoryPropertyFlags properties)
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(app.PhysicalDevice, &memProperties);
-
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
-		{
-			if ((memProperties.memoryTypes[i].propertyFlags & properties) == properties
-				&& typeFilter & (1 << i))
-			{
-				return i;
-			}
-		}
-
-		return -1;
-	}
-
 	void Buffer::Setup(vk::VulkanApp& app, const VkBufferUsageFlags usageFlags, const size_t stride, const size_t elementsCount)
 	{
 		VulkanApp = &app;

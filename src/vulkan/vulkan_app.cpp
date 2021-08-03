@@ -3,6 +3,8 @@
 #include <set>
 #include <fstream>
 
+#include "helpers.h"
+
 namespace vk
 {
 #ifdef NDEBUG
@@ -337,22 +339,7 @@ namespace vk
 		return extent;
 	}
 
-	static int32_t FindMemoryType(const vk::VulkanApp& app, uint32_t typeFilter, VkMemoryPropertyFlags properties)
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(app.PhysicalDevice, &memProperties);
 
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
-		{
-			if ((memProperties.memoryTypes[i].propertyFlags & properties) == properties
-				&& typeFilter & (1 << i))
-			{
-				return i;
-			}
-		}
-
-		return -1;
-	}
 
 	bool CreateDepthImage(VulkanApp& app, const VkExtent2D& extent)
 	{

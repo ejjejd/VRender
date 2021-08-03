@@ -4,15 +4,20 @@ layout(location = 0) in vec3 position;
 
 layout(location = 0) out vec3 Color;
 
-layout(binding = 0) uniform UboObject
+layout(set = 0, binding = 0) uniform GlobalUBO
 {
 	mat4 ToCamera;
 	mat4 ToClip;
-} ubo;
+} globalUbo;
+
+layout(set = 1, binding = 0) uniform MeshUBO
+{
+	mat4 Transform;
+} meshUbo;
 
 void main()
 {
 	Color = vec3(0.2f);
 	
-	gl_Position = ubo.ToClip * ubo.ToCamera * vec4(vec3(position.x, position.y, position.z), 1.0f);
+	gl_Position = globalUbo.ToClip * globalUbo.ToCamera * vec4(position, 1.0f);
 }

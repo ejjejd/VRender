@@ -29,7 +29,7 @@ int main()
 		[&]()
 		{
 			if(engine.InputManager.IsGesturePerformed(input::Gesture::MouseX)
-				|| engine.InputManager.IsGesturePerformed(input::Gesture::MouseY))
+			   || engine.InputManager.IsGesturePerformed(input::Gesture::MouseY))
 			{
 				auto offset = engine.InputManager.GetCursorOffset();
 

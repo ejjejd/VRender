@@ -4,6 +4,7 @@
 
 #include "vulkan/shader.h"
 #include "vulkan/buffer.h"
+#include "vulkan/ubo.h"
 
 #include "rendering/mesh.h"
 #include "rendering/renderable.h"
@@ -18,18 +19,20 @@ namespace manager
 		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
 		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
 
-		size_t ActiveCameraId = 0;
-
 		std::vector<vk::Buffer> MeshBuffers;
+		std::vector<vk::UniformBuffer> MeshUBOs;
+		std::vector<vk::UniformBuffer> MaterialUBOs;
 
 		std::vector<render::Renderable> Renderables;
 
 		VkDescriptorPool DescriptorPool;
 
+		size_t ActiveCameraId = 0;
+
 		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
 
-		std::vector<vk::Descriptor> CreateDescriptors();
+		std::vector<vk::Descriptor> CreateDescriptors(const vk::Shader& shader);
 
 		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
 							VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader);

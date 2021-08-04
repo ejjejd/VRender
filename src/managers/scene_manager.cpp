@@ -140,8 +140,11 @@ namespace manager
 		for (auto& [id, ubo] : MeshLookupUBOs)
 			ubo.Cleanup();
 
-		for (auto& vbo : MeshBuffers)
-			vbo.Cleanup();
+		for (auto& vboVector : MeshBuffers)
+		{
+			for (auto& vbo : vboVector)
+				vbo.Cleanup();
+		}
 
 		for (auto& r : Renderables)
 			render::CleanupRenderable(*VulkanApp, r);
@@ -212,10 +215,6 @@ namespace manager
 
 						MeshLookupUBOs[RegisteredMeshes.size() - 1] = meshUBO;
 					} break;
-				default:
-					{
-						continue;
-					} break;
 				}
 			}
 		}
@@ -243,15 +242,51 @@ namespace manager
 
 	void SceneManager::SetupBuffers(render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable)
 	{
-		vk::Buffer positionBuffer;
-		positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
-		positionBuffer.Update(&mesh.MeshInfo.Positions[0], mesh.MeshInfo.Positions.size());
+		auto reflectMap = shader.GetReflectMap();
 
-		renderable.PositionsVertexBuffer = positionBuffer;
+		auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_VERTEX_BIT);
+		if (findShaderInfo == reflectMap.end())
+			return;
 
-		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, 0, 0, 0, positionBuffer.GetStride());
+		std::vector<vk::Buffer> buffers;
 
-		MeshBuffers.push_back(positionBuffer);
+		size_t bindId = 0;
+
+		for (auto i : findShaderInfo->second.Inputs)
+		{
+			switch (i.LocationId)
+			{
+			case ShaderInputPositionLocation:
+				{
+					vk::Buffer positionBuffer;
+					positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
+					positionBuffer.Update(&mesh.MeshInfo.Positions[0], mesh.MeshInfo.Positions.size());
+
+					renderable.PositionsCount = positionBuffer.GetElementsCount();
+
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputPositionLocation, 0, positionBuffer.GetStride());
+
+					buffers.push_back(positionBuffer);
+				} break;
+			case ShaderInputNormalLocation:
+				{
+					vk::Buffer normalBuffer;
+					normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Normals[0]), mesh.MeshInfo.Normals.size());
+					normalBuffer.Update(&mesh.MeshInfo.Normals[0], mesh.MeshInfo.Normals.size());
+
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputNormalLocation, 0, normalBuffer.GetStride());
+
+					buffers.push_back(normalBuffer);
+				} break;
+			}
+
+			++bindId;
+		}
+
+		for (const auto& vbo : buffers)
+			renderable.Buffers.push_back(vbo.GetHandler());
+
+		MeshBuffers.push_back(buffers);
 	}
 
 	void SceneManager::RegisterMesh(render::Mesh& mesh)

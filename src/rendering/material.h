@@ -13,9 +13,12 @@ namespace render
 		virtual void* GetMaterialData() const = 0;
 	};
 
-	struct PbrMaterialInfo
+	struct alignas(16) PbrMaterialInfo
 	{
-		glm::vec4 Albedo;
+		glm::vec3 Albedo;
+		float Metallic;
+		float Roughness;
+		float Ao;
 	};
 
 	class PbrMaterial : public BaseMaterial
@@ -28,8 +31,8 @@ namespace render
 			vk::Shader shader;
 			shader.Setup(app);
 
-			shader.AddStage("shaders/vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-			shader.AddStage("shaders/frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+			shader.AddStage("shaders/pbr/pbr_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+			shader.AddStage("shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 			return shader;
 		}

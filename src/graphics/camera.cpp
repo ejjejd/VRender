@@ -9,7 +9,7 @@ namespace graphics
 		ForwardAxis.z = glm::sin(Yaw) * glm::cos(Pitch);
 
 		UpAxis = glm::vec3(0.0f, -1.0f, 0.0f);
-		RightAxis = glm::normalize(glm::cross(UpAxis, ForwardAxis));
+		RightAxis = glm::normalize(glm::cross(ForwardAxis, UpAxis));
 		UpAxis = glm::cross(ForwardAxis, RightAxis);
 	}
 

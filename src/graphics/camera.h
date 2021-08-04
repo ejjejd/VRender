@@ -71,8 +71,8 @@ namespace graphics
 
 		inline void AddRotation(const float yaw, const float pitch, const float deltaTime)
 		{
-			Yaw += yaw * Sensetivity * deltaTime;
-			Pitch += pitch * Sensetivity * deltaTime;
+			Yaw -= yaw * Sensetivity * deltaTime;
+			Pitch -= pitch * Sensetivity * deltaTime;
 
 			ComputeBasis();
 		}

@@ -14,6 +14,7 @@
 namespace manager
 {
 	constexpr uint8_t  ShaderInputPositionLocation = 0;
+	constexpr uint8_t  ShaderInputNormalLocation = 1;
 
 	constexpr uint8_t ShaderDescriptorSetGlobalUBO = 0;
 	constexpr uint8_t ShaderDescriptorSetMeshUBO = 1;
@@ -25,7 +26,7 @@ namespace manager
 		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
 		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
 
-		std::vector<vk::Buffer> MeshBuffers;
+		std::vector<std::vector<vk::Buffer>> MeshBuffers;
 		std::unordered_map<size_t, vk::UniformBuffer> MeshLookupUBOs;
 		std::unordered_map<size_t, vk::UniformBuffer> MaterialLookupUBOs;
 

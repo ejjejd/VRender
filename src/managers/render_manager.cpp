@@ -5,10 +5,11 @@
 
 namespace manager
 {
-	struct GlobalUboInfo
+	struct alignas(16) GlobalUboInfo
 	{
 		glm::mat4 ToCamera;
 		glm::mat4 ToClip;
+		glm::vec3 CameraPosition;
 	};
 
 	bool RenderManager::CreateRenderPass()
@@ -100,6 +101,7 @@ namespace manager
 		GlobalUboInfo ubo;
 		ubo.ToCamera = ActiveCamera.GetViewMatrix();
 		ubo.ToClip = ActiveCamera.GetProjection();
+		ubo.CameraPosition = ActiveCamera.Position;
 
 		GlobalUBO.Update(&ubo, 1);
 	}
@@ -195,13 +197,13 @@ namespace manager
 
 			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			for (auto r : renderables)
+			for (const auto& r : renderables)
 			{
 				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipeline);
 
-				VkBuffer vertexBuffers[] = { r.PositionsVertexBuffer.GetHandler() };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(CommandBuffers[i], 0, 1, vertexBuffers, offsets);
+				std::vector<VkDeviceSize> offsets(r.Buffers.size(), 0);
+
+				vkCmdBindVertexBuffers(CommandBuffers[i], 0, r.Buffers.size(), r.Buffers.data(), offsets.data());
 
 
 				std::vector<VkDescriptorSet> descriptors;
@@ -218,7 +220,7 @@ namespace manager
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipelineLayout, 0, descriptors.size(), descriptors.data(), 0, nullptr);
 
 
-				vkCmdDraw(CommandBuffers[i], r.PositionsVertexBuffer.GetElementsCount(), 1, 0, 0);
+				vkCmdDraw(CommandBuffers[i], r.PositionsCount, 1, 0, 0);
 			}
 
 			vkCmdEndRenderPass(CommandBuffers[i]);

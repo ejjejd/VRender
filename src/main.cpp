@@ -14,8 +14,8 @@ int main()
 
 
 	auto material = std::make_shared<render::PbrMaterial>();
-	material->Info.Albedo = glm::vec4(0.0f, 1.0f, 0.2f, 0.0f);
-
+	material->Info.Albedo = glm::vec3(0.0f, 1.0f, 0.2f);
+	
 	render::Mesh mesh;
 	mesh.MeshInfo = cubeMesh;
 	mesh.Material = material;

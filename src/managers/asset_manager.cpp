@@ -16,6 +16,9 @@ namespace manager
 
 				auto av = assimpMesh->mVertices[id];
 				mesh.Positions.emplace_back(av.x, -av.y, av.z);
+
+				auto nv = assimpMesh->mNormals[id];
+				mesh.Normals.emplace_back(nv.x, -nv.y, nv.z);
 			}
 		}
 

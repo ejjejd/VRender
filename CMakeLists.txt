@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/graphics/light.h"  
     "src/vulkan/helpers.h"
     "src/vulkan/helpers.cpp"
     "src/vendors/spirv/spirv_reflect.h"

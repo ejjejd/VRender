@@ -15,12 +15,15 @@ layout(set = 1, binding = 0) uniform MeshUBO
 	mat4 Transform;
 } meshUbo;
 
-layout(location = 0) out vec3 Normal;
+layout(location = 0) out vec3 FragPos;
 
-layout(location = 1) out flat vec3 Camera;
+layout(location = 1) out vec3 Normal;
+
+layout(location = 2) out flat vec3 Camera;
 
 void main()
 {
+	FragPos = (meshUbo.Transform * vec4(position, 1.0f)).xyz;
 	Normal = (transpose(inverse(meshUbo.Transform)) * vec4(normal, 1.0f)).xyz;
 	Camera = globalUbo.Camera;
 

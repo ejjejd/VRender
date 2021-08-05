@@ -2,7 +2,7 @@
 
 namespace manager
 {
-	struct MeshUBO
+	struct alignas(16) MeshUBO
 	{
 		glm::mat4 Transform;
 	};

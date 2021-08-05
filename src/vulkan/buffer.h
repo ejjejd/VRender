@@ -19,7 +19,7 @@ namespace vk
 
 		inline void Update(void* data, const size_t elementsCount)
 		{
-			if (elementsCount > ElementsCount)
+			if (elementsCount > ElementsCount || !data)
 			{
 				LOG("Wrong data passed to update buffer!");
 				return;

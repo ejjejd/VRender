@@ -15,10 +15,10 @@ namespace manager
 				auto id = face.mIndices[j];
 
 				auto av = assimpMesh->mVertices[id];
-				mesh.Positions.emplace_back(av.x, -av.y, av.z);
+				mesh.Positions.emplace_back(av.x, av.y, av.z);
 
 				auto nv = assimpMesh->mNormals[id];
-				mesh.Normals.emplace_back(nv.x, -nv.y, nv.z);
+				mesh.Normals.emplace_back(nv.x, nv.y, nv.z);
 			}
 		}
 

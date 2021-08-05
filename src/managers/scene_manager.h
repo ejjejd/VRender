@@ -10,6 +10,7 @@
 #include "rendering/renderable.h"
 
 #include "graphics/camera.h"
+#include "graphics/light.h"
 
 namespace manager
 {
@@ -24,9 +25,11 @@ namespace manager
 	{
 	private:
 		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
+		std::vector<std::reference_wrapper<graphics::PointLight>> RegisteredPointLights;
 		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
 
 		std::vector<std::vector<vk::Buffer>> MeshBuffers;
+
 		std::unordered_map<size_t, vk::UniformBuffer> MeshLookupUBOs;
 		std::unordered_map<size_t, vk::UniformBuffer> MaterialLookupUBOs;
 
@@ -45,8 +48,6 @@ namespace manager
 		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
 							VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader);
 	public:
-		graphics::Camera MainCamera;
-
 		void Setup(vk::VulkanApp& app, RenderManager& rm);
 
 		void Cleanup();

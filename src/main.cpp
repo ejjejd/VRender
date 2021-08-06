@@ -6,8 +6,11 @@ int main()
 
 	engine.StartupEngine();
 
-	auto pistolMeshId = engine.AssetManager.LoadMeshInfo("models/pistol.obj");
+	auto pistolMeshId = engine.AssetManager.LoadMeshInfo("models/pistol.fbx");
 	auto pistolMesh = engine.AssetManager.GetMeshInfo(pistolMeshId);
+
+	auto carlMeshId = engine.AssetManager.LoadMeshInfo("models/koenigsegg.fbx");
+	auto carMesh = engine.AssetManager.GetMeshInfo(carlMeshId);
 
 	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("models/cube.obj");
 	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
@@ -30,6 +33,13 @@ int main()
 
 	engine.SceneManager.RegisterCamera(camera);
 	engine.SceneManager.SetActiveCamera(0);
+
+
+	graphics::PointLight pl;
+	pl.Position = glm::vec3(0.0f, 10.0f, 0.0f);
+	pl.Color = glm::vec3(150.0f);
+
+	engine.SceneManager.RegisterLight(pl);
 
 	engine.Run(
 		[&]()

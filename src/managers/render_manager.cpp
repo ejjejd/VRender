@@ -207,12 +207,15 @@ namespace manager
 
 
 				std::vector<VkDescriptorSet> descriptors;
+
 				for (auto d : r.Descriptors)
 				{
-					if (d.DescriptorSets.size() == Framebuffers.size())
-						descriptors.push_back(d.DescriptorSets[i]);
-					else if (d.DescriptorSets.size() == 1)
-						descriptors.push_back(d.DescriptorSets[0]);
+					auto descriptorSets = d.GetDescriptorInfo().DescriptorSets;
+
+					if (descriptorSets.size() == Framebuffers.size())
+						descriptors.push_back(descriptorSets[i]);
+					else if (descriptorSets.size() == 1)
+						descriptors.push_back(descriptorSets[0]);
 					else
 						TERMINATE_LOG("Invalid descriptor created!")
 				}

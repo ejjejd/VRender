@@ -2,6 +2,17 @@
 
 namespace manager
 {
+	struct alignas(16) PointLightUBO
+	{
+		glm::vec3 Position;
+		glm::vec3 Color;
+	};
+
+	struct alignas(16) LightDataUBO
+	{
+		PointLightUBO PointLights[MaxPointLights + 1];
+	};
+
 	struct alignas(16) MeshUBO
 	{
 		glm::mat4 Transform;
@@ -128,10 +139,14 @@ namespace manager
 			TERMINATE_LOG("Couldn't create descriptor pool!")
 			return;
 		}
+
+		LightUBO.Setup(app, vk::UboType::Dynamic, sizeof(LightUBO), 1);
 	}
 
 	void SceneManager::Cleanup()
 	{
+		LightUBO.Cleanup();
+
 		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPool, nullptr);
 
 		for (auto& [id, ubo] : MaterialLookupUBOs)
@@ -185,13 +200,29 @@ namespace manager
 			
 			findUbo->second.Update(material->GetMaterialData(), 1);
 		}
+
+
+		LightDataUBO lightData;
+		for (size_t i = 0; i < RegisteredLights.size(); ++i)
+		{
+			auto& l = RegisteredLights[i].get();
+
+			lightData.PointLights[i].Position = l.Position;
+			lightData.PointLights[i].Color = l.Color;
+		}
+
+		LightUBO.Update(&lightData, 1);
 	}
 
-	std::vector<vk::Descriptor> SceneManager::CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader)
+	std::vector<vk::UboDescriptor> SceneManager::CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
-		std::vector<vk::Descriptor> descriptors;
+		std::vector<vk::UboDescriptor> descriptors;
+
+		vk::UboDescriptor globalUboDescriptor;
+		vk::UboDescriptor meshUboDescriptor;
+		vk::UboDescriptor materialUboDescriptor;
 
 		{
 			auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_VERTEX_BIT);
@@ -204,22 +235,18 @@ namespace manager
 				{
 				case ShaderDescriptorSetGlobalUBO:
 					{
-						vk::UboDescriptor globalUboDescriptor;
-						globalUboDescriptor.LinkUBO(RM->GlobalUBO, 0);
-						globalUboDescriptor.Create(*VulkanApp, DescriptorPool);
-
-						descriptors.push_back(globalUboDescriptor.GetDescriptorInfo());
+						for (auto& b : d.Bindings)
+						{
+							if(b.BindId == 0)
+								globalUboDescriptor.LinkUBO(RM->GlobalUBO, 0);
+						}
 					} break;
 				case ShaderDescriptorSetMeshUBO:
 					{
 						vk::UniformBuffer meshUBO;
 						meshUBO.Setup(*VulkanApp, vk::UboType::Dynamic, sizeof(MeshUBO), 1);
 
-						vk::UboDescriptor meshUboDescriptor;
 						meshUboDescriptor.LinkUBO(meshUBO, 0);
-						meshUboDescriptor.Create(*VulkanApp, DescriptorPool);
-
-						descriptors.push_back(meshUboDescriptor.GetDescriptorInfo());
 
 						MeshLookupUBOs[RegisteredMeshes.size() - 1] = meshUBO;
 					} break;
@@ -234,21 +261,36 @@ namespace manager
 
 			for (auto d : findShaderInfo->second.DescriptorSets)
 			{
-				if (d.SetId == ShaderDescriptorSetMaterialUBO)
+				switch (d.SetId)
 				{
-					vk::UniformBuffer materialUBO;
-					materialUBO.Setup(*VulkanApp, vk::UboType::Dynamic, material.GetMaterialInfoStride(), 1);
+				case ShaderDescriptorSetGlobalUBO:
+					{
+						for (auto& b : d.Bindings)
+						{
+							if (b.BindId == 1)
+								globalUboDescriptor.LinkUBO(LightUBO, 1);
+						}
+					} break;
+				case ShaderDescriptorSetMaterialUBO:
+					{
+						vk::UniformBuffer materialUBO;
+						materialUBO.Setup(*VulkanApp, vk::UboType::Dynamic, material.GetMaterialInfoStride(), 1);
 
-					vk::UboDescriptor materialUboDescriptor;
-					materialUboDescriptor.LinkUBO(materialUBO, 0);
-					materialUboDescriptor.Create(*VulkanApp, DescriptorPool);
+						materialUboDescriptor.LinkUBO(materialUBO, 0);
 
-					descriptors.push_back(materialUboDescriptor.GetDescriptorInfo());
-
-					MaterialLookupUBOs[RegisteredMeshes.size() - 1] = materialUBO;
+						MaterialLookupUBOs[RegisteredMeshes.size() - 1] = materialUBO;
+					} break;
 				}
 			}
 		}
+
+		globalUboDescriptor.Create(*VulkanApp, DescriptorPool);
+		meshUboDescriptor.Create(*VulkanApp, DescriptorPool);
+		materialUboDescriptor.Create(*VulkanApp, DescriptorPool);
+
+		descriptors.push_back(globalUboDescriptor);
+		descriptors.push_back(meshUboDescriptor);
+		descriptors.push_back(materialUboDescriptor);
 
 		return descriptors;
 	}
@@ -327,7 +369,7 @@ namespace manager
 
 		std::vector<VkDescriptorSetLayout> layouts;
 		for (auto& d : descriptors)
-			layouts.push_back(d.DescriptorSetLayout);
+			layouts.push_back(d.GetDescriptorInfo().DescriptorSetLayout);
 
 		if (!CreatePipeline(layouts, renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
 		{

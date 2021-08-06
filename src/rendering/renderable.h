@@ -14,7 +14,7 @@ namespace render
 
 		std::vector<VkBuffer> Buffers;
 
-		std::vector<vk::Descriptor> Descriptors;
+		std::vector<vk::UboDescriptor> Descriptors;
 
 		size_t PositionsCount;
 	};
@@ -22,8 +22,8 @@ namespace render
 	inline void CleanupRenderable(const vk::VulkanApp& app, const Renderable& renderable)
 	{
 		for (auto& d : renderable.Descriptors)
-			vkDestroyDescriptorSetLayout(app.Device, d.DescriptorSetLayout, nullptr);
-
+			d.Destroy();
+			
 		vkDestroyPipelineLayout(app.Device, renderable.GraphicsPipelineLayout, nullptr);
 		vkDestroyPipeline(app.Device, renderable.GraphicsPipeline, nullptr);
 	}

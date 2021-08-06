@@ -14,6 +14,8 @@
 
 namespace manager
 {
+	constexpr uint8_t MaxPointLights = 32;
+
 	constexpr uint8_t  ShaderInputPositionLocation = 0;
 	constexpr uint8_t  ShaderInputNormalLocation = 1;
 
@@ -25,7 +27,7 @@ namespace manager
 	{
 	private:
 		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
-		std::vector<std::reference_wrapper<graphics::PointLight>> RegisteredPointLights;
+		std::vector<std::reference_wrapper<graphics::PointLight>> RegisteredLights;
 		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
 
 		std::vector<std::vector<vk::Buffer>> MeshBuffers;
@@ -37,12 +39,14 @@ namespace manager
 
 		VkDescriptorPool DescriptorPool;
 
+		vk::UniformBuffer LightUBO;
+
 		size_t ActiveCameraId = 0;
 
 		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
 
-		std::vector<vk::Descriptor> CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
+		std::vector<vk::UboDescriptor> CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
 		void SetupBuffers(render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);
 
 		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
@@ -55,6 +59,12 @@ namespace manager
 		void Update();
 
 		void RegisterMesh(render::Mesh& mesh);
+
+		inline void RegisterLight(graphics::PointLight& pl)
+		{
+			if(RegisteredLights.size() <= MaxPointLights)
+				RegisteredLights.push_back(pl);
+		}
 
 		inline size_t RegisterCamera(graphics::Camera& camera)
 		{

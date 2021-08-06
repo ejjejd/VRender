@@ -81,7 +81,11 @@ namespace vk
 		VulkanApp* App;
 	public:
 		void Create(VulkanApp& app, const VkDescriptorPool& descriptorPool);
-		void Destroy();
+
+		inline void Destroy() const
+		{
+			CleanupDescriptor(*App, DescriptorInfo);
+		}
 
 		inline void LinkUBO(const UniformBuffer& ubo, const uint8_t bindId)
 		{

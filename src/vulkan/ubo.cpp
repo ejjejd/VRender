@@ -69,9 +69,4 @@ namespace vk
 			}
 		}
 	}
-
-	void UboDescriptor::Destroy()
-	{
-		CleanupDescriptor(*App, DescriptorInfo);
-	}
 }

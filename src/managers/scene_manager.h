@@ -23,6 +23,9 @@ namespace manager
 	constexpr uint8_t ShaderDescriptorSetMeshUBO = 1;
 	constexpr uint8_t ShaderDescriptorSetMaterialUBO = 2;
 
+	constexpr uint8_t ShaderDescriptorBindCameraUBO = 0;
+	constexpr uint8_t ShaderDescriptorBindLightUBO = 1;
+
 	class API SceneManager
 	{
 	private:

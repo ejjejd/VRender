@@ -6,13 +6,13 @@ int main()
 
 	engine.StartupEngine();
 
-	auto pistolMeshId = engine.AssetManager.LoadMeshInfo("models/pistol.fbx");
+	auto pistolMeshId = engine.AssetManager.LoadMeshInfo("res/models/pistol.fbx");
 	auto pistolMesh = engine.AssetManager.GetMeshInfo(pistolMeshId);
 
-	auto carlMeshId = engine.AssetManager.LoadMeshInfo("models/koenigsegg.fbx");
+	auto carlMeshId = engine.AssetManager.LoadMeshInfo("res/models/koenigsegg.fbx");
 	auto carMesh = engine.AssetManager.GetMeshInfo(carlMeshId);
 
-	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("models/cube.obj");
+	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("res/models/cube.obj");
 	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
 
 

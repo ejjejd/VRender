@@ -18,7 +18,7 @@ struct PointLight
 
 layout(set = 0, binding = 1) uniform LightUBO
 {
-	PointLight PointLights[MAX_POINT_LIGHTS];
+	PointLight PointLights[MAX_POINT_LIGHTS + 1];
 } lightUBO;
 
 layout(set = 2, binding = 0) uniform MaterialUBO

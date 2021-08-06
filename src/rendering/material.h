@@ -31,8 +31,8 @@ namespace render
 			vk::Shader shader;
 			shader.Setup(app);
 
-			shader.AddStage("shaders/pbr/pbr_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-			shader.AddStage("shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+			shader.AddStage("res/shaders/pbr/pbr_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+			shader.AddStage("res/shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 			return shader;
 		}

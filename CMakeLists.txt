@@ -52,44 +52,40 @@ IF(MSVC)
     endforeach()
 ENDIF(MSVC)
 
-link_directories(extern/vulkan/Lib/)
-link_directories(extern/GLFW/lib-vc2019/)
-link_directories(extern/assimp/lib)
+link_directories("extern/vulkan/Lib/")
+link_directories("extern/GLFW/lib-vc2019/")
+link_directories("extern/assimp/lib")
 
 add_executable(VRender ${SOURCE_FILES})
 
-
-add_custom_command(TARGET  VRender POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+add_custom_command(TARGET VRender POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory 
                    "${CMAKE_SOURCE_DIR}/res"
-                   $<TARGET_FILE_DIR:VRender>)   
-                        
-add_custom_command(TARGET  VRender POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                   "${CMAKE_SOURCE_DIR}/res"
-                   ${PROJECT_BINARY_DIR})
-        
+                   "$<TARGET_FILE_DIR:VRender>/res")
 
 #Copy dll
 add_custom_command(TARGET VRender POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
                    "${CMAKE_SOURCE_DIR}/extern/assimp/assimp-vc142-mt.dll"
-                   $<TARGET_FILE_DIR:VRender>)
+                   "$<TARGET_FILE_DIR:VRender>")
 
 add_custom_command(TARGET VRender POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
                    "${CMAKE_SOURCE_DIR}/extern/assimp/assimp-vc142-mt.dll"
-                   ${PROJECT_BINARY_DIR})
+                   "${PROJECT_BINARY_DIR}")
 
+execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
+                "${CMAKE_SOURCE_DIR}/res"
+                "${CMAKE_CURRENT_BINARY_DIR}/res")
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT VRender)
 
-target_include_directories(VRender PRIVATE src/)
-target_include_directories(VRender PRIVATE extern/vulkan/Include)
-target_include_directories(VRender PRIVATE extern/GLFW/include)
-target_include_directories(VRender PRIVATE extern/glm)
-target_include_directories(VRender PRIVATE extern/assimp/include)
-target_include_directories(VRender PRIVATE extern/SPIRV-Reflect)
+target_include_directories(VRender PRIVATE "src/")
+target_include_directories(VRender PRIVATE "extern/vulkan/Include")
+target_include_directories(VRender PRIVATE "extern/GLFW/include")
+target_include_directories(VRender PRIVATE "extern/glm")
+target_include_directories(VRender PRIVATE "extern/assimp/include")
+target_include_directories(VRender PRIVATE "extern/SPIRV-Reflect")
 
 target_link_libraries(VRender glfw3)
 target_link_libraries(VRender vulkan-1)

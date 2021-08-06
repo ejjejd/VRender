@@ -5,7 +5,7 @@
 
 namespace manager
 {
-	struct alignas(16) GlobalUboInfo
+	struct alignas(16) CameraUboInfo
 	{
 		glm::mat4 ToCamera;
 		glm::mat4 ToClip;
@@ -98,7 +98,7 @@ namespace manager
 
 	void RenderManager::UpdateUBO(const uint8_t imageId)
 	{
-		GlobalUboInfo ubo;
+		CameraUboInfo ubo;
 		ubo.ToCamera = ActiveCamera.GetViewMatrix();
 		ubo.ToClip = ActiveCamera.GetProjection();
 		ubo.CameraPosition = ActiveCamera.Position;
@@ -145,7 +145,7 @@ namespace manager
 
 
 		//Setup ubo's
-		GlobalUBO.Setup(app, vk::UboType::Dynamic, sizeof(GlobalUboInfo), 1);
+		GlobalUBO.Setup(app, vk::UboType::Dynamic, sizeof(CameraUboInfo), 1);
 
 		return true;
 	}

@@ -237,8 +237,8 @@ namespace manager
 					{
 						for (auto& b : d.Bindings)
 						{
-							if(b.BindId == 0)
-								globalUboDescriptor.LinkUBO(RM->GlobalUBO, 0);
+							if(b.BindId == ShaderDescriptorBindCameraUBO)
+								globalUboDescriptor.LinkUBO(RM->GlobalUBO, ShaderDescriptorBindCameraUBO);
 						}
 					} break;
 				case ShaderDescriptorSetMeshUBO:
@@ -267,8 +267,8 @@ namespace manager
 					{
 						for (auto& b : d.Bindings)
 						{
-							if (b.BindId == 1)
-								globalUboDescriptor.LinkUBO(LightUBO, 1);
+							if (b.BindId == ShaderDescriptorBindLightUBO)
+								globalUboDescriptor.LinkUBO(LightUBO, ShaderDescriptorBindLightUBO);
 						}
 					} break;
 				case ShaderDescriptorSetMaterialUBO:

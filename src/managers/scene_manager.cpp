@@ -204,14 +204,22 @@ namespace manager
 				{
 				case ShaderDescriptorSetGlobalUBO:
 					{
-						auto d = RM->GlobalUBO.CreateDescriptor(DescriptorPool, 0);
-						descriptors.push_back(d);
+						vk::UboDescriptor globalUboDescriptor;
+						globalUboDescriptor.LinkUBO(RM->GlobalUBO, 0);
+						globalUboDescriptor.Create(*VulkanApp, DescriptorPool);
+
+						descriptors.push_back(globalUboDescriptor.GetDescriptorInfo());
 					} break;
 				case ShaderDescriptorSetMeshUBO:
 					{
 						vk::UniformBuffer meshUBO;
 						meshUBO.Setup(*VulkanApp, vk::UboType::Dynamic, sizeof(MeshUBO), 1);
-						descriptors.push_back(meshUBO.CreateDescriptor(DescriptorPool, 0));
+
+						vk::UboDescriptor meshUboDescriptor;
+						meshUboDescriptor.LinkUBO(meshUBO, 0);
+						meshUboDescriptor.Create(*VulkanApp, DescriptorPool);
+
+						descriptors.push_back(meshUboDescriptor.GetDescriptorInfo());
 
 						MeshLookupUBOs[RegisteredMeshes.size() - 1] = meshUBO;
 					} break;
@@ -230,7 +238,12 @@ namespace manager
 				{
 					vk::UniformBuffer materialUBO;
 					materialUBO.Setup(*VulkanApp, vk::UboType::Dynamic, material.GetMaterialInfoStride(), 1);
-					descriptors.push_back(materialUBO.CreateDescriptor(DescriptorPool, 0));
+
+					vk::UboDescriptor materialUboDescriptor;
+					materialUboDescriptor.LinkUBO(materialUBO, 0);
+					materialUboDescriptor.Create(*VulkanApp, DescriptorPool);
+
+					descriptors.push_back(materialUboDescriptor.GetDescriptorInfo());
 
 					MaterialLookupUBOs[RegisteredMeshes.size() - 1] = materialUBO;
 				}

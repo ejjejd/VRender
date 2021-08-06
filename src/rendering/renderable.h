@@ -3,6 +3,7 @@
 
 #include "mesh.h"
 #include "vulkan/descriptor.h"
+#include "vulkan/ubo.h"
 
 namespace render
 {

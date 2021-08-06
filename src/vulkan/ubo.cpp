@@ -19,61 +19,59 @@ namespace vk
 			b.Setup(app, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, stride, elementsCount);
 	}
 
-	Descriptor UniformBuffer::CreateDescriptor(const VkDescriptorPool& descriptorPool, const uint8_t binding)
+	void UboDescriptor::Create(VulkanApp& app, const VkDescriptorPool& descriptorPool)
 	{
-		VkDescriptorSetLayoutBinding layoutBinding{};
-		layoutBinding.binding = binding;
-		layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layoutBinding.descriptorCount = 1;
-		layoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+		App = &app;
 
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = 1;
-		layoutInfo.pBindings = &layoutBinding;
+		VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
+		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutCreateInfo.bindingCount = UboInfos.LayoutBindInfos.size();
+		layoutCreateInfo.pBindings = UboInfos.LayoutBindInfos.data();
 
-		Descriptor descriptor;
-
-		if (vkCreateDescriptorSetLayout(VulkanApp->Device, &layoutInfo, nullptr, &descriptor.DescriptorSetLayout) != VK_SUCCESS)
+		if (vkCreateDescriptorSetLayout(app.Device, &layoutCreateInfo, nullptr, &DescriptorInfo.DescriptorSetLayout) != VK_SUCCESS)
 		{
-			LOG("Couldn't create descriptor layout!");
-			return descriptor;
+			TERMINATE_LOG("Couldn't create descriptor set layout!");
+			return;
 		}
 
-		std::vector<VkDescriptorSetLayout> layouts(Buffers.size(), descriptor.DescriptorSetLayout);
 
-		VkDescriptorSetAllocateInfo descAllocInfo{};
-		descAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descAllocInfo.descriptorPool = descriptorPool;
-		descAllocInfo.descriptorSetCount = Buffers.size();
-		descAllocInfo.pSetLayouts = layouts.data();
+		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(app.SwapChainImageViews.size(), DescriptorInfo.DescriptorSetLayout);
 
-		descriptor.DescriptorSets.resize(Buffers.size());
-		if (vkAllocateDescriptorSets(VulkanApp->Device, &descAllocInfo, &descriptor.DescriptorSets[0]) != VK_SUCCESS)
+		VkDescriptorSetAllocateInfo descriptorAllocInfo{};
+		descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descriptorAllocInfo.descriptorPool = descriptorPool;
+		descriptorAllocInfo.descriptorSetCount = descriptorLayoutsCopies.size();
+		descriptorAllocInfo.pSetLayouts = descriptorLayoutsCopies.data();
+
+
+		DescriptorInfo.DescriptorSets.resize(descriptorLayoutsCopies.size());
+
+		if (vkAllocateDescriptorSets(app.Device, &descriptorAllocInfo, &DescriptorInfo.DescriptorSets[0]) != VK_SUCCESS)
 		{
-			LOG("Couldn't allocate descriptor sets!");
-			return descriptor;
+			TERMINATE_LOG("Couldn't create descriptor set layout!");
+			return;
 		}
 
-		for (size_t i = 0; i < Buffers.size(); ++i)
+		for (size_t i = 0; i < UboInfos.BufferInfos.size(); ++i)
 		{
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = Buffers[i].GetHandler();
-			bufferInfo.offset = 0;
-			bufferInfo.range = Buffers[i].GetStride();
+			for (size_t j = 0; j < UboInfos.BufferInfos[i].size(); ++j)
+			{
+				VkWriteDescriptorSet descriptorWrite{};
+				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrite.dstSet = DescriptorInfo.DescriptorSets[j];
+				descriptorWrite.dstBinding = UboInfos.LayoutBindInfos[i].binding;
+				descriptorWrite.dstArrayElement = 0;
+				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrite.descriptorCount = 1;
+				descriptorWrite.pBufferInfo = UboInfos.BufferInfos[i].data();
 
-			VkWriteDescriptorSet descriptorWrite{};
-			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = descriptor.DescriptorSets[i];
-			descriptorWrite.dstBinding = binding;
-			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrite.descriptorCount = 1;
-			descriptorWrite.pBufferInfo = &bufferInfo;
-
-			vkUpdateDescriptorSets(VulkanApp->Device, 1, &descriptorWrite, 0, nullptr);
+				vkUpdateDescriptorSets(app.Device, 1, &descriptorWrite, 0, nullptr);
+			}
 		}
+	}
 
-		return descriptor;
+	void UboDescriptor::Destroy()
+	{
+		CleanupDescriptor(*App, DescriptorInfo);
 	}
 }

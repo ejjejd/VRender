@@ -20,7 +20,7 @@ int main()
 	material->Info.Ao = 1.0f;
 	
 	render::Mesh mesh;
-	mesh.MeshInfo = cubeMesh;
+	mesh.MeshInfo = pistolMesh;
 	mesh.Material = material;
 
 	engine.SceneManager.RegisterMesh(mesh);

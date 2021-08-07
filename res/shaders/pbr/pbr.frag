@@ -1,6 +1,7 @@
 #version 460 core
 
 #define MAX_POINT_LIGHTS 32
+#define MAX_SPOTLIGHTS 32
 
 #define PI 3.14159265359f
 
@@ -12,13 +13,24 @@ layout(location = 2) in vec3 Camera;
 
 struct PointLight
 {
-	vec3 Position;
-	vec3 Color;
+	vec4 Position;
+	vec4 Color;
+};
+
+struct Spotlight
+{
+	vec4 Position;
+	vec4 Direction;
+	vec4 Color;
+
+	float OuterAngle;
+	float InnerAngle;
 };
 
 layout(set = 0, binding = 1) uniform LightUBO
 {
 	PointLight PointLights[MAX_POINT_LIGHTS + 1];
+	Spotlight Spotlights[MAX_SPOTLIGHTS + 1];
 } lightUBO;
 
 layout(set = 2, binding = 0) uniform MaterialUBO
@@ -28,9 +40,6 @@ layout(set = 2, binding = 0) uniform MaterialUBO
 	float Roughness;
 	float Ao;
 } materialUBO;
-
-// vec3 lightPos = vec3(0.0f, 5.0f, 0.0f);
-// vec3 lightColor = vec3(150.0f, 150.0f, 150.0f);
 
 vec3 FresnelSchlick(float theta, vec3 F0)
 {
@@ -75,8 +84,8 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 void main()
 {
-	vec3 lightPos = lightUBO.PointLights[0].Position;
-	vec3 lightColor = lightUBO.PointLights[0].Color;
+	vec3 lightPos = lightUBO.PointLights[0].Position.xyz;
+	vec3 lightColor = lightUBO.PointLights[0].Color.xyz;
 
 	vec3 N = normalize(Normal);
 	vec3 V = normalize(Camera - FragPos);

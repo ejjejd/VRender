@@ -5,11 +5,11 @@
 
 namespace manager
 {
-	struct alignas(16) CameraUboInfo
+	struct CameraUboInfo
 	{
 		glm::mat4 ToCamera;
 		glm::mat4 ToClip;
-		glm::vec3 CameraPosition;
+		glm::vec4 CameraPosition;
 	};
 
 	bool RenderManager::CreateRenderPass()
@@ -101,7 +101,7 @@ namespace manager
 		CameraUboInfo ubo;
 		ubo.ToCamera = ActiveCamera.GetViewMatrix();
 		ubo.ToClip = ActiveCamera.GetProjection();
-		ubo.CameraPosition = ActiveCamera.Position;
+		ubo.CameraPosition = { ActiveCamera.Position, 1.0f };
 
 		GlobalUBO.Update(&ubo, 1);
 	}

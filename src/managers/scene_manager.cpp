@@ -2,18 +2,29 @@
 
 namespace manager
 {
-	struct alignas(16) PointLightUBO
+	struct PointLightUBO
 	{
-		glm::vec3 Position;
-		glm::vec3 Color;
+		glm::vec4 Position;
+		glm::vec4 Color;
 	};
 
-	struct alignas(16) LightDataUBO
+	struct alignas(16) SpotlightUBO
+	{
+		glm::vec4 Position;
+		glm::vec4 Direction;
+		glm::vec4 Color;
+
+		float OuterAngle;
+		float InnerAngle;
+	};
+
+	struct LightDataUBO
 	{
 		PointLightUBO PointLights[MaxPointLights + 1];
+		SpotlightUBO Spotlights[MaxSpotlights + 1];
 	};
 
-	struct alignas(16) MeshUBO
+	struct MeshUBO
 	{
 		glm::mat4 Transform;
 	};
@@ -140,7 +151,7 @@ namespace manager
 			return;
 		}
 
-		LightUBO.Setup(app, vk::UboType::Dynamic, sizeof(LightUBO), 1);
+		LightUBO.Setup(app, vk::UboType::Dynamic, sizeof(LightDataUBO), 1);
 	}
 
 	void SceneManager::Cleanup()
@@ -202,13 +213,27 @@ namespace manager
 		}
 
 
-		LightDataUBO lightData;
-		for (size_t i = 0; i < RegisteredLights.size(); ++i)
-		{
-			auto& l = RegisteredLights[i].get();
+		//Light ubo update
 
-			lightData.PointLights[i].Position = l.Position;
-			lightData.PointLights[i].Color = l.Color;
+		LightDataUBO lightData;
+
+		for (size_t i = 0; i < RegisteredPointLights.size(); ++i)
+		{
+			auto& l = RegisteredPointLights[i].get();
+
+			lightData.PointLights[i].Position = { l.Position, 1.0f };
+			lightData.PointLights[i].Color = { l.Color, 1.0f };
+		}
+
+		for (size_t i = 0; i < RegisteredSpotlights.size(); ++i)
+		{
+			auto& l = RegisteredSpotlights[i].get();
+
+			lightData.Spotlights[i].Position = { l.Position, 1.0f };
+			lightData.Spotlights[i].Direction = { l.Direction, 0.0f };
+			lightData.Spotlights[i].Color = { l.Color, 1.0f };
+			lightData.Spotlights[i].OuterAngle = l.OuterAngle;
+			lightData.Spotlights[i].InnerAngle = l.InnerAngle;
 		}
 
 		LightUBO.Update(&lightData, 1);

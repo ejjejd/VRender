@@ -15,6 +15,7 @@
 namespace manager
 {
 	constexpr uint8_t MaxPointLights = 32;
+	constexpr uint8_t MaxSpotlights = 32;
 
 	constexpr uint8_t  ShaderInputPositionLocation = 0;
 	constexpr uint8_t  ShaderInputNormalLocation = 1;
@@ -30,7 +31,10 @@ namespace manager
 	{
 	private:
 		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
-		std::vector<std::reference_wrapper<graphics::PointLight>> RegisteredLights;
+
+		std::vector<std::reference_wrapper<graphics::PointLight>> RegisteredPointLights;
+		std::vector<std::reference_wrapper<graphics::Spotlight>> RegisteredSpotlights;
+
 		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
 
 		std::vector<std::vector<vk::Buffer>> MeshBuffers;
@@ -65,8 +69,14 @@ namespace manager
 
 		inline void RegisterLight(graphics::PointLight& pl)
 		{
-			if(RegisteredLights.size() <= MaxPointLights)
-				RegisteredLights.push_back(pl);
+			if(RegisteredPointLights.size() <= MaxPointLights)
+				RegisteredPointLights.push_back(pl);
+		}
+
+		inline void RegisterLight(graphics::Spotlight& sl)
+		{
+			if (RegisteredSpotlights.size() <= MaxSpotlights)
+				RegisteredSpotlights.push_back(sl);
 		}
 
 		inline size_t RegisterCamera(graphics::Camera& camera)

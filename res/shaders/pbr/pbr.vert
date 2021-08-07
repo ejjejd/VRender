@@ -7,7 +7,7 @@ layout(set = 0, binding = 0) uniform GlobalUBO
 {
 	mat4 ToCamera;
 	mat4 ToClip;
-	vec3 Camera;
+	vec4 Camera;
 } globalUbo;
 
 layout(set = 1, binding = 0) uniform MeshUBO
@@ -25,7 +25,7 @@ void main()
 {
 	FragPos = (meshUbo.Transform * vec4(position, 1.0f)).xyz;
 	Normal = (transpose(inverse(meshUbo.Transform)) * vec4(normal, 1.0f)).xyz;
-	Camera = globalUbo.Camera;
+	Camera = globalUbo.Camera.xyz;
 
 	gl_Position = globalUbo.ToClip * globalUbo.ToCamera * meshUbo.Transform * vec4(position, 1.0f);
 }

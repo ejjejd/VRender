@@ -17,9 +17,9 @@ int main()
 
 
 	auto material = std::make_shared<render::PbrMaterial>();
-	material->Info.Albedo = glm::vec3(0.0f, 1.0f, 0.2f);
-	material->Info.Metallic = 0.1f;
-	material->Info.Roughness = 0.5f;
+	material->Info.Albedo = glm::vec3(0.91f, 0.92f, 0.92f);
+	material->Info.Metallic = 1.0f;
+	material->Info.Roughness = 0.3f;
 	material->Info.Ao = 1.0f;
 	
 	render::Mesh mesh;
@@ -36,7 +36,7 @@ int main()
 
 
 	graphics::PointLight pl;
-	pl.Position = glm::vec3(0.0f, 10.0f, 0.0f);
+	pl.Position = glm::vec3(0.0f, 5.0f, 0.0f);
 	pl.Color = glm::vec3(150.0f);
 
 	engine.SceneManager.RegisterLight(pl);

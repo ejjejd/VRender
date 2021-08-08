@@ -22,6 +22,8 @@ namespace manager
 	{
 		PointLightUBO PointLights[MaxPointLights + 1];
 		SpotlightUBO Spotlights[MaxSpotlights + 1];
+		int PointLightsCount;
+		int SpotlightsCount;
 	};
 
 	struct MeshUBO
@@ -235,6 +237,9 @@ namespace manager
 			lightData.Spotlights[i].OuterAngle = l.OuterAngle;
 			lightData.Spotlights[i].InnerAngle = l.InnerAngle;
 		}
+
+		lightData.PointLightsCount = RegisteredPointLights.size();
+		lightData.SpotlightsCount = RegisteredSpotlights.size();
 
 		LightUBO.Update(&lightData, 1);
 	}

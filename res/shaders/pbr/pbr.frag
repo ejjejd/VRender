@@ -31,6 +31,8 @@ layout(set = 0, binding = 1) uniform LightUBO
 {
 	PointLight PointLights[MAX_POINT_LIGHTS + 1];
 	Spotlight Spotlights[MAX_SPOTLIGHTS + 1];
+	int PointLightsCount;
+	int SpotlightsCount;
 } lightUBO;
 
 layout(set = 2, binding = 0) uniform MaterialUBO
@@ -84,40 +86,43 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 void main()
 {
-	vec3 lightPos = lightUBO.PointLights[0].Position.xyz;
-	vec3 lightColor = lightUBO.PointLights[0].Color.xyz;
-
 	vec3 N = normalize(Normal);
 	vec3 V = normalize(Camera - FragPos);
 
 	vec3 Lo = vec3(0.0f);
 
-	vec3 L = normalize(lightPos - FragPos);
-	vec3 H = normalize(L + V);
+	for(int i = 0; i < min(lightUBO.PointLightsCount, MAX_POINT_LIGHTS); ++i)
+	{
+		vec3 lightPos = lightUBO.PointLights[i].Position.xyz;
+		vec3 lightColor = lightUBO.PointLights[i].Color.xyz;
 
-	float distance = length(lightPos - FragPos);
-	float attenuation = 1.0f / (distance * distance);
-	vec3 radiance = lightColor * attenuation;
+		vec3 L = normalize(lightPos - FragPos);
+		vec3 H = normalize(L + V);
 
-	vec3 F0 = vec3(0.04f);
-	F0 = mix(F0, materialUBO.Albedo, materialUBO.Metallic);
-	vec3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
+		float distance = length(lightPos - FragPos);
+		float attenuation = 1.0f / (distance * distance);
+		vec3 radiance = lightColor * attenuation;
 
-	float NDF = DistributionGGX(N, H, materialUBO.Roughness);
-	float G = GeometrySmith(N, V, L, materialUBO.Roughness);
+		vec3 F0 = vec3(0.04f);
+		F0 = mix(F0, materialUBO.Albedo, materialUBO.Metallic);
+		vec3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
 
-	vec3 numerator = NDF * G * F;
-	float denom = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f);
+		float NDF = DistributionGGX(N, H, materialUBO.Roughness);
+		float G = GeometrySmith(N, V, L, materialUBO.Roughness);
 
-	vec3 specular = numerator / max(denom, 0.001f);
+		vec3 numerator = NDF * G * F;
+		float denom = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f);
 
-	vec3 kS = F;
-	vec3 kD = vec3(1.0f) - kS;
+		vec3 specular = numerator / max(denom, 0.001f);
 
-	kD *= 1.0f - materialUBO.Metallic;
+		vec3 kS = F;
+		vec3 kD = vec3(1.0f) - kS;
 
-	float NdotL = max(dot(N, L), 0.0f);
-	Lo = (kD * materialUBO.Albedo / PI + specular) * radiance * NdotL;
+		kD *= 1.0f - materialUBO.Metallic;
+
+		float NdotL = max(dot(N, L), 0.0f);
+		Lo += (kD * materialUBO.Albedo / PI + specular) * radiance * NdotL;
+	}
 
 	vec3 ambient = vec3(0.03f) * materialUBO.Albedo * materialUBO.Ao;
 	vec3 color = ambient + Lo;

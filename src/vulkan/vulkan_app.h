@@ -5,7 +5,7 @@ namespace vk
 {
 	struct VulkanQueueFamilies
 	{
-		int32_t vk;
+		int32_t Graphics;
 		int32_t Present;
 	};
 

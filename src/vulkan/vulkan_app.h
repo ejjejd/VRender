@@ -27,6 +27,8 @@ namespace vk
 		VkQueue GraphicsQueue;
 		VkQueue PresentQueue;
 
+		VkCommandPool CommandPoolGQ;
+
 		VkSwapchainKHR SwapChain;
 
 		VkImage DepthImage;

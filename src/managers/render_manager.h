@@ -9,6 +9,7 @@
 #include "rendering/renderable.h"
 
 #include "graphics/camera.h"
+#include "graphics/texture.h"
 
 namespace manager
 {
@@ -17,7 +18,6 @@ namespace manager
 	private:
 		VkRenderPass RenderPass;
 
-		VkCommandPool CommandPool;
 		std::vector<VkCommandBuffer> CommandBuffers;
 
 		std::vector<VkFramebuffer> Framebuffers;
@@ -26,6 +26,8 @@ namespace manager
 		VkSemaphore RenderFinishedSemaphore;
 
 		graphics::Camera ActiveCamera;
+
+		graphics::Texture Texture;
 
 		vk::VulkanApp* VulkanApp;
 

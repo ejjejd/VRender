@@ -297,6 +297,14 @@ namespace vk
 
 		vkGetDeviceQueue(app.Device, app.QueueFamilies.Graphics, 0, &app.GraphicsQueue);
 		vkGetDeviceQueue(app.Device, app.QueueFamilies.Present, 0, &app.PresentQueue);
+
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.queueFamilyIndex = app.QueueFamilies.Graphics;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+		if (vkCreateCommandPool(app.Device, &poolInfo, nullptr, &app.CommandPoolGQ) != VK_SUCCESS)
+			return false;
 	}
 
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
@@ -526,6 +534,8 @@ namespace vk
 			vkDestroyImageView(app.Device, app.SwapChainImageViews[i], nullptr);
 
 		vkDestroySwapchainKHR(app.Device, app.SwapChain, nullptr);
+
+		vkDestroyCommandPool(app.Device, app.CommandPoolGQ, nullptr);
 
 		vkDestroyDevice(app.Device, nullptr);
 

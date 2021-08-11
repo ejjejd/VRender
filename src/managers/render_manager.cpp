@@ -3,6 +3,8 @@
 #include <set>
 #include <fstream>
 
+#include "vendors/stb/stb_image.h"
+
 namespace manager
 {
 	struct CameraUboInfo
@@ -113,20 +115,11 @@ namespace manager
 		if (!CreateRenderPass())
 			return false;
 
-
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = VulkanApp->QueueFamilies.Graphics;
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-
-		if (vkCreateCommandPool(VulkanApp->Device, &poolInfo, nullptr, &CommandPool) != VK_SUCCESS)
-			return false;
-
 		CommandBuffers.resize(Framebuffers.size());
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = CommandPool;
+		allocInfo.commandPool = VulkanApp->CommandPoolGQ;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = CommandBuffers.size();
 
@@ -147,6 +140,12 @@ namespace manager
 		//Setup ubo's
 		GlobalUBO.Setup(app, vk::UboType::Dynamic, sizeof(CameraUboInfo), 1);
 
+		int texWidth, texHeight, texChannels;
+		stbi_uc* pixels = stbi_load("res/textures/test.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+		Texture.Setup(app, texWidth, texHeight);
+		Texture.Update(pixels);
+
 		return true;
 	}
 
@@ -154,8 +153,7 @@ namespace manager
 	{
 		GlobalUBO.Cleanup();
 
-		vkFreeCommandBuffers(VulkanApp->Device, CommandPool, CommandBuffers.size(), &CommandBuffers[0]);
-		vkDestroyCommandPool(VulkanApp->Device, CommandPool, nullptr);
+		vkFreeCommandBuffers(VulkanApp->Device, VulkanApp->CommandPoolGQ, CommandBuffers.size(), &CommandBuffers[0]);
 
 		for (size_t i = 0; i < Framebuffers.size(); i++)
 			vkDestroyFramebuffer(VulkanApp->Device, Framebuffers[i], nullptr);

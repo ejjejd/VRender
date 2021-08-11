@@ -8,6 +8,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/vendors/stb/stb_image.h"
+    "src/vendors/stb/stb_image.cpp"
+    "src/graphics/texture.h"
+    "src/graphics/texture.cpp"
+    "src/vulkan/image.h"
+    "src/vulkan/image.cpp"
     "src/graphics/light.h"  
     "src/vulkan/helpers.h"
     "src/vulkan/helpers.cpp"

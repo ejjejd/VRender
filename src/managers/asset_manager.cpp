@@ -19,6 +19,12 @@ namespace manager
 
 				auto nv = assimpMesh->mNormals[id];
 				mesh.Normals.emplace_back(nv.x, nv.y, nv.z);
+
+				if (assimpMesh->mTextureCoords[0])
+				{
+					auto uv = assimpMesh->mTextureCoords[0][id];
+					mesh.UVs.emplace_back(uv.x, uv.y);
+				}
 			}
 		}
 

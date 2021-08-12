@@ -9,7 +9,6 @@
 #include "rendering/renderable.h"
 
 #include "graphics/camera.h"
-#include "graphics/texture.h"
 
 namespace manager
 {
@@ -26,8 +25,6 @@ namespace manager
 		VkSemaphore RenderFinishedSemaphore;
 
 		graphics::Camera ActiveCamera;
-
-		graphics::Texture Texture;
 
 		vk::VulkanApp* VulkanApp;
 

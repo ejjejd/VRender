@@ -1,6 +1,7 @@
 #pragma once
 #include "vrender.h"
 #include "vulkan/image.h"
+#include "vulkan/descriptor.h"
 
 namespace graphics
 {
@@ -8,21 +9,74 @@ namespace graphics
 	{
 	private:
 		vk::Image Image;
+		VkSampler Sampler;
 
 		vk::VulkanApp* App;
 	public:
-		inline void Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height)
-		{
-			App = &app;
-
-			Image.Setup(app, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height);
-		}
+		bool Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height);
 
 		inline void Cleanup()
 		{
+			vkDestroySampler(App->Device, Sampler, nullptr);
+
 			Image.Cleanup();
 		}
 
 		void Update(void* data);
+
+		inline vk::Image GetImage() const
+		{
+			return Image;
+		}
+
+		inline VkDescriptorImageInfo GetInfo() const
+		{
+			VkDescriptorImageInfo info{};
+			info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			info.imageView = Image.GetViewHandler();
+			info.sampler = Sampler;
+
+			return info;
+		}
+	};
+
+	class TextureDescriptor
+	{
+	private:
+		vk::Descriptor DescriptorInfo;
+
+		struct
+		{
+			std::vector<VkDescriptorSetLayoutBinding> LayoutBindInfos;
+			std::vector<VkDescriptorImageInfo> ImageInfos;
+		} ImageInfos;
+
+		vk::VulkanApp* App;
+	public:
+		void Create(vk::VulkanApp& app, const VkDescriptorPool& descriptorPool);
+
+		inline void Destroy() const
+		{
+			CleanupDescriptor(*App, DescriptorInfo);
+		}
+
+		inline void LinkTexture(const Texture& texture, const uint8_t bindId)
+		{
+			VkDescriptorSetLayoutBinding layoutBinding{};
+			layoutBinding.binding = bindId;
+			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			layoutBinding.descriptorCount = 1;
+			layoutBinding.pImmutableSamplers = nullptr;
+			layoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
+			ImageInfos.LayoutBindInfos.push_back({ layoutBinding });
+
+			ImageInfos.ImageInfos.push_back(texture.GetInfo());
+		}
+
+		inline vk::Descriptor GetDescriptorInfo() const
+		{
+			return DescriptorInfo;
+		}
 	};
 }

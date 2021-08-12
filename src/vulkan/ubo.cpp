@@ -34,8 +34,7 @@ namespace vk
 			return;
 		}
 
-
-		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(app.SwapChainImageViews.size(), DescriptorInfo.DescriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(app.SwapChainImages.size(), DescriptorInfo.DescriptorSetLayout);
 
 		VkDescriptorSetAllocateInfo descriptorAllocInfo{};
 		descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

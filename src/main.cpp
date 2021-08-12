@@ -18,8 +18,8 @@ int main()
 
 	auto material = std::make_shared<render::PbrMaterial>();
 	material->Info.Albedo = glm::vec3(0.91f, 0.92f, 0.92f);
-	material->Info.Metallic = 1.0f;
-	material->Info.Roughness = 0.3f;
+	material->Info.Metallic = 0.5f;
+	material->Info.Roughness = 0.8f;
 	material->Info.Ao = 1.0f;
 	
 	render::Mesh mesh;

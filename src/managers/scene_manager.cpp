@@ -1,5 +1,7 @@
 #include "scene_manager.h"
 
+#include "vendors/stb/stb_image.h"
+
 namespace manager
 {
 	struct PointLightUBO
@@ -153,14 +155,41 @@ namespace manager
 			return;
 		}
 
+
+		VkDescriptorPoolSize imagePoolSize{};
+		imagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		imagePoolSize.descriptorCount = RM->GetFBOs().size() * 255;
+
+		VkDescriptorPoolCreateInfo imagePoolInfo{};
+		imagePoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		imagePoolInfo.poolSizeCount = 1;
+		imagePoolInfo.pPoolSizes = &imagePoolSize;
+		imagePoolInfo.maxSets = 255;
+
+		if (vkCreateDescriptorPool(VulkanApp->Device, &imagePoolInfo, nullptr, &DescriptorPoolImage) != VK_SUCCESS)
+		{
+			TERMINATE_LOG("Couldn't create descriptor pool!")
+			return;
+		}
+
+		int texWidth, texHeight, texChannels;
+		stbi_set_flip_vertically_on_load(1);
+		stbi_uc* pixels = stbi_load("res/textures/pistol/handgun_C.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+		Texture.Setup(app, texWidth, texHeight);
+		Texture.Update(pixels);
+
 		LightUBO.Setup(app, vk::UboType::Dynamic, sizeof(LightDataUBO), 1);
 	}
 
 	void SceneManager::Cleanup()
 	{
+		Texture.Cleanup();
+
 		LightUBO.Cleanup();
 
 		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPool, nullptr);
+		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPoolImage, nullptr);
 
 		for (auto& [id, ubo] : MaterialLookupUBOs)
 			ubo.Cleanup();
@@ -244,11 +273,11 @@ namespace manager
 		LightUBO.Update(&lightData, 1);
 	}
 
-	std::vector<vk::UboDescriptor> SceneManager::CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader)
+	std::vector<vk::Descriptor> SceneManager::CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
-		std::vector<vk::UboDescriptor> descriptors;
+		std::vector<vk::Descriptor> descriptors;
 
 		vk::UboDescriptor globalUboDescriptor;
 		vk::UboDescriptor meshUboDescriptor;
@@ -318,9 +347,14 @@ namespace manager
 		meshUboDescriptor.Create(*VulkanApp, DescriptorPool);
 		materialUboDescriptor.Create(*VulkanApp, DescriptorPool);
 
-		descriptors.push_back(globalUboDescriptor);
-		descriptors.push_back(meshUboDescriptor);
-		descriptors.push_back(materialUboDescriptor);
+		graphics::TextureDescriptor td;
+		td.LinkTexture(Texture, 0);
+		td.Create(*VulkanApp, DescriptorPoolImage);
+
+		descriptors.push_back(globalUboDescriptor.GetDescriptorInfo());
+		descriptors.push_back(meshUboDescriptor.GetDescriptorInfo());
+		descriptors.push_back(materialUboDescriptor.GetDescriptorInfo());
+		descriptors.push_back(td.GetDescriptorInfo());
 
 		return descriptors;
 	}
@@ -363,6 +397,16 @@ namespace manager
 
 					buffers.push_back(normalBuffer);
 				} break;
+			case ShaderInputUvLocation:
+				{
+					vk::Buffer uvBuffer;
+					uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.UVs[0]), mesh.MeshInfo.UVs.size());
+					uvBuffer.Update(&mesh.MeshInfo.UVs[0], mesh.MeshInfo.UVs.size());
+
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
+
+					buffers.push_back(uvBuffer);
+				} break;
 			}
 
 			++bindId;
@@ -399,7 +443,7 @@ namespace manager
 
 		std::vector<VkDescriptorSetLayout> layouts;
 		for (auto& d : descriptors)
-			layouts.push_back(d.GetDescriptorInfo().DescriptorSetLayout);
+			layouts.push_back(d.DescriptorSetLayout);
 
 		if (!CreatePipeline(layouts, renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
 		{

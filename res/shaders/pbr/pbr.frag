@@ -9,7 +9,10 @@ layout(location = 0) out vec4 outColor;
 
 layout(location = 0) in vec3 FragPos;
 layout(location = 1) in vec3 Normal;
-layout(location = 2) in vec3 Camera;
+layout(location = 2) in vec2 UV;
+layout(location = 3) in vec3 Camera;
+
+layout(set = 3, binding = 0) uniform sampler2D Texture;
 
 struct PointLight
 {
@@ -124,7 +127,9 @@ void main()
 		Lo += (kD * materialUBO.Albedo / PI + specular) * radiance * NdotL;
 	}
 
-	vec3 ambient = vec3(0.03f) * materialUBO.Albedo * materialUBO.Ao;
+	vec4 tex = texture(Texture, UV);
+
+	vec3 ambient = vec3(0.03f) * tex.xyz * materialUBO.Ao;
 	vec3 color = ambient + Lo;
 
 	outColor = vec4(color, 1.0f);

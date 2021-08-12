@@ -4,7 +4,8 @@
 
 namespace vk
 {
-	bool Image::Setup(VulkanApp& app, const VkImageType type, const VkFormat format, const VkImageUsageFlags usage, 
+	bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, 
+		              const VkFormat format, const VkImageUsageFlags usage, 
 					  const uint16_t width, const uint16_t height)
 	{
 		App = &app;
@@ -43,10 +44,29 @@ namespace vk
 			return false;
 
 		vkBindImageMemory(app.Device, Image, Memory, 0);
+
+
+		VkImageViewCreateInfo viewCreateInfo{};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.image = Image;
+		viewCreateInfo.viewType = viewType;
+		viewCreateInfo.format = format;
+		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.baseMipLevel = 0;
+		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		viewCreateInfo.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(app.Device, &viewCreateInfo, nullptr, &ImageView) != VK_SUCCESS)
+			return false;
+
+		return true;
 	}
 
 	void Image::Cleanup()
 	{
+		vkDestroyImageView(App->Device, ImageView, nullptr);
+
 		vkDestroyImage(App->Device, Image, nullptr);
 		vkFreeMemory(App->Device, Memory, nullptr);
 	}

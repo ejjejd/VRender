@@ -11,6 +11,7 @@
 
 #include "graphics/camera.h"
 #include "graphics/light.h"
+#include "graphics/texture.h"
 
 namespace manager
 {
@@ -19,6 +20,7 @@ namespace manager
 
 	constexpr uint8_t  ShaderInputPositionLocation = 0;
 	constexpr uint8_t  ShaderInputNormalLocation = 1;
+	constexpr uint8_t  ShaderInputUvLocation = 2;
 
 	constexpr uint8_t ShaderDescriptorSetGlobalUBO = 0;
 	constexpr uint8_t ShaderDescriptorSetMeshUBO = 1;
@@ -45,6 +47,7 @@ namespace manager
 		std::vector<render::Renderable> Renderables;
 
 		VkDescriptorPool DescriptorPool;
+		VkDescriptorPool DescriptorPoolImage;
 
 		vk::UniformBuffer LightUBO;
 
@@ -53,7 +56,9 @@ namespace manager
 		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
 
-		std::vector<vk::UboDescriptor> CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
+		graphics::Texture Texture;
+
+		std::vector<vk::Descriptor> CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
 		void SetupBuffers(render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);
 
 		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 

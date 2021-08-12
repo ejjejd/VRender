@@ -22,6 +22,8 @@ namespace vk
 		VkPhysicalDevice PhysicalDevice;
 		VkDevice Device;
 
+		VkPhysicalDeviceProperties DeviceProperties;
+
 		VulkanQueueFamilies QueueFamilies;
 
 		VkQueue GraphicsQueue;

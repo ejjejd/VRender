@@ -8,6 +8,7 @@ namespace vk
 	{
 	private:
 		VkImage Image;
+		VkImageView ImageView;
 		VkDeviceMemory Memory;
 
 		uint16_t Width;
@@ -15,13 +16,19 @@ namespace vk
 
 		VulkanApp* App;
 	public:
-		bool Image::Setup(VulkanApp& app, const VkImageType type, const VkFormat format, const VkImageUsageFlags usage,
+		bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, 
+						  const VkFormat format, const VkImageUsageFlags usage,
 						  const uint16_t width, const uint16_t height);
 		void Cleanup();
 
 		inline VkImage GetHandler() const
 		{
 			return Image;
+		}
+
+		inline VkImageView GetViewHandler() const
+		{
+			return ImageView;
 		}
 
 		inline uint16_t GetWidth() const

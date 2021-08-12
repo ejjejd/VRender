@@ -227,8 +227,8 @@ namespace vk
 
 	bool IsDeviceSuitable(const VulkanApp& app, const VkPhysicalDevice& pd)
 	{
-		VkPhysicalDeviceProperties deviceProp;
-		vkGetPhysicalDeviceProperties(pd, &deviceProp);
+		VkPhysicalDeviceFeatures deviceFeatures;
+		vkGetPhysicalDeviceFeatures(pd, &deviceFeatures);
 
 		auto details = QuerySwapChainDetails(app, pd);
 		bool swapChainValid = !(details.PresentModes.empty() && details.Formats.empty());
@@ -237,8 +237,9 @@ namespace vk
 		bool queueFamiliesValid = qf.Graphics != -1 & qf.Present != -1;
 
 		return queueFamiliesValid
-			&& CheckDeviceExtensions(pd)
-			&& swapChainValid;
+			   && CheckDeviceExtensions(pd)
+			   && swapChainValid
+			   && deviceFeatures.samplerAnisotropy;
 	}
 
 	bool SetupDevice(VulkanApp& app)
@@ -283,6 +284,7 @@ namespace vk
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
+		deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 		VkDeviceCreateInfo deviceCreateInfo{};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -297,6 +299,8 @@ namespace vk
 
 		vkGetDeviceQueue(app.Device, app.QueueFamilies.Graphics, 0, &app.GraphicsQueue);
 		vkGetDeviceQueue(app.Device, app.QueueFamilies.Present, 0, &app.PresentQueue);
+
+		vkGetPhysicalDeviceProperties(app.PhysicalDevice, &app.DeviceProperties);
 
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

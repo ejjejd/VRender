@@ -140,12 +140,6 @@ namespace manager
 		//Setup ubo's
 		GlobalUBO.Setup(app, vk::UboType::Dynamic, sizeof(CameraUboInfo), 1);
 
-		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("res/textures/test.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-		Texture.Setup(app, texWidth, texHeight);
-		Texture.Update(pixels);
-
 		return true;
 	}
 
@@ -208,7 +202,7 @@ namespace manager
 
 				for (auto d : r.Descriptors)
 				{
-					auto descriptorSets = d.GetDescriptorInfo().DescriptorSets;
+					auto descriptorSets = d.DescriptorSets;
 
 					if (descriptorSets.size() == Framebuffers.size())
 						descriptors.push_back(descriptorSets[i]);

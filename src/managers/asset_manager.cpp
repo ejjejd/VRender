@@ -1,5 +1,11 @@
 #include "asset_manager.h"
 
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
+
+#include "vendors/stb/stb_image.h"
+
 namespace manager
 {
 	asset::MeshInfo ConvertMesh(const aiMesh* assimpMesh)
@@ -31,9 +37,11 @@ namespace manager
 		return mesh;
 	}
 
-	size_t AssetManager::LoadMeshInfo(const std::string& filepath)
+	asset::AssetId AssetManager::LoadMeshInfo(const std::string& filepath)
 	{
-		const auto scene = AssimImporter.ReadFile(filepath, aiProcess_Triangulate);
+		Assimp::Importer assimpImporter;
+
+		const auto scene = assimpImporter.ReadFile(filepath, aiProcess_Triangulate);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
@@ -43,13 +51,37 @@ namespace manager
 
 
 		size_t meshId = MeshesLookup.size();
-
-		std::vector<asset::MeshInfo> subMeshes;
-
 		MeshesLookup[meshId] = ConvertMesh(scene->mMeshes[0]);
 		
-		AssimImporter.FreeScene();
+		assimpImporter.FreeScene();
 
 		return meshId;
+	}
+
+	asset::AssetId AssetManager::LoadImageInfo(const std::string& filepath)
+	{
+		int texWidth, texHeight, texChannels;
+		stbi_set_flip_vertically_on_load(1);
+		auto pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+		if (!pixels)
+		{
+			LOG("Error loading image: %s", filepath)
+			return -1;
+		}
+
+		asset::ImageInfo imageInfo;
+		imageInfo.Width = texWidth;
+		imageInfo.Height = texHeight;
+		
+		imageInfo.PixelsData.resize(texWidth * texHeight);
+		memcpy(&imageInfo.PixelsData[0], pixels, texWidth * texHeight);
+
+		size_t imageId = ImagesLookup.size();
+		ImagesLookup[imageId] = imageInfo;
+
+		stbi_image_free(pixels);
+
+		return imageId;
 	}
 }

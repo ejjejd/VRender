@@ -1,9 +1,7 @@
 #pragma once
 #include "vrender.h"
 
-#include "assimp/Importer.hpp"
-#include "assimp/scene.h"
-#include "assimp/postprocess.h"
+#include <vector>
 
 namespace asset
 {
@@ -18,6 +16,16 @@ namespace asset
 		std::vector<glm::vec3> Tangents;
 		std::vector<glm::vec3> Bitangents;
 	};
+
+	struct ImageInfo
+	{
+		uint16_t Width;
+		uint16_t Height;
+
+		std::vector<uint8_t> PixelsData;
+	};
+
+	using AssetId = size_t;
 }
 
 namespace manager
@@ -25,13 +33,19 @@ namespace manager
 	class AssetManager
 	{
 	private:
-		Assimp::Importer AssimImporter;
-
-		std::unordered_map<size_t, asset::MeshInfo> MeshesLookup;
+		std::unordered_map<asset::AssetId, asset::MeshInfo> MeshesLookup;
+		std::unordered_map<asset::AssetId, asset::ImageInfo> ImagesLookup;
 	public:
-		size_t LoadMeshInfo(const std::string& filepath);
+		asset::AssetId LoadMeshInfo(const std::string& filepath);
+		asset::AssetId LoadImageInfo(const std::string& filepath);
 
-		inline asset::MeshInfo GetMeshInfo(const size_t id)
+		inline void UnloadAll()
+		{
+			MeshesLookup.clear();
+			ImagesLookup.clear();
+		}
+
+		inline asset::MeshInfo GetMeshInfo(const asset::AssetId id)
 		{
 			auto findRes = MeshesLookup.find(id);
 			if (findRes == MeshesLookup.end())
@@ -43,9 +57,16 @@ namespace manager
 			return findRes->second;
 		}
 
-		inline void UnloadAll()
+		inline asset::ImageInfo GetImageInfo(const asset::AssetId id)
 		{
-			MeshesLookup.clear();
+			auto findRes = ImagesLookup.find(id);
+			if (findRes == ImagesLookup.end())
+			{
+				LOG("Error getting image under id: %d", id)
+				return asset::ImageInfo{};
+			}
+
+			return findRes->second;
 		}
 	};
 }

@@ -2,6 +2,7 @@
 #include "vrender.h"
 #include "vulkan/vulkan_app.h"
 #include "vulkan/shader.h"
+#include "managers/asset_manager.h"
 
 namespace render
 {
@@ -25,6 +26,11 @@ namespace render
 	{
 	public:
 		mutable PbrMaterialInfo Info;
+
+		asset::AssetId AlbedoImage;
+		asset::AssetId MettalicImage;
+		asset::AssetId RoughnessImage;
+		asset::AssetId AoImage;
 
 		inline vk::Shader CreateShader(vk::VulkanApp& app) const override
 		{

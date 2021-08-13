@@ -74,8 +74,8 @@ namespace manager
 		imageInfo.Width = texWidth;
 		imageInfo.Height = texHeight;
 		
-		imageInfo.PixelsData.resize(texWidth * texHeight);
-		memcpy(&imageInfo.PixelsData[0], pixels, texWidth * texHeight);
+		imageInfo.PixelsData.resize(texWidth * texHeight * 4);
+		memcpy(&imageInfo.PixelsData[0], pixels, texWidth * texHeight * 4);
 
 		size_t imageId = ImagesLookup.size();
 		ImagesLookup[imageId] = imageInfo;

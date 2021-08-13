@@ -15,12 +15,14 @@ int main()
 	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("res/models/cube.obj");
 	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
 
+	auto pistolAldeboId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_C.jpg");
+	auto pistolSpecId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_S.jpg");
 
 	auto material = std::make_shared<render::PbrMaterial>();
-	material->Info.Albedo = glm::vec3(0.6f, 0.4f, 0.2f);
-	material->Info.Metallic = 0.5f;
-	material->Info.Roughness = 0.8f;
-	material->Info.Ao = 1.0f;
+	material->Params.Roughness = 0.5f;
+	material->Params.Ao = 1.0f;
+	material->Textures.AlbedoId = pistolAldeboId;
+	material->Textures.MetallicId = pistolSpecId;
 	
 	render::Mesh mesh;
 	mesh.MeshInfo = pistolMesh;

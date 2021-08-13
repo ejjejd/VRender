@@ -68,5 +68,17 @@ namespace manager
 
 			return findRes->second;
 		}
+
+		inline bool IsMeshLoaded(const asset::AssetId id)
+		{
+			auto findRes = MeshesLookup.find(id);
+			return (findRes != MeshesLookup.end());
+		}
+
+		inline bool IsImageLoaded(const asset::AssetId id)
+		{
+			auto findRes = ImagesLookup.find(id);
+			return (findRes != ImagesLookup.end());
+		}
 	};
 }

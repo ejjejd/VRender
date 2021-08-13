@@ -12,7 +12,10 @@ layout(location = 1) in vec3 Normal;
 layout(location = 2) in vec2 UV;
 layout(location = 3) in vec3 Camera;
 
-layout(set = 3, binding = 0) uniform sampler2D Texture;
+layout(set = 3, binding = 0) uniform sampler2D AlbedoTexture;
+layout(set = 3, binding = 1) uniform sampler2D MetallicTexture;
+layout(set = 3, binding = 2) uniform sampler2D RoughnessTexture;
+layout(set = 3, binding = 3) uniform sampler2D AoTexture;
 
 struct PointLight
 {
@@ -94,6 +97,11 @@ void main()
 
 	vec3 Lo = vec3(0.0f);
 
+	vec3 Albedo = materialUBO.Albedo * texture(AlbedoTexture, UV).xyz;
+	float Metallic = materialUBO.Metallic * texture(MetallicTexture, UV).r;
+	float Roughness = materialUBO.Roughness * texture(RoughnessTexture, UV).r;
+	float Ao = materialUBO.Ao * texture(AoTexture, UV).r;
+
 	for(int i = 0; i < min(lightUBO.PointLightsCount, MAX_POINT_LIGHTS); ++i)
 	{
 		vec3 lightPos = lightUBO.PointLights[i].Position.xyz;
@@ -107,11 +115,11 @@ void main()
 		vec3 radiance = lightColor * attenuation;
 
 		vec3 F0 = vec3(0.04f);
-		F0 = mix(F0, materialUBO.Albedo, materialUBO.Metallic);
+		F0 = mix(F0, Albedo, Metallic);
 		vec3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
 
-		float NDF = DistributionGGX(N, H, materialUBO.Roughness);
-		float G = GeometrySmith(N, V, L, materialUBO.Roughness);
+		float NDF = DistributionGGX(N, H, Roughness);
+		float G = GeometrySmith(N, V, L, Roughness);
 
 		vec3 numerator = NDF * G * F;
 		float denom = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f);
@@ -121,15 +129,13 @@ void main()
 		vec3 kS = F;
 		vec3 kD = vec3(1.0f) - kS;
 
-		kD *= 1.0f - materialUBO.Metallic;
+		kD *= 1.0f - Metallic;
 
 		float NdotL = max(dot(N, L), 0.0f);
-		Lo += (kD * materialUBO.Albedo / PI + specular) * radiance * NdotL;
+		Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 	}
 
-	vec4 tex = texture(Texture, UV);
-
-	vec3 ambient = vec3(0.03f) * tex.xyz * materialUBO.Ao;
+	vec3 ambient = vec3(0.03f) * Albedo * Ao;
 	vec3 color = ambient + Lo;
 
 	outColor = vec4(color, 1.0f);

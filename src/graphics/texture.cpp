@@ -90,7 +90,7 @@ namespace graphics
 		{
 			VkWriteDescriptorSet descriptorWrite{};
 			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = DescriptorInfo.DescriptorSets[j];
+			descriptorWrite.dstSet = DescriptorInfo.DescriptorSets[0];
 			descriptorWrite.dstBinding = ImageInfos.LayoutBindInfos[j].binding;
 			descriptorWrite.dstArrayElement = 0;
 			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;

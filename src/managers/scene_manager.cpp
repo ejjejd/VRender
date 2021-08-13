@@ -33,6 +33,35 @@ namespace manager
 		glm::mat4 Transform;
 	};
 
+	graphics::Texture TextureManager::GetOrCreate(const asset::AssetId id)
+	{
+		auto& findRes = TexturesLookup.find(id);
+		if (findRes == TexturesLookup.end())
+		{
+			graphics::Texture t;
+
+			if (!AM->IsImageLoaded(id))
+			{
+				char pixels[] = { -1, -1, -1, -1 };
+				t.Setup(*App, 1, 1);
+				t.Update(pixels);
+			}
+			else
+			{
+				auto image = AM->GetImageInfo(id);
+
+				t.Setup(*App, image.Width, image.Height);
+				t.Update(image.PixelsData.data());
+			}
+
+			TexturesLookup[id] = t;
+
+			return t;
+		}
+
+		return findRes->second;
+	}
+
 	bool SceneManager::CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
 									  VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader)
 	{
@@ -134,10 +163,12 @@ namespace manager
 		return true;
 	}
 
-	void SceneManager::Setup(vk::VulkanApp& app, RenderManager& rm)
+	void SceneManager::Setup(vk::VulkanApp& app, RenderManager& rm, AssetManager& am)
 	{
 		VulkanApp = &app;
 		RM = &rm;
+
+		TM.Setup(app, am);
 
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -172,19 +203,12 @@ namespace manager
 			return;
 		}
 
-		int texWidth, texHeight, texChannels;
-		stbi_set_flip_vertically_on_load(1);
-		stbi_uc* pixels = stbi_load("res/textures/pistol/handgun_C.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-		Texture.Setup(app, texWidth, texHeight);
-		Texture.Update(pixels);
-
 		LightUBO.Setup(app, vk::UboType::Dynamic, sizeof(LightDataUBO), 1);
 	}
 
 	void SceneManager::Cleanup()
 	{
-		Texture.Cleanup();
+		TM.Cleanup();
 
 		LightUBO.Cleanup();
 
@@ -283,6 +307,8 @@ namespace manager
 		vk::UboDescriptor meshUboDescriptor;
 		vk::UboDescriptor materialUboDescriptor;
 
+		graphics::TextureDescriptor materialTexturesDescriptor;
+
 		{
 			auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_VERTEX_BIT);
 			if (findShaderInfo == reflectMap.end())
@@ -339,6 +365,14 @@ namespace manager
 
 						MaterialLookupUBOs[RegisteredMeshes.size() - 1] = materialUBO;
 					} break;
+				case ShaderDescriptorSetMaterialTextures:
+					{
+						for (auto& b : d.Bindings)
+						{
+							auto texture = TM.GetOrCreate(material.GetMaterialTexturesIds()[b.BindId]);
+							materialTexturesDescriptor.LinkTexture(texture, b.BindId);
+						}
+					} break;
 				}
 			}
 		}
@@ -347,14 +381,12 @@ namespace manager
 		meshUboDescriptor.Create(*VulkanApp, DescriptorPool);
 		materialUboDescriptor.Create(*VulkanApp, DescriptorPool);
 
-		graphics::TextureDescriptor td;
-		td.LinkTexture(Texture, 0);
-		td.Create(*VulkanApp, DescriptorPoolImage);
+		materialTexturesDescriptor.Create(*VulkanApp, DescriptorPoolImage);
 
 		descriptors.push_back(globalUboDescriptor.GetDescriptorInfo());
 		descriptors.push_back(meshUboDescriptor.GetDescriptorInfo());
 		descriptors.push_back(materialUboDescriptor.GetDescriptorInfo());
-		descriptors.push_back(td.GetDescriptorInfo());
+		descriptors.push_back(materialTexturesDescriptor.GetDescriptorInfo());
 
 		return descriptors;
 	}

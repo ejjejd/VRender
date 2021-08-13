@@ -10,27 +10,33 @@ namespace render
 	{
 	public:
 		virtual vk::Shader CreateShader(vk::VulkanApp& app) const = 0;
+		virtual std::vector<asset::AssetId> GetMaterialTexturesIds() const = 0;
 		virtual size_t GetMaterialInfoStride() const = 0;
 		virtual void* GetMaterialData() const = 0;
 	};
 
-	struct alignas(16) PbrMaterialInfo
+	struct alignas(16) PbrMaterialParams
 	{
-		glm::vec3 Albedo;
-		float Metallic;
-		float Roughness;
-		float Ao;
+		glm::vec3 Albedo = glm::vec3(1.0f);
+		float Metallic = 1.0f;
+		float Roughness = 1.0f;
+		float Ao = 1.0f;
+	};
+
+	struct PbrMaterialTextures
+	{
+		asset::AssetId AlbedoId = -1;
+		asset::AssetId MetallicId = -1;
+		asset::AssetId RoughnessId = -1;
+		asset::AssetId AoId = -1;
 	};
 
 	class PbrMaterial : public BaseMaterial
 	{
 	public:
-		mutable PbrMaterialInfo Info;
+		mutable PbrMaterialParams Params;
 
-		asset::AssetId AlbedoImage;
-		asset::AssetId MettalicImage;
-		asset::AssetId RoughnessImage;
-		asset::AssetId AoImage;
+		PbrMaterialTextures Textures;
 
 		inline vk::Shader CreateShader(vk::VulkanApp& app) const override
 		{
@@ -43,14 +49,19 @@ namespace render
 			return shader;
 		}
 
+		inline std::vector<asset::AssetId> GetMaterialTexturesIds() const override
+		{
+			return { Textures.AlbedoId, Textures.MetallicId, Textures.RoughnessId, Textures.AoId };
+		}
+
 		inline  size_t GetMaterialInfoStride() const override
 		{
-			return sizeof(Info);
+			return sizeof(Params);
 		}
 
 		inline void* GetMaterialData() const override
 		{
-			return &Info;
+			return &Params;
 		}
 	};
 }

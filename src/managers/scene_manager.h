@@ -25,9 +25,33 @@ namespace manager
 	constexpr uint8_t ShaderDescriptorSetGlobalUBO = 0;
 	constexpr uint8_t ShaderDescriptorSetMeshUBO = 1;
 	constexpr uint8_t ShaderDescriptorSetMaterialUBO = 2;
+	constexpr uint8_t ShaderDescriptorSetMaterialTextures = 3;
 
 	constexpr uint8_t ShaderDescriptorBindCameraUBO = 0;
 	constexpr uint8_t ShaderDescriptorBindLightUBO = 1;
+
+	class TextureManager
+	{
+	private:
+		std::unordered_map<asset::AssetId, graphics::Texture> TexturesLookup;
+
+		vk::VulkanApp* App;
+		AssetManager* AM;
+	public:
+		inline void Setup(vk::VulkanApp& app, AssetManager& am)
+		{
+			App = &app;
+			AM = &am;
+		}
+
+		inline void Cleanup()
+		{
+			for (auto [id, t] : TexturesLookup)
+				t.Cleanup();
+		}
+
+		graphics::Texture GetOrCreate(const asset::AssetId id);
+	};
 
 	class API SceneManager
 	{
@@ -53,10 +77,10 @@ namespace manager
 
 		size_t ActiveCameraId = 0;
 
+		TextureManager TM;
+
 		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
-
-		graphics::Texture Texture;
 
 		std::vector<vk::Descriptor> CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
 		void SetupBuffers(render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);
@@ -64,7 +88,7 @@ namespace manager
 		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts, 
 							VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader);
 	public:
-		void Setup(vk::VulkanApp& app, RenderManager& rm);
+		void Setup(vk::VulkanApp& app, RenderManager& rm, AssetManager& am);
 
 		void Cleanup();
 

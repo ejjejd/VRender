@@ -39,7 +39,7 @@ namespace app
 
 			InputManager.Setup(VulkanApp);
 
-			SceneManager.Setup(VulkanApp, RenderManager);
+			SceneManager.Setup(VulkanApp, RenderManager, AssetManager);
 		}
 
 		inline void CleanupEngine()

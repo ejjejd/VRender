@@ -29,8 +29,8 @@ namespace render
 		graphics::TextureParams params{};
 		params.MagFilter = VK_FILTER_NEAREST;
 		params.MinFilter = VK_FILTER_NEAREST;
-		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
 		return params;
 	}

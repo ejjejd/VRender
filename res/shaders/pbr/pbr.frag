@@ -119,8 +119,8 @@ void main()
 	vec3 Lo = vec3(0.0f);
 
 	vec3 Albedo = materialUBO.Albedo * texture(AlbedoTexture, UV).xyz;
-	float Metallic = materialUBO.Metallic * texture(MetallicTexture, UV).r;
-	float Roughness = materialUBO.Roughness * texture(RoughnessTexture, UV).r;
+	float Metallic = materialUBO.Metallic * texture(MetallicTexture, UV).b;
+	float Roughness = materialUBO.Roughness * texture(RoughnessTexture, UV).g;
 	float Ao = materialUBO.Ao * texture(AoTexture, UV).r;
 
 	for(int i = 0; i < min(lightUBO.PointLightsCount, MAX_POINT_LIGHTS); ++i)
@@ -159,5 +159,5 @@ void main()
 	vec3 ambient = vec3(0.03f) * Albedo * Ao;
 	vec3 color = ambient + Lo;
 
-	outColor = vec4(N, 1.0f);
+	outColor = vec4(color, 1.0f);
 }

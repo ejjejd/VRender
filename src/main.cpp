@@ -6,29 +6,35 @@ int main()
 
 	engine.StartupEngine();
 
-	auto pistolMeshId = engine.AssetManager.LoadMeshInfo("res/models/pistol.fbx");
-	auto pistolMesh = engine.AssetManager.GetMeshInfo(pistolMeshId);
+	//auto cubeMeshId = engine.AssetManager.LoadMeshInfo("res/models/cube.obj");
+	//auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
 
-	auto carlMeshId = engine.AssetManager.LoadMeshInfo("res/models/koenigsegg.fbx");
-	auto carMesh = engine.AssetManager.GetMeshInfo(carlMeshId);
+	//auto pistolMeshId = engine.AssetManager.LoadMeshInfo("res/models/pistol.fbx");
+	//auto pistolMesh = engine.AssetManager.GetMeshInfo(pistolMeshId);
 
-	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("res/models/cube.obj");
-	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
+	//auto pistolAldeboId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_C.jpg");
+	//auto pistolSpecId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_S.jpg");
+	//auto pistolNormalId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_N.jpg");
 
-	auto pistolAldeboId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_C.jpg");
-	auto pistolSpecId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_S.jpg");
-	auto pistolNormalId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_N.jpg");
+	auto helmetMeshId = engine.AssetManager.LoadMeshInfo("res/models/DamagedHelmet.blend");
+	auto helmetMesh = engine.AssetManager.GetMeshInfo(helmetMeshId);
+
+	auto helmetAlbedoId = engine.AssetManager.LoadImageInfo("res/textures/helmet/Default_albedo.jpg");
+	auto helmetMetalRoughnessId = engine.AssetManager.LoadImageInfo("res/textures/helmet/Default_metalRoughness.jpg");
+	auto helmetAoId = engine.AssetManager.LoadImageInfo("res/textures/helmet/Default_AO.jpg");
+	auto helmetNormalId = engine.AssetManager.LoadImageInfo("res/textures/helmet/Default_normal.jpg");
 
 	auto material = std::make_shared<render::PbrMaterial>();
-	material->Params.Roughness = 1.0f;
-	material->Params.Ao = 1.0f;
-	material->Textures.Albedo.ImageId = pistolAldeboId;
-	material->Textures.Metallic.ImageId = pistolSpecId;
-	material->Textures.Normal.ImageId = pistolNormalId;
+	material->Textures.Albedo.ImageId = helmetAlbedoId;
+	material->Textures.Metallic.ImageId = helmetMetalRoughnessId;
+	material->Textures.Roughness.ImageId = helmetMetalRoughnessId;
+	material->Textures.Ao.ImageId = helmetAoId;
+	material->Textures.Normal.ImageId = helmetNormalId;
 	
 	render::Mesh mesh;
-	mesh.MeshInfo = pistolMesh;
+	mesh.MeshInfo = helmetMesh;
 	mesh.Material = material;
+	mesh.Transform.Rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>());
 
 	engine.SceneManager.RegisterMesh(mesh);
 	
@@ -40,7 +46,7 @@ int main()
 
 
 	graphics::PointLight pl;
-	pl.Position = glm::vec3(0.0f, 5.0f, -5.0f);
+	pl.Position = glm::vec3(0.0f, 6.0f, -5.0f);
 	pl.Color = glm::vec3(150.0f);
 
 	engine.SceneManager.RegisterLight(pl);

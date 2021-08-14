@@ -21,7 +21,7 @@ namespace graphics
 		samplerCreateInfo.minFilter = params.MinFilter;
 		samplerCreateInfo.addressModeU = params.AddressModeU;
 		samplerCreateInfo.addressModeV = params.AddressModeV;
-		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeW = params.AddressModeV;
 		samplerCreateInfo.anisotropyEnable = VK_TRUE;
 		samplerCreateInfo.maxAnisotropy = app.DeviceProperties.limits.maxSamplerAnisotropy;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;

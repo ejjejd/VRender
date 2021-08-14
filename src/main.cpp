@@ -46,7 +46,7 @@ int main()
 
 
 	graphics::PointLight pl;
-	pl.Position = glm::vec3(0.0f, 6.0f, -5.0f);
+	pl.Position = glm::vec3(5.0f, 3.0f, -5.0f);
 	pl.Color = glm::vec3(150.0f);
 
 	engine.SceneManager.RegisterLight(pl);

@@ -5,6 +5,14 @@
 
 namespace graphics
 {
+	struct TextureParams
+	{
+		VkFilter MagFilter;
+		VkFilter MinFilter;
+		VkSamplerAddressMode AddressModeU;
+		VkSamplerAddressMode AddressModeV;
+	};
+
 	class Texture
 	{
 	private:
@@ -13,7 +21,7 @@ namespace graphics
 
 		vk::VulkanApp* App;
 	public:
-		bool Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height);
+		bool Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height, const TextureParams& params);
 
 		inline void Cleanup()
 		{
@@ -39,7 +47,10 @@ namespace graphics
 			return info;
 		}
 	};
+}
 
+namespace vk
+{
 	class TextureDescriptor
 	{
 	private:
@@ -60,7 +71,7 @@ namespace graphics
 			CleanupDescriptor(*App, DescriptorInfo);
 		}
 
-		inline void LinkTexture(const Texture& texture, const uint8_t bindId)
+		inline void LinkTexture(const graphics::Texture& texture, const uint8_t bindId)
 		{
 			VkDescriptorSetLayoutBinding layoutBinding{};
 			layoutBinding.binding = bindId;

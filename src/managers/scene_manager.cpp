@@ -33,28 +33,28 @@ namespace manager
 		glm::mat4 Transform;
 	};
 
-	graphics::Texture TextureManager::GetOrCreate(const asset::AssetId id)
+	graphics::Texture TextureManager::GetOrCreate(const render::MaterialTexture& texture)
 	{
-		auto& findRes = TexturesLookup.find(id);
+		auto& findRes = TexturesLookup.find(texture.ImageId);
 		if (findRes == TexturesLookup.end())
 		{
 			graphics::Texture t;
 
-			if (!AM->IsImageLoaded(id))
+			if (!AM->IsImageLoaded(texture.ImageId))
 			{
 				char pixels[] = { -1, -1, -1, -1 };
-				t.Setup(*App, 1, 1);
+				t.Setup(*App, 1, 1, render::CreateInfoMapTextureParams() );
 				t.Update(pixels);
 			}
 			else
 			{
-				auto image = AM->GetImageInfo(id);
+				auto image = AM->GetImageInfo(texture.ImageId);
 
-				t.Setup(*App, image.Width, image.Height);
+				t.Setup(*App, image.Width, image.Height, texture.TextureParams);
 				t.Update(image.PixelsData.data());
 			}
 
-			TexturesLookup[id] = t;
+			TexturesLookup[texture.ImageId] = t;
 
 			return t;
 		}
@@ -307,7 +307,7 @@ namespace manager
 		vk::UboDescriptor meshUboDescriptor;
 		vk::UboDescriptor materialUboDescriptor;
 
-		graphics::TextureDescriptor materialTexturesDescriptor;
+		vk::TextureDescriptor materialTexturesDescriptor;
 
 		{
 			auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_VERTEX_BIT);
@@ -438,6 +438,26 @@ namespace manager
 					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
 
 					buffers.push_back(uvBuffer);
+				} break;
+			case ShaderInputTangentLocation:
+				{
+					vk::Buffer tangentBuffer;
+					tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Tangents[0]), mesh.MeshInfo.Tangents.size());
+					tangentBuffer.Update(&mesh.MeshInfo.Tangents[0], mesh.MeshInfo.Tangents.size());
+
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputTangentLocation, 0, tangentBuffer.GetStride());
+
+					buffers.push_back(tangentBuffer);
+				} break;
+			case ShaderInputBitangentLocation:
+				{
+					vk::Buffer bitangentBuffer;
+					bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Bitangents[0]), mesh.MeshInfo.Bitangents.size());
+					bitangentBuffer.Update(&mesh.MeshInfo.Bitangents[0], mesh.MeshInfo.Bitangents.size());
+
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputBitangentLocation, 0, bitangentBuffer.GetStride());
+
+					buffers.push_back(bitangentBuffer);
 				} break;
 			}
 

@@ -3,6 +3,8 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 uv;
+layout(location = 3) in vec3 tangent;
+layout(location = 4) in vec3 bitangent;
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -20,13 +22,18 @@ layout(location = 0) out vec3 FragPos;
 layout(location = 1) out vec3 Normal;
 layout(location = 2) out vec2 UV;
 layout(location = 3) out flat vec3 Camera;
+layout(location = 4) out vec3 Tangent;
+layout(location = 5) out vec3 Bitangent;
 
 void main()
 {
 	FragPos = (meshUbo.Transform * vec4(position, 1.0f)).xyz;
-	Normal = (transpose(inverse(meshUbo.Transform)) * vec4(normal, 1.0f)).xyz;
+	Normal = transpose(inverse(mat3(meshUbo.Transform))) * normal;
 	UV = uv;
 	Camera = globalUbo.Camera.xyz;
+
+	Tangent = mat3(meshUbo.Transform) * tangent;
+	Bitangent = mat3(meshUbo.Transform) * bitangent;
 
 	gl_Position = globalUbo.ToClip * globalUbo.ToCamera * meshUbo.Transform * vec4(position, 1.0f);
 }

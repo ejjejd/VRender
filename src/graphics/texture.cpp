@@ -5,22 +5,22 @@
 
 namespace graphics
 {
-	bool Texture::Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height)
+	bool Texture::Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height, const TextureParams& params)
 	{
 		App = &app;
 
 		if (!Image.Setup(app, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_SRGB,
-		    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height))
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height))
 		{
 			return false;
 		}
 
 		VkSamplerCreateInfo samplerCreateInfo{};
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.magFilter = params.MagFilter;
+		samplerCreateInfo.minFilter = params.MinFilter;
+		samplerCreateInfo.addressModeU = params.AddressModeU;
+		samplerCreateInfo.addressModeV = params.AddressModeV;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.anisotropyEnable = VK_TRUE;
 		samplerCreateInfo.maxAnisotropy = app.DeviceProperties.limits.maxSamplerAnisotropy;
@@ -52,7 +52,9 @@ namespace graphics
 
 		buffer.Cleanup();
 	}
-
+}
+namespace vk
+{
 	void TextureDescriptor::Create(vk::VulkanApp& app, const VkDescriptorPool& descriptorPool)
 	{
 		App = &app;

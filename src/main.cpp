@@ -17,12 +17,14 @@ int main()
 
 	auto pistolAldeboId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_C.jpg");
 	auto pistolSpecId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_S.jpg");
+	auto pistolNormalId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_N.jpg");
 
 	auto material = std::make_shared<render::PbrMaterial>();
-	material->Params.Roughness = 0.5f;
+	material->Params.Roughness = 1.0f;
 	material->Params.Ao = 1.0f;
-	material->Textures.AlbedoId = pistolAldeboId;
-	material->Textures.MetallicId = pistolSpecId;
+	material->Textures.Albedo.ImageId = pistolAldeboId;
+	material->Textures.Metallic.ImageId = pistolSpecId;
+	material->Textures.Normal.ImageId = pistolNormalId;
 	
 	render::Mesh mesh;
 	mesh.MeshInfo = pistolMesh;
@@ -38,7 +40,7 @@ int main()
 
 
 	graphics::PointLight pl;
-	pl.Position = glm::vec3(0.0f, 5.0f, 0.0f);
+	pl.Position = glm::vec3(0.0f, 5.0f, -5.0f);
 	pl.Color = glm::vec3(150.0f);
 
 	engine.SceneManager.RegisterLight(pl);

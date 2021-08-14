@@ -12,6 +12,14 @@ namespace manager
 	{
 		asset::MeshInfo mesh;
 
+		bool haveTangentSpace = true;
+
+		if (!assimpMesh->HasTangentsAndBitangents())
+		{
+			haveTangentSpace = false;
+			LOG("Can't generate tangent space for mesh: %s", assimpMesh->mName.C_Str())
+		}
+
 		for (size_t i = 0; i < assimpMesh->mNumFaces; ++i)
 		{
 			auto face = assimpMesh->mFaces[i];
@@ -31,8 +39,19 @@ namespace manager
 					auto uv = assimpMesh->mTextureCoords[0][id];
 					mesh.UVs.emplace_back(uv.x, uv.y);
 				}
+
+				if (haveTangentSpace)
+				{
+					auto tangent = assimpMesh->mTangents[id];
+					auto bitangent = assimpMesh->mBitangents[id];
+
+					mesh.Tangents.emplace_back(tangent.x, tangent.y, tangent.z);
+					mesh.Bitangents.emplace_back(bitangent.x, bitangent.y, bitangent.z);
+				}
 			}
 		}
+
+		mesh.Name = assimpMesh->mName.C_Str();
 
 		return mesh;
 	}
@@ -41,7 +60,7 @@ namespace manager
 	{
 		Assimp::Importer assimpImporter;
 
-		const auto scene = assimpImporter.ReadFile(filepath, aiProcess_Triangulate);
+		const auto scene = assimpImporter.ReadFile(filepath, aiProcess_Triangulate | aiProcess_CalcTangentSpace);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{

@@ -3,14 +3,43 @@
 #include "vulkan/vulkan_app.h"
 #include "vulkan/shader.h"
 #include "managers/asset_manager.h"
+#include "graphics/texture.h"
 
 namespace render
 {
+	struct MaterialTexture
+	{
+		asset::AssetId ImageId;
+		graphics::TextureParams TextureParams;
+	};
+
+	inline graphics::TextureParams CreateColorMapTextureParams()
+	{
+		graphics::TextureParams params{};
+		params.MagFilter = VK_FILTER_LINEAR;
+		params.MinFilter = VK_FILTER_LINEAR;
+		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+		return params;
+	}
+
+	inline graphics::TextureParams CreateInfoMapTextureParams()
+	{
+		graphics::TextureParams params{};
+		params.MagFilter = VK_FILTER_NEAREST;
+		params.MinFilter = VK_FILTER_NEAREST;
+		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+		return params;
+	}
+
 	class BaseMaterial
 	{
 	public:
 		virtual vk::Shader CreateShader(vk::VulkanApp& app) const = 0;
-		virtual std::vector<asset::AssetId> GetMaterialTexturesIds() const = 0;
+		virtual std::vector<MaterialTexture> GetMaterialTexturesIds() const = 0;
 		virtual size_t GetMaterialInfoStride() const = 0;
 		virtual void* GetMaterialData() const = 0;
 	};
@@ -25,10 +54,11 @@ namespace render
 
 	struct PbrMaterialTextures
 	{
-		asset::AssetId AlbedoId = -1;
-		asset::AssetId MetallicId = -1;
-		asset::AssetId RoughnessId = -1;
-		asset::AssetId AoId = -1;
+		MaterialTexture Albedo = { SIZE_MAX, CreateColorMapTextureParams() };
+		MaterialTexture Metallic = { SIZE_MAX, CreateInfoMapTextureParams() };
+		MaterialTexture Roughness = { SIZE_MAX, CreateInfoMapTextureParams() };
+		MaterialTexture Ao = { SIZE_MAX, CreateInfoMapTextureParams() };
+		MaterialTexture Normal = { SIZE_MAX, CreateInfoMapTextureParams() };
 	};
 
 	class PbrMaterial : public BaseMaterial
@@ -49,9 +79,11 @@ namespace render
 			return shader;
 		}
 
-		inline std::vector<asset::AssetId> GetMaterialTexturesIds() const override
+		inline std::vector<MaterialTexture> GetMaterialTexturesIds() const override
 		{
-			return { Textures.AlbedoId, Textures.MetallicId, Textures.RoughnessId, Textures.AoId };
+			return { Textures.Albedo, Textures.Metallic, 
+					 Textures.Roughness, Textures.Ao,
+			         Textures.Normal };
 		}
 
 		inline  size_t GetMaterialInfoStride() const override

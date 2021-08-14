@@ -7,6 +7,7 @@
 #include "vulkan/ubo.h"
 
 #include "rendering/mesh.h"
+#include "rendering/material.h"
 #include "rendering/renderable.h"
 
 #include "graphics/camera.h"
@@ -21,6 +22,8 @@ namespace manager
 	constexpr uint8_t  ShaderInputPositionLocation = 0;
 	constexpr uint8_t  ShaderInputNormalLocation = 1;
 	constexpr uint8_t  ShaderInputUvLocation = 2;
+	constexpr uint8_t  ShaderInputTangentLocation = 3;
+	constexpr uint8_t  ShaderInputBitangentLocation = 4;
 
 	constexpr uint8_t ShaderDescriptorSetGlobalUBO = 0;
 	constexpr uint8_t ShaderDescriptorSetMeshUBO = 1;
@@ -50,7 +53,7 @@ namespace manager
 				t.Cleanup();
 		}
 
-		graphics::Texture GetOrCreate(const asset::AssetId id);
+		graphics::Texture GetOrCreate(const render::MaterialTexture& texture);
 	};
 
 	class API SceneManager

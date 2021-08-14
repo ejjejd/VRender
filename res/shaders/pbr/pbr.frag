@@ -11,11 +11,14 @@ layout(location = 0) in vec3 FragPos;
 layout(location = 1) in vec3 Normal;
 layout(location = 2) in vec2 UV;
 layout(location = 3) in vec3 Camera;
+layout(location = 4) in vec3 Tangent;
+layout(location = 5) in vec3 Bitangent;
 
 layout(set = 3, binding = 0) uniform sampler2D AlbedoTexture;
 layout(set = 3, binding = 1) uniform sampler2D MetallicTexture;
 layout(set = 3, binding = 2) uniform sampler2D RoughnessTexture;
 layout(set = 3, binding = 3) uniform sampler2D AoTexture;
+layout(set = 3, binding = 4) uniform sampler2D NormalTexture;
 
 struct PointLight
 {
@@ -92,7 +95,25 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 void main()
 {
-	vec3 N = normalize(Normal);
+	vec3 N;
+
+	if(textureSize(NormalTexture, 0).x > 1)
+	{
+		vec3 n = normalize(Normal);	
+
+		vec3 t = normalize(Tangent);
+		t = t - dot(n, t) * n;
+
+		vec3 b = normalize(Bitangent);
+		b = b - dot(n, b) * n - dot(t, b) * t;
+
+		mat3 tbn = mat3(t, b, n);
+
+		N = (mat3(t, b, n) * texture(NormalTexture, UV).xyz) * 2.0f - 1.0f;
+	}
+	else 
+		N = normalize(Normal);
+
 	vec3 V = normalize(Camera - FragPos);
 
 	vec3 Lo = vec3(0.0f);
@@ -138,5 +159,5 @@ void main()
 	vec3 ambient = vec3(0.03f) * Albedo * Ao;
 	vec3 color = ambient + Lo;
 
-	outColor = vec4(color, 1.0f);
+	outColor = vec4(N, 1.0f);
 }

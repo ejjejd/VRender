@@ -36,20 +36,20 @@ int main()
 	mesh.Material = material;
 	mesh.Transform.Rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>());
 
-	engine.SceneManager.RegisterMesh(mesh);
+	engine.SceneManager.Register(mesh);
 	
 	graphics::Camera camera;
 	camera.SetupAsPerspective(glm::vec3(0.0f, 0.0f, -5.0f), 45.0f, 1.77f, 5.0f, 0.1f, 1000.0f);
 
-	engine.SceneManager.RegisterCamera(camera);
+	engine.SceneManager.Register(camera);
 	engine.SceneManager.SetActiveCamera(0);
 
 
-	graphics::PointLight pl;
+	render::PointLight pl;
 	pl.Position = glm::vec3(5.0f, 3.0f, -5.0f);
 	pl.Color = glm::vec3(150.0f);
 
-	engine.SceneManager.RegisterLight(pl);
+	engine.SceneManager.Register(pl);
 
 	engine.Run(
 		[&]()

@@ -34,19 +34,17 @@ namespace app
 			if (!vk::SetupVulkanApp(WindowWidth, WindowHeight, VulkanApp))
 				return;
 
-			//if (!RenderManager.Setup(VulkanApp))
-			//	return;
+			if (!RenderManager.Setup(VulkanApp, AssetManager))
+				return;
+
+			SceneManager.Setup(RenderManager);
 
 			InputManager.Setup(VulkanApp);
-
-			SceneManager.Setup(VulkanApp, RenderManager, AssetManager);
 		}
 
 		inline void CleanupEngine()
 		{
-			SceneManager.Cleanup();
-
-			//RenderManager.Cleanup();
+			RenderManager.Cleanup();
 
 			vk::CleanVulkanApp(VulkanApp);
 		}
@@ -67,7 +65,7 @@ namespace app
 
 					SceneManager.Update();
 
-					//RenderManager.Update(SceneManager.GetRenderables());
+					RenderManager.Update();
 
 
 					Fps = 1000.0f / frameTimer.GetElapsedTime();

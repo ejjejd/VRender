@@ -14,7 +14,7 @@ set(SOURCE_FILES
     "src/graphics/texture.cpp"
     "src/vulkan/image.h"
     "src/vulkan/image.cpp"
-    "src/graphics/light.h"  
+    "src/rendering/light.h"  
     "src/vulkan/helpers.h"
     "src/vulkan/helpers.cpp"
     "src/vendors/spirv/spirv_reflect.h"

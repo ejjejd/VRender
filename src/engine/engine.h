@@ -34,8 +34,8 @@ namespace app
 			if (!vk::SetupVulkanApp(WindowWidth, WindowHeight, VulkanApp))
 				return;
 
-			if (!RenderManager.Setup(VulkanApp))
-				return;
+			//if (!RenderManager.Setup(VulkanApp))
+			//	return;
 
 			InputManager.Setup(VulkanApp);
 
@@ -46,7 +46,7 @@ namespace app
 		{
 			SceneManager.Cleanup();
 
-			RenderManager.Cleanup();
+			//RenderManager.Cleanup();
 
 			vk::CleanVulkanApp(VulkanApp);
 		}
@@ -67,7 +67,7 @@ namespace app
 
 					SceneManager.Update();
 
-					RenderManager.Update(SceneManager.GetRenderables());
+					//RenderManager.Update(SceneManager.GetRenderables());
 
 
 					Fps = 1000.0f / frameTimer.GetElapsedTime();

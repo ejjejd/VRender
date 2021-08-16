@@ -15,8 +15,9 @@ namespace render
 		glm::vec4 Rotation = glm::vec4(glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 	};
 
-	struct Mesh
+	class Mesh
 	{
+	public:
 		std::shared_ptr<BaseMaterial> Material;
 
 		asset::MeshInfo MeshInfo;

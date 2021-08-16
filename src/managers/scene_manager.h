@@ -14,10 +14,54 @@
 #include "graphics/light.h"
 #include "graphics/texture.h"
 
+namespace scene
+{
+	inline size_t IdsCounter = 0;
+
+	class SceneObject
+	{
+	public:
+		inline size_t GetId() const
+		{
+			return IdsCounter++;
+		}
+	};
+
+	enum class RendererType
+	{
+		Mesh
+	};
+
+	class RendererObject : public SceneObject
+	{
+	protected:
+		RendererType Type;
+	public:
+		inline RendererType GetRenderType() const
+		{
+			return Type;
+		}
+	};
+}
+
 namespace manager
 {
 	constexpr uint8_t MaxPointLights = 32;
 	constexpr uint8_t MaxSpotlights = 32;
+
+	/*class SceneManager
+	{
+	private:
+		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
+		std::vector<std::reference_wrapper<render::BaseMaterial>> RegisteredMaterials;
+
+		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
+
+		std::vector<std::reference_wrapper<graphics::PointLight>> RegisteredPointLights;
+		std::vector<std::reference_wrapper<graphics::Spotlight>> RegisteredSpotlights;
+	public:
+
+	};*/
 
 	constexpr uint8_t  ShaderInputPositionLocation = 0;
 	constexpr uint8_t  ShaderInputNormalLocation = 1;
@@ -59,6 +103,17 @@ namespace manager
 	class API SceneManager
 	{
 	private:
+		VkRenderPass RenderPass;
+
+		std::vector<VkCommandBuffer> CommandBuffers;
+
+		std::vector<VkFramebuffer> Framebuffers;
+
+		VkSemaphore ImageAvailableSemaphore;
+		VkSemaphore RenderFinishedSemaphore;
+
+		graphics::Camera ActiveCamera;
+
 		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
 
 		std::vector<std::reference_wrapper<graphics::PointLight>> RegisteredPointLights;
@@ -77,13 +132,16 @@ namespace manager
 		VkDescriptorPool DescriptorPoolImage;
 
 		vk::UniformBuffer LightUBO;
+		vk::UniformBuffer GlobalUBO;
 
 		size_t ActiveCameraId = 0;
 
 		TextureManager TM;
 
-		RenderManager* RM;
 		vk::VulkanApp* VulkanApp;
+
+		bool CreateRenderPass();
+		void UpdateUBO(const uint8_t imageId);
 
 		std::vector<vk::Descriptor> CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
 		void SetupBuffers(render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);

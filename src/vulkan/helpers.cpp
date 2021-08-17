@@ -140,4 +140,93 @@ namespace vk
 
 		EndCommands(app, app.CommandPoolGQ, commandBuffer, app.GraphicsQueue);
 	}
+
+	std::optional<VkRenderPass> CreateRenderPass(const VulkanApp& app, const std::vector<VkAttachmentDescription>& attachments,
+												 const std::vector<VkSubpassDescription>& subpasses,
+												 const std::vector<VkSubpassDependency>& dependencies)
+	{
+		VkRenderPassCreateInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = attachments.size();
+		renderPassInfo.pAttachments = attachments.data();
+		renderPassInfo.subpassCount = subpasses.size();
+		renderPassInfo.pSubpasses = subpasses.data();
+		renderPassInfo.dependencyCount = dependencies.size();
+		renderPassInfo.pDependencies = dependencies.data();
+
+		VkRenderPass renderPass;
+
+		if (vkCreateRenderPass(app.Device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+			return std::nullopt;
+
+		return renderPass;
+	}
+
+	std::optional<VkFramebuffer> CreateFramebuffer(const VulkanApp& app, const VkRenderPass& renderPass,
+												   const std::vector<VkImageView>& attachments, 
+												   const uint16_t width, const uint16_t height)
+	{
+		VkFramebufferCreateInfo fboInfo{};
+		fboInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		fboInfo.renderPass = renderPass;
+		fboInfo.attachmentCount = attachments.size();
+		fboInfo.pAttachments = attachments.data();
+		fboInfo.width = width;
+		fboInfo.height = height;
+		fboInfo.layers = 1;
+
+		VkFramebuffer fbo;
+
+		if (vkCreateFramebuffer(app.Device, &fboInfo, nullptr, &fbo) != VK_SUCCESS)
+			return std::nullopt;
+
+		return fbo;
+	}
+
+	std::optional<Pipeline> CreateGraphicsPipeline(const VulkanApp& app,
+												   const VkRenderPass& renderPass,
+												   const vk::Shader& shader,
+												   const std::vector< VkDescriptorSetLayout>& layouts,
+												   const VkPipelineInputAssemblyStateCreateInfo& inputAssembly,
+												   const VkPipelineViewportStateCreateInfo& viewportState,
+												   const VkPipelineRasterizationStateCreateInfo& rasterizer,
+												   const VkPipelineMultisampleStateCreateInfo& multisample,
+												   const VkPipelineColorBlendStateCreateInfo& colorBlending,
+												   const VkPipelineDepthStencilStateCreateInfo& depthState)
+	{
+		VkPipelineLayout pipelineLayout;
+
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = layouts.size();
+		pipelineLayoutInfo.pSetLayouts = layouts.data();
+
+		if (vkCreatePipelineLayout(app.Device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+			return std::nullopt;
+
+
+		VkPipeline pipeline;
+
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.stageCount = shader.GetStages().size();
+		pipelineInfo.pStages = shader.GetStages().data();
+		pipelineInfo.pVertexInputState = &shader.GetInputState();
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pViewportState = &viewportState;
+		pipelineInfo.pRasterizationState = &rasterizer;
+		pipelineInfo.pMultisampleState = &multisample;
+		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.pDepthStencilState = &depthState;
+		pipelineInfo.pDynamicState = nullptr;
+		pipelineInfo.layout = pipelineLayout;
+		pipelineInfo.renderPass = renderPass;
+		pipelineInfo.subpass = 0;
+		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+		if (vkCreateGraphicsPipelines(app.Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
+			return std::nullopt;
+
+		return { { pipelineLayout, pipeline } };
+	}
 }

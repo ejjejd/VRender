@@ -3,8 +3,6 @@
 #include <set>
 #include <fstream>
 
-#include "vendors/stb/stb_image.h"
-
 namespace manager
 {
 	struct CameraUboInfo
@@ -72,102 +70,82 @@ namespace manager
 		return findRes->second;
 	}
 
-	bool RenderManager::CreateRenderPass()
+	bool RenderManager::SetupRenderPassases()
 	{
-		VkAttachmentDescription depthAttachment{};
-		depthAttachment.format = VulkanApp->DepthFormat;
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef{};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = VulkanApp->SwapChainFormat;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-
-		VkAttachmentDescription attachments[2] = { colorAttachment, depthAttachment };
-
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 2;
-		renderPassInfo.pAttachments = &attachments[0];
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-		if (vkCreateRenderPass(VulkanApp->Device, &renderPassInfo, nullptr, &RenderPass) != VK_SUCCESS)
-			return false;
-
-		Framebuffers.resize(VulkanApp->SwapChainImageViews.size());
-
-		for (size_t i = 0; i < VulkanApp->SwapChainImageViews.size(); ++i)
 		{
-			VkImageView attachments[2];
-			attachments[0] = VulkanApp->SwapChainImageViews[i];
-			attachments[1] = VulkanApp->DepthImageView;
+			VkAttachmentDescription depthAttachment{};
+			depthAttachment.format = VulkanApp->DepthFormat;
+			depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-			VkFramebufferCreateInfo fboInfo{};
-			fboInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			fboInfo.renderPass = RenderPass;
-			fboInfo.attachmentCount = 2;
-			fboInfo.pAttachments = &attachments[0];
-			fboInfo.width = VulkanApp->SwapChainExtent.width;
-			fboInfo.height = VulkanApp->SwapChainExtent.height;
-			fboInfo.layers = 1;
+			VkAttachmentReference depthAttachmentRef{};
+			depthAttachmentRef.attachment = 1;
+			depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-			if (vkCreateFramebuffer(VulkanApp->Device, &fboInfo, nullptr, &Framebuffers[i]) != VK_SUCCESS)
+			VkAttachmentDescription colorAttachment{};
+			colorAttachment.format = VulkanApp->SwapChainFormat;
+			colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+			VkAttachmentReference colorAttachmentRef{};
+			colorAttachmentRef.attachment = 0;
+			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			VkSubpassDescription subpass{};
+			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			subpass.colorAttachmentCount = 1;
+			subpass.pColorAttachments = &colorAttachmentRef;
+			subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+			VkSubpassDependency dependency{};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.srcAccessMask = 0;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+			std::vector<VkAttachmentDescription> attachments = { colorAttachment, depthAttachment };
+			std::vector<VkSubpassDescription> subpasses = { subpass };
+			std::vector<VkSubpassDependency> dependencies = { dependency };
+
+			auto rpCreateRes = vk::CreateRenderPass(*VulkanApp, attachments, subpasses, dependencies);
+			if (!rpCreateRes)
 				return false;
+			MainRenderPass = *rpCreateRes;
+
+			Framebuffers.resize(VulkanApp->SwapChainImageViews.size());
+
+			for (size_t i = 0; i < VulkanApp->SwapChainImageViews.size(); ++i)
+			{
+				std::vector<VkImageView> attachments;
+				attachments.push_back(VulkanApp->SwapChainImageViews[i]);
+				attachments.push_back(VulkanApp->DepthImageView);
+
+				auto fboRes = vk::CreateFramebuffer(*VulkanApp, MainRenderPass, attachments,
+					VulkanApp->SwapChainExtent.width, VulkanApp->SwapChainExtent.height);
+				if (!fboRes)
+					return false;
+
+				Framebuffers[i] = *fboRes;
+			}
 		}
 
 		return true;
 	}
-
-	void RenderManager::UpdateGlobalUBO()
-	{
-		CameraUboInfo ubo;
-		ubo.ToCamera = ActiveCamera.GetViewMatrix();
-		ubo.ToClip = ActiveCamera.GetProjection();
-		ubo.CameraPosition = { ActiveCamera.Position, 1.0f };
-
-		GlobalUBO.Update(&ubo, 1);
-	}
-
-	bool RenderManager::CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts,
-		VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader)
+	
+	std::optional<vk::Pipeline> RenderManager::CreateMeshPipeline(vk::Shader& shader, 
+																	   const std::vector<VkDescriptorSetLayout>& layouts)
 	{
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -210,9 +188,9 @@ namespace manager
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
-			| VK_COLOR_COMPONENT_G_BIT
-			| VK_COLOR_COMPONENT_B_BIT
-			| VK_COLOR_COMPONENT_A_BIT;
+											  | VK_COLOR_COMPONENT_G_BIT
+											  | VK_COLOR_COMPONENT_B_BIT
+											  | VK_COLOR_COMPONENT_A_BIT;
 		colorBlendAttachment.blendEnable = VK_FALSE;
 
 		VkPipelineColorBlendStateCreateInfo colorBlending{};
@@ -236,42 +214,30 @@ namespace manager
 		depthState.maxDepthBounds = 1.0f;
 		depthState.stencilTestEnable = VK_FALSE;
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = layouts.size();
-		pipelineLayoutInfo.pSetLayouts = layouts.data();
+		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, MainRenderPass, shader, layouts,
+													  inputAssembly, viewportState, rasterizer, 
+													  multisample, colorBlending, depthState);
+		if (!pipelineRes)
+			return std::nullopt;
 
-		if (vkCreatePipelineLayout(VulkanApp->Device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-			return false;
+		return pipelineRes;
+	}
 
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = shader.GetStages().size();
-		pipelineInfo.pStages = shader.GetStages().data();
-		pipelineInfo.pVertexInputState = &shader.GetInputState();
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = &multisample;
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDepthStencilState = &depthState;
-		pipelineInfo.pDynamicState = nullptr;
-		pipelineInfo.layout = pipelineLayout;
-		pipelineInfo.renderPass = RenderPass;
-		pipelineInfo.subpass = 0;
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	void RenderManager::UpdateGlobalUBO()
+	{
+		CameraUboInfo ubo;
+		ubo.ToCamera = ActiveCamera.GetViewMatrix();
+		ubo.ToClip = ActiveCamera.GetProjection();
+		ubo.CameraPosition = { ActiveCamera.Position, 1.0f };
 
-		if (vkCreateGraphicsPipelines(VulkanApp->Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
-			return false;
-
-		return true;
+		GlobalUBO.Update(&ubo, 1);
 	}
 
 	bool RenderManager::Setup(vk::VulkanApp& app, AssetManager& am)
 	{
 		VulkanApp = &app;
 
-		if (!CreateRenderPass())
+		if (!SetupRenderPassases())
 			return false;
 
 		CommandBuffers.resize(Framebuffers.size());
@@ -370,7 +336,7 @@ namespace manager
 		for (size_t i = 0; i < Framebuffers.size(); i++)
 			vkDestroyFramebuffer(VulkanApp->Device, Framebuffers[i], nullptr);
 
-		vkDestroyRenderPass(VulkanApp->Device, RenderPass, nullptr);
+		vkDestroyRenderPass(VulkanApp->Device, MainRenderPass, nullptr);
 
 		vkDestroySemaphore(VulkanApp->Device, ImageAvailableSemaphore, nullptr);
 		vkDestroySemaphore(VulkanApp->Device, RenderFinishedSemaphore, nullptr);
@@ -455,7 +421,7 @@ namespace manager
 
 			VkRenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = RenderPass;
+			renderPassInfo.renderPass = MainRenderPass;
 			renderPassInfo.framebuffer = Framebuffers[i];
 			renderPassInfo.renderArea.offset = { 0, 0 };
 			renderPassInfo.renderArea.extent = VulkanApp->SwapChainExtent;
@@ -544,7 +510,7 @@ namespace manager
 		vkQueueWaitIdle(VulkanApp->PresentQueue);
 	}
 
-	std::vector<vk::Descriptor> RenderManager::CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader, const size_t meshId)
+	std::vector<vk::Descriptor> RenderManager::SetupMeshDescriptors(const render::BaseMaterial& material, const vk::Shader& shader, const size_t meshId)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
@@ -638,7 +604,7 @@ namespace manager
 		return descriptors;
 	}
 
-	void RenderManager::SetupBuffers(const render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable)
+	void RenderManager::SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
@@ -722,7 +688,7 @@ namespace manager
 		if (!mesh.Material)
 		{
 			LOG("Couldn't register mesh without material!")
-				return;
+			return;
 		}
 
 
@@ -731,10 +697,10 @@ namespace manager
 		auto shader = mesh.Material->CreateShader(*VulkanApp);
 
 
-		SetupBuffers(mesh, shader, renderable);
+		SetupMeshBuffers(mesh, shader, renderable);
 
 
-		auto descriptors = CreateDescriptors(*mesh.Material, shader, meshId);
+		auto descriptors = SetupMeshDescriptors(*mesh.Material, shader, meshId);
 
 		renderable.Descriptors = descriptors;
 
@@ -742,11 +708,15 @@ namespace manager
 		for (auto& d : descriptors)
 			layouts.push_back(d.DescriptorSetLayout);
 
-		if (!CreatePipeline(layouts, renderable.GraphicsPipeline, renderable.GraphicsPipelineLayout, shader))
+		auto pipelineRes = CreateMeshPipeline(shader, layouts);
+		if (!pipelineRes)
 		{
-			LOG("Couldn't create pipeline for new material")
-				return;
+			LOG("Couldn't create graphics pipeline for the mesh!")
+			return;
 		}
+
+		renderable.GraphicsPipelineLayout = pipelineRes->Layout;
+		renderable.GraphicsPipeline = pipelineRes->Handle;
 
 		Renderables.push_back(renderable);
 

@@ -11,6 +11,8 @@
 
 #include "graphics/camera.h"
 
+#include "vulkan/helpers.h"
+
 namespace manager
 {
 	constexpr uint8_t MaxPointLights = 32;
@@ -56,11 +58,10 @@ namespace manager
 	class API RenderManager
 	{
 	private:
-		VkRenderPass RenderPass;
+		VkRenderPass MainRenderPass;
+		std::vector<VkFramebuffer> Framebuffers;
 
 		std::vector<VkCommandBuffer> CommandBuffers;
-
-		std::vector<VkFramebuffer> Framebuffers;
 
 		VkSemaphore ImageAvailableSemaphore;
 		VkSemaphore RenderFinishedSemaphore;
@@ -84,14 +85,14 @@ namespace manager
 
 		vk::VulkanApp* VulkanApp;
 
-		bool CreateRenderPass();
-
-		std::vector<vk::Descriptor> CreateDescriptors(const render::BaseMaterial& material, const vk::Shader& shader,
+		std::vector<vk::Descriptor> SetupMeshDescriptors(const render::BaseMaterial& material, const vk::Shader& shader,
 													  const size_t meshId);
-		void SetupBuffers(const render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);
+		void SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);
 
-		bool CreatePipeline(const std::vector<VkDescriptorSetLayout>& layouts,
-							VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, vk::Shader& shader);
+		std::optional<vk::Pipeline> CreateMeshPipeline(vk::Shader& shader,
+															const std::vector<VkDescriptorSetLayout>& layouts);
+
+		bool SetupRenderPassases();
 
 		void UpdateGlobalUBO();
 	public:

@@ -5,13 +5,16 @@
 #include "vulkan/shader.h"
 #include "vulkan/buffer.h"
 #include "vulkan/ubo.h"
+#include "vulkan/helpers.h"
 
-#include "rendering/renderable.h"
 #include "rendering/light.h"
+#include "rendering/material.h"
+#include "rendering/mesh.h"
 
 #include "graphics/camera.h"
+#include "graphics/texture.h"
 
-#include "vulkan/helpers.h"
+#include "managers/asset_manager.h"
 
 namespace manager
 {

@@ -35,7 +35,6 @@ set(SOURCE_FILES
     "src/vulkan/shader.h"
     "src/vulkan/shader.cpp"
     "src/debug/logger.h"
-    "src/rendering/renderable.h"
     "src/rendering/mesh.h"
     "src/rendering/material.h"
     "src/managers/scene_manager.h"

@@ -34,7 +34,7 @@ namespace manager
 		inline void Register(render::Mesh& mesh)
 		{
 			RegisteredMeshes.push_back(mesh);
-			RM->RegisterMesh(mesh, RegisteredMeshes.size() - 1);
+			RM->RegisterMesh(mesh);
 		}
 
 		inline void Register(render::PointLight& pl)

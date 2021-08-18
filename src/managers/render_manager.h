@@ -55,6 +55,23 @@ namespace manager
 		graphics::Texture GetOrCreate(const render::MaterialTexture& texture);
 	};
 
+
+	struct MeshRenderablesInfos
+	{
+		std::vector<VkPipelineLayout> GraphicsPipelineLayouts;
+		std::vector<VkPipeline> GraphicsPipelines;
+
+		std::vector<std::vector<vk::Buffer>> Buffers;
+
+		std::vector<std::vector<vk::Descriptor>> Descriptors;
+
+		std::vector<vk::UniformBuffer> MeshUBOs;
+		std::vector<vk::UniformBuffer> MaterialUBOs;
+	};
+
+	void CleanupRenderablesInfos(const vk::VulkanApp& app, const MeshRenderablesInfos& infos);
+
+
 	class API RenderManager
 	{
 	private:
@@ -69,30 +86,24 @@ namespace manager
 		VkDescriptorPool DescriptorPool;
 		VkDescriptorPool DescriptorPoolImage;
 
-		std::vector<std::vector<vk::Buffer>> MeshBuffers;
-
-		std::unordered_map<size_t, vk::UniformBuffer> MeshLookupUBOs;
-		std::unordered_map<size_t, vk::UniformBuffer> MaterialLookupUBOs;
-
-		std::vector<render::Renderable> Renderables;
+		vk::UniformBuffer LightUBO;
+		vk::UniformBuffer GlobalUBO;
 
 		graphics::Camera ActiveCamera;
 
-		vk::UniformBuffer LightUBO;
-		vk::UniformBuffer GlobalUBO;
+		MeshRenderablesInfos RenderablesInfos;
 
 		TextureManager TM;
 
 		vk::VulkanApp* VulkanApp;
 
-		std::vector<vk::Descriptor> SetupMeshDescriptors(const render::BaseMaterial& material, const vk::Shader& shader,
-													  const size_t meshId);
-		void SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable);
-
-		std::optional<vk::Pipeline> CreateMeshPipeline(vk::Shader& shader,
-															const std::vector<VkDescriptorSetLayout>& layouts);
-
 		bool SetupRenderPassases();
+
+		std::vector<vk::Buffer> SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader);
+
+		std::vector<vk::Descriptor> SetupMeshDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
+		std::optional<vk::Pipeline> CreateMeshPipeline(vk::Shader& shader,
+													   const std::vector<VkDescriptorSetLayout>& layouts);
 
 		void UpdateGlobalUBO();
 	public:
@@ -106,7 +117,7 @@ namespace manager
 
 		void Update();
 
-		void RegisterMesh(const render::Mesh& mesh, const size_t meshId);
+		void RegisterMesh(const render::Mesh& mesh);
 
 		inline void SetActiveCamera(const graphics::Camera& camera)
 		{

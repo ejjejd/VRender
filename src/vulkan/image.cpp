@@ -63,8 +63,8 @@ namespace vk
 		return true;
 	}
 
-	void Image::Cleanup()
-	{
+	void Image::Cleanup() const
+	{ 
 		vkDestroyImageView(App->Device, ImageView, nullptr);
 
 		vkDestroyImage(App->Device, Image, nullptr);

@@ -31,7 +31,7 @@ namespace vk
 			vkUnmapMemory(VulkanApp->Device, BufferMemory);
 		}
 
-		inline void Cleanup()
+		inline void Cleanup() const
 		{
 			vkDestroyBuffer(VulkanApp->Device, BufferH, nullptr);
 			vkFreeMemory(VulkanApp->Device, BufferMemory, nullptr);

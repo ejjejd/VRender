@@ -43,7 +43,7 @@ namespace vk
 				b.Update(data, elementsCount);
 		}
 
-		inline void Cleanup()
+		inline void Cleanup() const
 		{
 			for (auto& b : Buffers)
 				b.Cleanup();

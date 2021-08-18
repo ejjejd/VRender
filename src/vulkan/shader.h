@@ -55,7 +55,7 @@ namespace vk
 			VulkanApp = &app;
 		}
 
-		inline void Cleanup()
+		inline void Cleanup() const
 		{
 			for (auto m : ShaderModules)
 				vkDestroyShaderModule(VulkanApp->Device, m, nullptr);

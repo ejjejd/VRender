@@ -70,6 +70,33 @@ namespace manager
 		return findRes->second;
 	}
 
+	void CleanupRenderablesInfos(const vk::VulkanApp& app, const MeshRenderablesInfos& infos)
+	{
+		for (const auto& descriptors : infos.Descriptors)
+		{
+			for(const auto& d : descriptors)
+				vk::CleanupDescriptor(app, d);
+		}
+
+		for (const auto& vbos : infos.Buffers)
+		{
+			for (const auto& b : vbos)
+				b.Cleanup();
+		}
+
+		for (const auto& l : infos.GraphicsPipelineLayouts)
+			vkDestroyPipelineLayout(app.Device, l, nullptr);
+
+		for (const auto& p : infos.GraphicsPipelines)
+			vkDestroyPipeline(app.Device, p, nullptr);
+
+		for (const auto& ubo : infos.MeshUBOs)
+			ubo.Cleanup();
+
+		for (const auto& ubo : infos.MaterialUBOs)
+			ubo.Cleanup();
+	}
+
 	bool RenderManager::SetupRenderPassases()
 	{
 		{
@@ -145,7 +172,7 @@ namespace manager
 	}
 	
 	std::optional<vk::Pipeline> RenderManager::CreateMeshPipeline(vk::Shader& shader, 
-																	   const std::vector<VkDescriptorSetLayout>& layouts)
+																  const std::vector<VkDescriptorSetLayout>& layouts)
 	{
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -307,29 +334,15 @@ namespace manager
 
 	void RenderManager::Cleanup()
 	{
-		TM.Cleanup();
+		CleanupRenderablesInfos(*VulkanApp, RenderablesInfos);
 
 		LightUBO.Cleanup();
+		GlobalUBO.Cleanup();
+
+		TM.Cleanup();
 
 		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPool, nullptr);
 		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPoolImage, nullptr);
-
-		for (auto& [id, ubo] : MaterialLookupUBOs)
-			ubo.Cleanup();
-
-		for (auto& [id, ubo] : MeshLookupUBOs)
-			ubo.Cleanup();
-
-		for (auto& vboVector : MeshBuffers)
-		{
-			for (auto& vbo : vboVector)
-				vbo.Cleanup();
-		}
-
-		for (auto& r : Renderables)
-			render::CleanupRenderable(*VulkanApp, r);
-
-		GlobalUBO.Cleanup();
 
 		vkFreeCommandBuffers(VulkanApp->Device, VulkanApp->CommandPoolGQ, CommandBuffers.size(), &CommandBuffers[0]);
 
@@ -346,9 +359,8 @@ namespace manager
 	{
 		for (size_t i = 0; i < meshes.size(); ++i)
 		{
-			auto& findUbo = MeshLookupUBOs.find(i);
-			if (findUbo == MeshLookupUBOs.end())
-				continue;
+			if (i >= RenderablesInfos.GraphicsPipelines.size())
+				break;
 
 			auto& mesh = meshes[i];
 			auto& meshTransform = mesh.get().Transform;
@@ -358,19 +370,18 @@ namespace manager
 			transform = glm::scale(transform, meshTransform.Scale);
 			transform = glm::translate(transform, meshTransform.Translate);
 
-			findUbo->second.Update(&transform, 1);
+			RenderablesInfos.MeshUBOs[i].Update(&transform, 1);
 		}
 
 		for (size_t i = 0; i < meshes.size(); ++i)
 		{
-			auto& findUbo = MaterialLookupUBOs.find(i);
-			if (findUbo == MaterialLookupUBOs.end())
-				continue;
+			if (i >= RenderablesInfos.GraphicsPipelines.size())
+				break;
 
 			auto& mesh = meshes[i];
 			auto& material = mesh.get().Material;
 
-			findUbo->second.Update(material->GetMaterialData(), 1);
+			RenderablesInfos.MaterialUBOs[i].Update(material->GetMaterialData(), 1);
 		}
 
 	}
@@ -438,18 +449,23 @@ namespace manager
 
 			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			for (const auto& r : Renderables)
+			for (size_t j = 0; j < RenderablesInfos.GraphicsPipelines.size(); ++j)
 			{
-				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipeline);
+				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelines[j]);
 
-				std::vector<VkDeviceSize> offsets(r.Buffers.size(), 0);
 
-				vkCmdBindVertexBuffers(CommandBuffers[i], 0, r.Buffers.size(), r.Buffers.data(), offsets.data());
+				std::vector<VkBuffer> buffers;
+				for (const auto& b : RenderablesInfos.Buffers[j])
+					buffers.push_back(b.GetHandler());
+
+				std::vector<VkDeviceSize> offsets(buffers.size(), 0);
+
+				vkCmdBindVertexBuffers(CommandBuffers[i], 0, buffers.size(), buffers.data(), offsets.data());
 
 
 				std::vector<VkDescriptorSet> descriptors;
 
-				for (auto d : r.Descriptors)
+				for (auto d : RenderablesInfos.Descriptors[j])
 				{
 					auto descriptorSets = d.DescriptorSets;
 
@@ -461,10 +477,11 @@ namespace manager
 						TERMINATE_LOG("Invalid descriptor created!")
 				}
 
-				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, r.GraphicsPipelineLayout, 0, descriptors.size(), descriptors.data(), 0, nullptr);
+				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelineLayouts[j], 
+										0, descriptors.size(), descriptors.data(), 0, nullptr);
 
 
-				vkCmdDraw(CommandBuffers[i], r.PositionsCount, 1, 0, 0);
+				vkCmdDraw(CommandBuffers[i], RenderablesInfos.Buffers[j][0].GetElementsCount(), 1, 0, 0);
 			}
 
 			vkCmdEndRenderPass(CommandBuffers[i]);
@@ -510,7 +527,7 @@ namespace manager
 		vkQueueWaitIdle(VulkanApp->PresentQueue);
 	}
 
-	std::vector<vk::Descriptor> RenderManager::SetupMeshDescriptors(const render::BaseMaterial& material, const vk::Shader& shader, const size_t meshId)
+	std::vector<vk::Descriptor> RenderManager::SetupMeshDescriptors(const render::BaseMaterial& material, const vk::Shader& shader)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
@@ -532,22 +549,22 @@ namespace manager
 				switch (d.SetId)
 				{
 				case ShaderDescriptorSetGlobalUBO:
-				{
-					for (auto& b : d.Bindings)
 					{
-						if (b.BindId == ShaderDescriptorBindCameraUBO)
-							globalUboDescriptor.LinkUBO(GlobalUBO, ShaderDescriptorBindCameraUBO);
-					}
-				} break;
+						for (auto& b : d.Bindings)
+						{
+							if (b.BindId == ShaderDescriptorBindCameraUBO)
+								globalUboDescriptor.LinkUBO(GlobalUBO, ShaderDescriptorBindCameraUBO);
+						}
+					} break;
 				case ShaderDescriptorSetMeshUBO:
-				{
-					vk::UniformBuffer meshUBO;
-					meshUBO.Setup(*VulkanApp, vk::UboType::Dynamic, sizeof(MeshUBO), 1);
+					{
+						vk::UniformBuffer meshUBO;
+						meshUBO.Setup(*VulkanApp, vk::UboType::Dynamic, sizeof(MeshUBO), 1);
 
-					meshUboDescriptor.LinkUBO(meshUBO, 0);
+						meshUboDescriptor.LinkUBO(meshUBO, 0);
 
-					MeshLookupUBOs[meshId] = meshUBO;
-				} break;
+						RenderablesInfos.MeshUBOs.push_back(meshUBO);
+					} break;
 				}
 			}
 		}
@@ -562,30 +579,30 @@ namespace manager
 				switch (d.SetId)
 				{
 				case ShaderDescriptorSetGlobalUBO:
-				{
-					for (auto& b : d.Bindings)
 					{
-						if (b.BindId == ShaderDescriptorBindLightUBO)
-							globalUboDescriptor.LinkUBO(LightUBO, ShaderDescriptorBindLightUBO);
-					}
-				} break;
+						for (auto& b : d.Bindings)
+						{
+							if (b.BindId == ShaderDescriptorBindLightUBO)
+								globalUboDescriptor.LinkUBO(LightUBO, ShaderDescriptorBindLightUBO);
+						}
+					} break;
 				case ShaderDescriptorSetMaterialUBO:
-				{
-					vk::UniformBuffer materialUBO;
-					materialUBO.Setup(*VulkanApp, vk::UboType::Dynamic, material.GetMaterialInfoStride(), 1);
-
-					materialUboDescriptor.LinkUBO(materialUBO, 0);
-
-					MaterialLookupUBOs[meshId] = materialUBO;
-				} break;
-				case ShaderDescriptorSetMaterialTextures:
-				{
-					for (auto& b : d.Bindings)
 					{
-						auto texture = TM.GetOrCreate(material.GetMaterialTexturesIds()[b.BindId]);
-						materialTexturesDescriptor.LinkTexture(texture, b.BindId);
-					}
-				} break;
+						vk::UniformBuffer materialUBO;
+						materialUBO.Setup(*VulkanApp, vk::UboType::Dynamic, material.GetMaterialInfoStride(), 1);
+
+						materialUboDescriptor.LinkUBO(materialUBO, 0);
+
+						RenderablesInfos.MaterialUBOs.push_back(materialUBO);
+					} break;
+				case ShaderDescriptorSetMaterialTextures:
+					{
+						for (auto& b : d.Bindings)
+						{
+							auto texture = TM.GetOrCreate(material.GetMaterialTexturesIds()[b.BindId]);
+							materialTexturesDescriptor.LinkTexture(texture, b.BindId);
+						}
+					} break;
 				}
 			}
 		}
@@ -604,13 +621,13 @@ namespace manager
 		return descriptors;
 	}
 
-	void RenderManager::SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader, render::Renderable& renderable)
+	std::vector<vk::Buffer> RenderManager::SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
 		auto& findShaderInfo = reflectMap.find(VK_SHADER_STAGE_VERTEX_BIT);
 		if (findShaderInfo == reflectMap.end())
-			return;
+			return {};
 
 		std::vector<vk::Buffer> buffers;
 
@@ -621,69 +638,64 @@ namespace manager
 			switch (i.LocationId)
 			{
 			case ShaderInputPositionLocation:
-			{
-				vk::Buffer positionBuffer;
-				positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
-				positionBuffer.Update((void*)mesh.MeshInfo.Positions.data(), mesh.MeshInfo.Positions.size());
+				{
+					vk::Buffer positionBuffer;
+					positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
+					positionBuffer.Update((void*)mesh.MeshInfo.Positions.data(), mesh.MeshInfo.Positions.size());
 
-				renderable.PositionsCount = positionBuffer.GetElementsCount();
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputPositionLocation, 0, positionBuffer.GetStride());
 
-				shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputPositionLocation, 0, positionBuffer.GetStride());
-
-				buffers.push_back(positionBuffer);
-			} break;
+					buffers.push_back(positionBuffer);
+				} break;
 			case ShaderInputNormalLocation:
-			{
-				vk::Buffer normalBuffer;
-				normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Normals[0]), mesh.MeshInfo.Normals.size());
-				normalBuffer.Update((void*)mesh.MeshInfo.Normals.data(), mesh.MeshInfo.Normals.size());
+				{
+					vk::Buffer normalBuffer;
+					normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Normals[0]), mesh.MeshInfo.Normals.size());
+					normalBuffer.Update((void*)mesh.MeshInfo.Normals.data(), mesh.MeshInfo.Normals.size());
 
-				shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputNormalLocation, 0, normalBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputNormalLocation, 0, normalBuffer.GetStride());
 
-				buffers.push_back(normalBuffer);
-			} break;
+					buffers.push_back(normalBuffer);
+				} break;
 			case ShaderInputUvLocation:
-			{
-				vk::Buffer uvBuffer;
-				uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.UVs[0]), mesh.MeshInfo.UVs.size());
-				uvBuffer.Update((void*)mesh.MeshInfo.UVs.data(), mesh.MeshInfo.UVs.size());
+				{
+					vk::Buffer uvBuffer;
+					uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.UVs[0]), mesh.MeshInfo.UVs.size());
+					uvBuffer.Update((void*)mesh.MeshInfo.UVs.data(), mesh.MeshInfo.UVs.size());
 
-				shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
 
-				buffers.push_back(uvBuffer);
-			} break;
+					buffers.push_back(uvBuffer);
+				} break;
 			case ShaderInputTangentLocation:
-			{
-				vk::Buffer tangentBuffer;
-				tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Tangents[0]), mesh.MeshInfo.Tangents.size());
-				tangentBuffer.Update((void*)mesh.MeshInfo.Tangents.data(), mesh.MeshInfo.Tangents.size());
+				{
+					vk::Buffer tangentBuffer;
+					tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Tangents[0]), mesh.MeshInfo.Tangents.size());
+					tangentBuffer.Update((void*)mesh.MeshInfo.Tangents.data(), mesh.MeshInfo.Tangents.size());
 
-				shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputTangentLocation, 0, tangentBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputTangentLocation, 0, tangentBuffer.GetStride());
 
-				buffers.push_back(tangentBuffer);
-			} break;
+					buffers.push_back(tangentBuffer);
+				} break;
 			case ShaderInputBitangentLocation:
-			{
-				vk::Buffer bitangentBuffer;
-				bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Bitangents[0]), mesh.MeshInfo.Bitangents.size());
-				bitangentBuffer.Update((void*)mesh.MeshInfo.Bitangents.data(), mesh.MeshInfo.Bitangents.size());
+				{
+					vk::Buffer bitangentBuffer;
+					bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Bitangents[0]), mesh.MeshInfo.Bitangents.size());
+					bitangentBuffer.Update((void*)mesh.MeshInfo.Bitangents.data(), mesh.MeshInfo.Bitangents.size());
 
-				shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputBitangentLocation, 0, bitangentBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputBitangentLocation, 0, bitangentBuffer.GetStride());
 
-				buffers.push_back(bitangentBuffer);
-			} break;
+					buffers.push_back(bitangentBuffer);
+				} break;
 			}
 
 			++bindId;
 		}
 
-		for (const auto& vbo : buffers)
-			renderable.Buffers.push_back(vbo.GetHandler());
-
-		MeshBuffers.push_back(buffers);
+		return buffers;
 	}
 
-	void RenderManager::RegisterMesh(const render::Mesh& mesh, const size_t meshId)
+	void RenderManager::RegisterMesh(const render::Mesh& mesh)
 	{
 		if (!mesh.Material)
 		{
@@ -692,17 +704,11 @@ namespace manager
 		}
 
 
-		render::Renderable renderable;
-
 		auto shader = mesh.Material->CreateShader(*VulkanApp);
 
+		auto buffers = SetupMeshBuffers(mesh, shader);
 
-		SetupMeshBuffers(mesh, shader, renderable);
-
-
-		auto descriptors = SetupMeshDescriptors(*mesh.Material, shader, meshId);
-
-		renderable.Descriptors = descriptors;
+		auto descriptors = SetupMeshDescriptors(*mesh.Material, shader);
 
 		std::vector<VkDescriptorSetLayout> layouts;
 		for (auto& d : descriptors)
@@ -715,10 +721,11 @@ namespace manager
 			return;
 		}
 
-		renderable.GraphicsPipelineLayout = pipelineRes->Layout;
-		renderable.GraphicsPipeline = pipelineRes->Handle;
 
-		Renderables.push_back(renderable);
+		RenderablesInfos.GraphicsPipelineLayouts.push_back(pipelineRes->Layout);
+		RenderablesInfos.GraphicsPipelines.push_back(pipelineRes->Handle);
+		RenderablesInfos.Buffers.push_back(buffers);
+		RenderablesInfos.Descriptors.push_back(descriptors);
 
 		shader.Cleanup();
 	}

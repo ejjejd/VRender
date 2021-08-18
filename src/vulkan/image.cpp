@@ -5,7 +5,7 @@
 namespace vk
 {
 	bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, 
-		              const VkFormat format, const VkImageUsageFlags usage, 
+		              const VkFormat format, const VkImageUsageFlags usage, const VkImageAspectFlags& viewAspect,
 					  const uint16_t width, const uint16_t height)
 	{
 		App = &app;
@@ -51,7 +51,7 @@ namespace vk
 		viewCreateInfo.image = Image;
 		viewCreateInfo.viewType = viewType;
 		viewCreateInfo.format = format;
-		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.aspectMask = viewAspect;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
 		viewCreateInfo.subresourceRange.levelCount = 1;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;

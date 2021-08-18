@@ -5,6 +5,7 @@
 #include "vulkan/shader.h"
 #include "vulkan/buffer.h"
 #include "vulkan/ubo.h"
+#include "vulkan/texture.h"
 #include "vulkan/helpers.h"
 
 #include "rendering/light.h"
@@ -12,7 +13,6 @@
 #include "rendering/mesh.h"
 
 #include "graphics/camera.h"
-#include "graphics/texture.h"
 
 #include "managers/asset_manager.h"
 
@@ -38,7 +38,7 @@ namespace manager
 	class TextureManager
 	{
 	private:
-		std::unordered_map<asset::AssetId, graphics::Texture> TexturesLookup;
+		std::unordered_map<asset::AssetId, vk::Texture> TexturesLookup;
 
 		vk::VulkanApp* App;
 		AssetManager* AM;
@@ -55,8 +55,31 @@ namespace manager
 				t.Cleanup();
 		}
 
-		graphics::Texture GetOrCreate(const render::MaterialTexture& texture);
+		vk::Texture GetOrCreate(const render::MaterialTexture& texture);
 	};
+
+
+	struct OffscreenRenderable
+	{
+		VkPipelineLayout PipelineLayout;
+		VkPipeline Pipeline;
+
+		vk::Buffer Buffer;
+		vk::Descriptor Descriptor;
+	};
+
+	struct OffscreenPass
+	{
+		VkRenderPass PassHandler;
+		std::vector<VkFramebuffer> Framebuffers;
+
+		vk::Texture ColorTexture;
+		vk::Texture DepthTexture;
+
+		OffscreenRenderable Renderable;
+	};
+
+	void CleanupOffscreenPass(const vk::VulkanApp& app, const OffscreenPass& pass);
 
 
 	struct MeshRenderablesInfos
@@ -78,6 +101,8 @@ namespace manager
 	class API RenderManager
 	{
 	private:
+		OffscreenPass HdrPass;
+
 		VkRenderPass MainRenderPass;
 		std::vector<VkFramebuffer> Framebuffers;
 
@@ -102,11 +127,14 @@ namespace manager
 
 		bool SetupRenderPassases();
 
-		std::vector<vk::Buffer> SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader);
-
-		std::vector<vk::Descriptor> SetupMeshDescriptors(const render::BaseMaterial& material, const vk::Shader& shader);
 		std::optional<vk::Pipeline> CreateMeshPipeline(vk::Shader& shader,
 													   const std::vector<VkDescriptorSetLayout>& layouts);
+		std::optional<vk::Pipeline> CreateMainPipeline(vk::Shader& shader,
+													   const std::vector<VkDescriptorSetLayout>& layouts);
+
+		std::vector<vk::Buffer> SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader);
+		std::vector<vk::Descriptor> SetupMeshDescriptors(const render::BaseMaterial& material, 
+													     const vk::Shader& shader);
 
 		void UpdateGlobalUBO();
 	public:

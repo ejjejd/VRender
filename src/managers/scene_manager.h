@@ -6,7 +6,8 @@
 #include "rendering/light.h"
 
 #include "graphics/camera.h"
-#include "graphics/texture.h"
+
+#include "vulkan/texture.h"
 
 namespace manager
 {

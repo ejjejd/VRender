@@ -10,8 +10,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 set(SOURCE_FILES
     "src/vendors/stb/stb_image.h"
     "src/vendors/stb/stb_image.cpp"
-    "src/graphics/texture.h"
-    "src/graphics/texture.cpp"
+    "src/vulkan/texture.h"
+    "src/vulkan/texture.cpp"
     "src/vulkan/image.h"
     "src/vulkan/image.cpp"
     "src/rendering/light.h"  

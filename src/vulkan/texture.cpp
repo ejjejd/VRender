@@ -3,14 +3,15 @@
 #include "vulkan/buffer.h"
 #include "vulkan/helpers.h"
 
-namespace graphics
+namespace vk
 {
-	bool Texture::Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height, const TextureParams& params)
-	{
+	bool Texture::Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height,
+				        const TextureImageInfo& imageInfo, const TextureParams& params)
+	{ 
 		App = &app;
 
-		if (!Image.Setup(app, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_SRGB,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height))
+		if (!Image.Setup(app, imageInfo.Type, imageInfo.ViewType, imageInfo.Format,
+						 imageInfo.UsageFlags, imageInfo.ViewAspect, width, height))
 		{
 			return false;
 		}
@@ -41,20 +42,18 @@ namespace graphics
 
 	void Texture::Update(void* data)
 	{
-		vk::Buffer buffer;
+		Buffer buffer;
 		buffer.Setup(*App, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 4, Image.GetWidth() * Image.GetHeight());
 
 		buffer.Update(data, Image.GetWidth() * Image.GetHeight());
 
-		vk::TransitionImageLayout(*App, Image.GetHandler(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		vk::CopyBufferToImage(*App, buffer.GetHandler(), Image.GetHandler(), Image.GetWidth(), Image.GetHeight());
-		vk::TransitionImageLayout(*App, Image.GetHandler(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		TransitionImageLayout(*App, Image.GetHandler(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		CopyBufferToImage(*App, buffer.GetHandler(), Image.GetHandler(), Image.GetWidth(), Image.GetHeight());
+		TransitionImageLayout(*App, Image.GetHandler(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		buffer.Cleanup();
 	}
-}
-namespace vk
-{
+
 	void TextureDescriptor::Create(vk::VulkanApp& app, const VkDescriptorPool& descriptorPool)
 	{
 		App = &app;

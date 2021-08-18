@@ -3,19 +3,19 @@
 #include "vulkan/vulkan_app.h"
 #include "vulkan/shader.h"
 #include "managers/asset_manager.h"
-#include "graphics/texture.h"
+#include "vulkan/texture.h"
 
 namespace render
 {
 	struct MaterialTexture
 	{
 		asset::AssetId ImageId;
-		graphics::TextureParams TextureParams;
+		vk::TextureParams TextureParams;
 	};
 
-	inline graphics::TextureParams CreateColorMapTextureParams()
+	inline vk::TextureParams CreateColorMapTextureParams()
 	{
-		graphics::TextureParams params{};
+		vk::TextureParams params{};
 		params.MagFilter = VK_FILTER_LINEAR;
 		params.MinFilter = VK_FILTER_LINEAR;
 		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -24,9 +24,9 @@ namespace render
 		return params;
 	}
 
-	inline graphics::TextureParams CreateInfoMapTextureParams()
+	inline vk::TextureParams CreateInfoMapTextureParams()
 	{
-		graphics::TextureParams params{};
+		vk::TextureParams params{};
 		params.MagFilter = VK_FILTER_NEAREST;
 		params.MinFilter = VK_FILTER_NEAREST;
 		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;

@@ -3,7 +3,7 @@
 #include "vulkan/image.h"
 #include "vulkan/descriptor.h"
 
-namespace graphics
+namespace vk
 {
 	struct TextureParams
 	{
@@ -11,6 +11,15 @@ namespace graphics
 		VkFilter MinFilter;
 		VkSamplerAddressMode AddressModeU;
 		VkSamplerAddressMode AddressModeV;
+	};
+
+	struct TextureImageInfo
+	{
+		VkImageType Type;
+		VkImageViewType ViewType;
+		VkFormat Format;
+		VkImageAspectFlags ViewAspect;
+		VkImageUsageFlags UsageFlags;
 	};
 
 	class Texture
@@ -21,9 +30,10 @@ namespace graphics
 
 		vk::VulkanApp* App;
 	public:
-		bool Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height, const TextureParams& params);
+		bool Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height, 
+				   const TextureImageInfo& imageInfo, const TextureParams& params);
 
-		inline void Cleanup()
+		inline void Cleanup() const
 		{
 			vkDestroySampler(App->Device, Sampler, nullptr);
 
@@ -47,14 +57,11 @@ namespace graphics
 			return info;
 		}
 	};
-}
 
-namespace vk
-{
 	class TextureDescriptor
 	{
 	private:
-		vk::Descriptor DescriptorInfo;
+		Descriptor DescriptorInfo;
 
 		struct
 		{
@@ -62,16 +69,16 @@ namespace vk
 			std::vector<VkDescriptorImageInfo> ImageInfos;
 		} ImageInfos;
 
-		vk::VulkanApp* App;
+		VulkanApp* App;
 	public:
-		void Create(vk::VulkanApp& app, const VkDescriptorPool& descriptorPool);
+		void Create(VulkanApp& app, const VkDescriptorPool& descriptorPool);
 
 		inline void Destroy() const
 		{
 			CleanupDescriptor(*App, DescriptorInfo);
 		}
 
-		inline void LinkTexture(const graphics::Texture& texture, const uint8_t bindId)
+		inline void LinkTexture(const vk::Texture& texture, const uint8_t bindId)
 		{
 			VkDescriptorSetLayoutBinding layoutBinding{};
 			layoutBinding.binding = bindId;
@@ -85,7 +92,7 @@ namespace vk
 			ImageInfos.ImageInfos.push_back(texture.GetInfo());
 		}
 
-		inline vk::Descriptor GetDescriptorInfo() const
+		inline Descriptor GetDescriptorInfo() const
 		{
 			return DescriptorInfo;
 		}

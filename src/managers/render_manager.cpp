@@ -41,24 +41,43 @@ namespace manager
 		int SpotlightsCount;
 	};
 
-	graphics::Texture TextureManager::GetOrCreate(const render::MaterialTexture& texture)
+	void CleanupOffscreenPass(const vk::VulkanApp& app, const OffscreenPass& pass)
+	{
+		for (const auto& fbo : pass.Framebuffers)
+			vkDestroyFramebuffer(app.Device, fbo, nullptr);
+
+		pass.ColorTexture.Cleanup();
+		pass.DepthTexture.Cleanup();
+
+		vkDestroyRenderPass(app.Device, pass.PassHandler, nullptr);
+	}
+
+	vk::Texture TextureManager::GetOrCreate(const render::MaterialTexture& texture)
 	{
 		auto& findRes = TexturesLookup.find(texture.ImageId);
 		if (findRes == TexturesLookup.end())
 		{
-			graphics::Texture t;
+			vk::Texture t;
+
+			vk::TextureImageInfo imageInfo;
+			imageInfo.Type = VK_IMAGE_TYPE_2D;
+			imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+			imageInfo.Format = VK_FORMAT_R8G8B8A8_SRGB;
+			imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT 
+								   | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 			if (!AM->IsImageLoaded(texture.ImageId))
 			{
 				char pixels[] = { -1, -1, -1, -1 };
-				t.Setup(*App, 1, 1, render::CreateInfoMapTextureParams());
+				t.Setup(*App, 1, 1, imageInfo, render::CreateInfoMapTextureParams());
 				t.Update(pixels);
 			}
 			else
 			{
 				auto image = AM->GetImageInfo(texture.ImageId);
 
-				t.Setup(*App, image.Width, image.Height, texture.TextureParams);
+				t.Setup(*App, image.Width, image.Height, imageInfo, texture.TextureParams);
 				t.Update(image.PixelsData.data());
 			}
 
@@ -160,12 +179,138 @@ namespace manager
 				attachments.push_back(VulkanApp->DepthImageView);
 
 				auto fboRes = vk::CreateFramebuffer(*VulkanApp, MainRenderPass, attachments,
-					VulkanApp->SwapChainExtent.width, VulkanApp->SwapChainExtent.height);
+													VulkanApp->SwapChainExtent.width, VulkanApp->SwapChainExtent.height);
 				if (!fboRes)
 					return false;
 
 				Framebuffers[i] = *fboRes;
 			}
+		}
+
+		{
+			vk::TextureParams textureParams;
+			textureParams.MagFilter = VK_FILTER_LINEAR;
+			textureParams.MinFilter = VK_FILTER_LINEAR;
+			textureParams.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			textureParams.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+			vk::TextureImageInfo imageInfo;
+			imageInfo.Type = VK_IMAGE_TYPE_2D;
+			imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+			imageInfo.Format = VulkanApp->SwapChainFormat;
+			imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageInfo.UsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+								   | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+			HdrPass.ColorTexture.Setup(*VulkanApp, VulkanApp->SwapChainExtent.width, VulkanApp->SwapChainExtent.height,
+										imageInfo, textureParams);
+
+			imageInfo.ViewAspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+			imageInfo.Format = VulkanApp->DepthFormat;
+			imageInfo.UsageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+								   | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+			HdrPass.DepthTexture.Setup(*VulkanApp, VulkanApp->SwapChainExtent.width, VulkanApp->SwapChainExtent.height,
+									   imageInfo, textureParams);
+
+			VkAttachmentDescription depthAttachment{};
+			depthAttachment.format = VulkanApp->DepthFormat;
+			depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+			VkAttachmentReference depthAttachmentRef{};
+			depthAttachmentRef.attachment = 1;
+			depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+			VkAttachmentDescription colorAttachment{};
+			colorAttachment.format = VulkanApp->SwapChainFormat;
+			colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+			VkAttachmentReference colorAttachmentRef{};
+			colorAttachmentRef.attachment = 0;
+			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			VkSubpassDescription subpass{};
+			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			subpass.colorAttachmentCount = 1;
+			subpass.pColorAttachments = &colorAttachmentRef;
+			subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+
+			std::vector<VkSubpassDependency> dependencies(2);
+
+			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependencies[0].dstSubpass = 0;
+			dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+			dependencies[1].srcSubpass = 0;
+			dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+			dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+
+			std::vector<VkAttachmentDescription> attachments = { colorAttachment, depthAttachment };
+			std::vector<VkSubpassDescription> subpasses = { subpass };
+
+			auto rpCreateRes = vk::CreateRenderPass(*VulkanApp, attachments, subpasses, dependencies);
+			if (!rpCreateRes)
+				return false;
+			HdrPass.PassHandler = *rpCreateRes;
+
+			for (size_t i = 0; i < VulkanApp->SwapChainImageViews.size(); ++i)
+			{
+				std::vector<VkImageView> attachments;
+				attachments.push_back(HdrPass.ColorTexture.GetImage().GetViewHandler());
+				attachments.push_back(HdrPass.DepthTexture.GetImage().GetViewHandler());
+
+				auto fboRes = vk::CreateFramebuffer(*VulkanApp, HdrPass.PassHandler, attachments,
+													VulkanApp->SwapChainExtent.width, VulkanApp->SwapChainExtent.height);
+				if (!fboRes)
+					return false;
+
+				HdrPass.Framebuffers.push_back(*fboRes);
+			}
+
+			auto& renderable = HdrPass.Renderable;
+
+			vk::TextureDescriptor descriptor;
+			descriptor.LinkTexture(HdrPass.ColorTexture, 0);
+			descriptor.Create(*VulkanApp, DescriptorPoolImage);
+
+			vk::Shader shader;
+			shader.Setup(*VulkanApp);
+
+			shader.AddStage("res/shaders/offscreen/hdr_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+			shader.AddStage("res/shaders/offscreen/hdr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+
+			auto pipeline = CreateMainPipeline(shader, { descriptor.GetDescriptorInfo().DescriptorSetLayout });
+			if (!pipeline)
+				return false;
+
+			renderable.Pipeline = pipeline->Handle;
+			renderable.PipelineLayout = pipeline->Layout;
+			renderable.Buffer = {};
+			renderable.Descriptor = { descriptor.GetDescriptorInfo() };
+
+			shader.Cleanup();
 		}
 
 		return true;
@@ -241,8 +386,85 @@ namespace manager
 		depthState.maxDepthBounds = 1.0f;
 		depthState.stencilTestEnable = VK_FALSE;
 
-		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, MainRenderPass, shader, layouts,
+		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, HdrPass.PassHandler, shader, layouts,
 													  inputAssembly, viewportState, rasterizer, 
+													  multisample, colorBlending, depthState);
+		if (!pipelineRes)
+			return std::nullopt;
+
+		return pipelineRes;
+	}
+	std::optional<vk::Pipeline> RenderManager::CreateMainPipeline(vk::Shader& shader,
+																  const std::vector<VkDescriptorSetLayout>& layouts)
+	{
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+		VkViewport viewport;
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)VulkanApp->SwapChainExtent.width;
+		viewport.height = (float)VulkanApp->SwapChainExtent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = VulkanApp->SwapChainExtent;
+
+		VkPipelineViewportStateCreateInfo viewportState{};
+		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportState.viewportCount = 1;
+		viewportState.pViewports = &viewport;
+		viewportState.scissorCount = 1;
+		viewportState.pScissors = &scissor;
+
+		VkPipelineRasterizationStateCreateInfo rasterizer{};
+		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer.depthClampEnable = VK_FALSE;
+		rasterizer.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.lineWidth = 1.0f;
+		rasterizer.cullMode = VK_CULL_MODE_NONE;
+		rasterizer.depthBiasEnable = VK_FALSE;
+
+		VkPipelineMultisampleStateCreateInfo multisample{};
+		multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisample.sampleShadingEnable = VK_FALSE;
+		multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
+											  | VK_COLOR_COMPONENT_G_BIT
+											  | VK_COLOR_COMPONENT_B_BIT
+											  | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.blendEnable = VK_FALSE;
+
+		VkPipelineColorBlendStateCreateInfo colorBlending{};
+		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlending.logicOpEnable = VK_FALSE;
+		colorBlending.logicOp = VK_LOGIC_OP_COPY;
+		colorBlending.attachmentCount = 1;
+		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.blendConstants[0] = 0.0f;
+		colorBlending.blendConstants[1] = 0.0f;
+		colorBlending.blendConstants[2] = 0.0f;
+		colorBlending.blendConstants[3] = 0.0f;
+
+		VkPipelineDepthStencilStateCreateInfo depthState{};
+		depthState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthState.depthTestEnable = VK_TRUE;
+		depthState.depthWriteEnable = VK_TRUE;
+		depthState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthState.depthBoundsTestEnable = VK_FALSE;
+		depthState.minDepthBounds = 0.0f;
+		depthState.maxDepthBounds = 1.0f;
+		depthState.stencilTestEnable = VK_FALSE;
+
+		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, MainRenderPass, shader, layouts,
+													  inputAssembly, viewportState, rasterizer,
 													  multisample, colorBlending, depthState);
 		if (!pipelineRes)
 			return std::nullopt;
@@ -263,6 +485,39 @@ namespace manager
 	bool RenderManager::Setup(vk::VulkanApp& app, AssetManager& am)
 	{
 		VulkanApp = &app;
+
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = app.SwapChainImages.size() * 255;
+
+		VkDescriptorPoolCreateInfo poolCreateInfo{};
+		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolCreateInfo.poolSizeCount = 1;
+		poolCreateInfo.pPoolSizes = &poolSize;
+		poolCreateInfo.maxSets = 255;
+
+		if (vkCreateDescriptorPool(VulkanApp->Device, &poolCreateInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
+		{
+			TERMINATE_LOG("Couldn't create descriptor pool!")
+				return false;
+		}
+
+
+		VkDescriptorPoolSize imagePoolSize{};
+		imagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		imagePoolSize.descriptorCount = app.SwapChainImages.size() * 255;
+
+		VkDescriptorPoolCreateInfo imagePoolInfo{};
+		imagePoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		imagePoolInfo.poolSizeCount = 1;
+		imagePoolInfo.pPoolSizes = &imagePoolSize;
+		imagePoolInfo.maxSets = 255;
+
+		if (vkCreateDescriptorPool(VulkanApp->Device, &imagePoolInfo, nullptr, &DescriptorPoolImage) != VK_SUCCESS)
+		{
+			TERMINATE_LOG("Couldn't create descriptor pool!")
+				return false;
+		}
 
 		if (!SetupRenderPassases())
 			return false;
@@ -291,43 +546,9 @@ namespace manager
 
 		//Setup ubo's
 		GlobalUBO.Setup(app, vk::UboType::Dynamic, sizeof(CameraUboInfo), 1);
+		LightUBO.Setup(app, vk::UboType::Dynamic, sizeof(LightDataUBO), 1);
 
 		TM.Setup(app, am);
-
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = Framebuffers.size() * 255;
-
-		VkDescriptorPoolCreateInfo poolCreateInfo{};
-		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolCreateInfo.poolSizeCount = 1;
-		poolCreateInfo.pPoolSizes = &poolSize;
-		poolCreateInfo.maxSets = 255;
-
-		if (vkCreateDescriptorPool(VulkanApp->Device, &poolCreateInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
-		{
-			TERMINATE_LOG("Couldn't create descriptor pool!")
-			return false;
-		}
-
-
-		VkDescriptorPoolSize imagePoolSize{};
-		imagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		imagePoolSize.descriptorCount = Framebuffers.size() * 255;
-
-		VkDescriptorPoolCreateInfo imagePoolInfo{};
-		imagePoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		imagePoolInfo.poolSizeCount = 1;
-		imagePoolInfo.pPoolSizes = &imagePoolSize;
-		imagePoolInfo.maxSets = 255;
-
-		if (vkCreateDescriptorPool(VulkanApp->Device, &imagePoolInfo, nullptr, &DescriptorPoolImage) != VK_SUCCESS)
-		{
-			TERMINATE_LOG("Couldn't create descriptor pool!")
-			return false;
-		}
-
-		LightUBO.Setup(app, vk::UboType::Dynamic, sizeof(LightDataUBO), 1);
 
 		return true;
 	}
@@ -348,6 +569,8 @@ namespace manager
 
 		for (size_t i = 0; i < Framebuffers.size(); i++)
 			vkDestroyFramebuffer(VulkanApp->Device, Framebuffers[i], nullptr);
+
+		CleanupOffscreenPass(*VulkanApp, HdrPass);
 
 		vkDestroyRenderPass(VulkanApp->Device, MainRenderPass, nullptr);
 
@@ -432,8 +655,8 @@ namespace manager
 
 			VkRenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = MainRenderPass;
-			renderPassInfo.framebuffer = Framebuffers[i];
+			renderPassInfo.renderPass = HdrPass.PassHandler;
+			renderPassInfo.framebuffer = HdrPass.Framebuffers[i];
 			renderPassInfo.renderArea.offset = { 0, 0 };
 			renderPassInfo.renderArea.extent = VulkanApp->SwapChainExtent;
 
@@ -483,6 +706,20 @@ namespace manager
 
 				vkCmdDraw(CommandBuffers[i], RenderablesInfos.Buffers[j][0].GetElementsCount(), 1, 0, 0);
 			}
+
+			vkCmdEndRenderPass(CommandBuffers[i]);
+
+			//Render quad
+			renderPassInfo.renderPass = MainRenderPass;
+			renderPassInfo.framebuffer = Framebuffers[i];
+			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, HdrPass.Renderable.Pipeline);
+
+			vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, HdrPass.Renderable.PipelineLayout,
+									0, 1, HdrPass.Renderable.Descriptor.DescriptorSets.data(), 0, nullptr);
+
+			vkCmdDraw(CommandBuffers[i], 6, 1, 0, 0);
 
 			vkCmdEndRenderPass(CommandBuffers[i]);
 

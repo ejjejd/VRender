@@ -2,9 +2,12 @@
 
 layout(location = 0) out vec4 OutputColor;
 
+layout(location = 0) in vec2 UV;
+
 layout(binding = 0) uniform sampler2D Texture;
 
 void main()
 {
-    OutputColor = vec4(1.0f, 0.2f, 0.2f, 1.0f);
+    vec4 color = texture(Texture, UV);
+    OutputColor = vec4(color.xyz, 1.0f);
 }

@@ -43,6 +43,10 @@ namespace manager
 
 	void CleanupOffscreenPass(const vk::VulkanApp& app, const OffscreenPass& pass)
 	{
+		pass.Renderable.Descriptor.Destroy();
+		vkDestroyPipelineLayout(app.Device, pass.Renderable.PipelineLayout, nullptr);
+		vkDestroyPipeline(app.Device, pass.Renderable.Pipeline, nullptr);
+
 		for (const auto& fbo : pass.Framebuffers)
 			vkDestroyFramebuffer(app.Device, fbo, nullptr);
 
@@ -66,6 +70,7 @@ namespace manager
 			imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
 			imageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT 
 								   | VK_IMAGE_USAGE_SAMPLED_BIT;
+			imageInfo.Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			if (!AM->IsImageLoaded(texture.ImageId))
 			{
@@ -201,14 +206,17 @@ namespace manager
 			imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
 			imageInfo.UsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 								   | VK_IMAGE_USAGE_SAMPLED_BIT;
+			imageInfo.Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			HdrPass.ColorTexture.Setup(*VulkanApp, VulkanApp->SwapChainExtent.width, VulkanApp->SwapChainExtent.height,
 										imageInfo, textureParams);
 
 			imageInfo.ViewAspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 			imageInfo.Format = VulkanApp->DepthFormat;
+			imageInfo.ViewAspect = VK_IMAGE_ASPECT_DEPTH_BIT;;
 			imageInfo.UsageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 								   | VK_IMAGE_USAGE_SAMPLED_BIT;
+			imageInfo.Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			HdrPass.DepthTexture.Setup(*VulkanApp, VulkanApp->SwapChainExtent.width, VulkanApp->SwapChainExtent.height,
 									   imageInfo, textureParams);
@@ -235,7 +243,7 @@ namespace manager
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			VkAttachmentReference colorAttachmentRef{};
 			colorAttachmentRef.attachment = 0;
@@ -307,8 +315,7 @@ namespace manager
 
 			renderable.Pipeline = pipeline->Handle;
 			renderable.PipelineLayout = pipeline->Layout;
-			renderable.Buffer = {};
-			renderable.Descriptor = { descriptor.GetDescriptorInfo() };
+			renderable.Descriptor = descriptor;
 
 			shader.Cleanup();
 		}
@@ -709,7 +716,8 @@ namespace manager
 
 			vkCmdEndRenderPass(CommandBuffers[i]);
 
-			//Render quad
+
+			//Render fullscreen quad
 			renderPassInfo.renderPass = MainRenderPass;
 			renderPassInfo.framebuffer = Framebuffers[i];
 			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -717,11 +725,12 @@ namespace manager
 			vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, HdrPass.Renderable.Pipeline);
 
 			vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, HdrPass.Renderable.PipelineLayout,
-									0, 1, HdrPass.Renderable.Descriptor.DescriptorSets.data(), 0, nullptr);
+									0, 1, HdrPass.Renderable.Descriptor.GetDescriptorInfo().DescriptorSets.data(), 0, nullptr);
 
 			vkCmdDraw(CommandBuffers[i], 6, 1, 0, 0);
 
 			vkCmdEndRenderPass(CommandBuffers[i]);
+
 
 			if (vkEndCommandBuffer(CommandBuffers[i]) != VK_SUCCESS)
 				return;

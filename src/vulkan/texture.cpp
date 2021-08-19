@@ -37,6 +37,14 @@ namespace vk
 		if (vkCreateSampler(app.Device, &samplerCreateInfo, nullptr, &Sampler) != VK_SUCCESS)
 			return false;
 
+
+		VkDescriptorImageInfo info{};
+		info.imageLayout = imageInfo.Layout;
+		info.imageView = Image.GetViewHandler();
+		info.sampler = Sampler;
+
+		Info = info;
+
 		return true;
 	}
 
@@ -94,7 +102,7 @@ namespace vk
 			descriptorWrite.dstSet = DescriptorInfo.DescriptorSets[0];
 			descriptorWrite.dstBinding = ImageInfos.LayoutBindInfos[j].binding;
 			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrite.descriptorType = ImageInfos.LayoutBindInfos[j].descriptorType;
 			descriptorWrite.descriptorCount = 1;
 			descriptorWrite.pImageInfo = &ImageInfos.ImageInfos[j];
 

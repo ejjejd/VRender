@@ -64,8 +64,7 @@ namespace manager
 		VkPipelineLayout PipelineLayout;
 		VkPipeline Pipeline;
 
-		vk::Buffer Buffer;
-		vk::Descriptor Descriptor;
+		vk::TextureDescriptor Descriptor;
 	};
 
 	struct OffscreenPass

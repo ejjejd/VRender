@@ -20,6 +20,7 @@ namespace vk
 		VkFormat Format;
 		VkImageAspectFlags ViewAspect;
 		VkImageUsageFlags UsageFlags;
+		VkImageLayout Layout;
 	};
 
 	class Texture
@@ -27,6 +28,8 @@ namespace vk
 	private:
 		vk::Image Image;
 		VkSampler Sampler;
+
+		VkDescriptorImageInfo Info;
 
 		vk::VulkanApp* App;
 	public:
@@ -49,12 +52,7 @@ namespace vk
 
 		inline VkDescriptorImageInfo GetInfo() const
 		{
-			VkDescriptorImageInfo info{};
-			info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			info.imageView = Image.GetViewHandler();
-			info.sampler = Sampler;
-
-			return info;
+			return Info;
 		}
 	};
 

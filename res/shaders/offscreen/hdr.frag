@@ -8,6 +8,11 @@ layout(binding = 0) uniform sampler2D Texture;
 
 void main()
 {
-    vec4 color = texture(Texture, UV);
-    OutputColor = vec4(color.xyz, 1.0f);
+    vec3 color = texture(Texture, UV).xyz;
+
+    //Tone mapping
+    const float exposure = 0.6f;
+    color = vec3(1.0f) - exp(-color * exposure);
+
+    OutputColor = vec4(color, 1.0f);
 }

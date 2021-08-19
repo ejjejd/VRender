@@ -202,7 +202,7 @@ namespace manager
 			vk::TextureImageInfo imageInfo;
 			imageInfo.Type = VK_IMAGE_TYPE_2D;
 			imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
-			imageInfo.Format = VulkanApp->SwapChainFormat;
+			imageInfo.Format = VK_FORMAT_R16G16B16A16_SFLOAT;
 			imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
 			imageInfo.UsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 								   | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -236,7 +236,7 @@ namespace manager
 			depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 			VkAttachmentDescription colorAttachment{};
-			colorAttachment.format = VulkanApp->SwapChainFormat;
+			colorAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 			colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -296,6 +296,7 @@ namespace manager
 
 				HdrPass.Framebuffers.push_back(*fboRes);
 			}
+			
 
 			auto& renderable = HdrPass.Renderable;
 

@@ -8,13 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/rendering/scene_objects.h"
     "src/vendors/stb/stb_image.h"
     "src/vendors/stb/stb_image.cpp"
     "src/vulkan/texture.h"
     "src/vulkan/texture.cpp"
     "src/vulkan/image.h"
     "src/vulkan/image.cpp"
-    "src/rendering/light.h"  
     "src/vulkan/helpers.h"
     "src/vulkan/helpers.cpp"
     "src/vendors/spirv/spirv_reflect.h"
@@ -35,7 +35,6 @@ set(SOURCE_FILES
     "src/vulkan/shader.h"
     "src/vulkan/shader.cpp"
     "src/debug/logger.h"
-    "src/rendering/mesh.h"
     "src/rendering/material.h"
     "src/managers/scene_manager.h"
     "src/managers/scene_manager.cpp"

@@ -96,4 +96,36 @@ namespace render
 			return &Params;
 		}
 	};
+
+	class HdrMaterial : public BaseMaterial
+	{
+	public:
+		MaterialTexture HdrTexture = { SIZE_MAX, CreateColorMapTextureParams() };
+
+		inline vk::Shader CreateShader(vk::VulkanApp& app) const override
+		{
+			vk::Shader shader;
+			shader.Setup(app);
+
+			shader.AddStage("res/shaders/other/hdr_map_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+			shader.AddStage("res/shaders/other/hdr_map_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+
+			return shader;
+		}
+
+		inline std::vector<MaterialTexture> GetMaterialTexturesIds() const override
+		{
+			return { HdrTexture };
+		}
+
+		inline  size_t GetMaterialInfoStride() const override
+		{
+			return 0;
+		}
+
+		inline void* GetMaterialData() const override
+		{
+			return nullptr;
+		}
+	};
 }

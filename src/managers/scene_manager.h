@@ -2,8 +2,7 @@
 #include "vrender.h"
 #include "render_manager.h"
 
-#include "rendering/mesh.h"
-#include "rendering/light.h"
+#include "rendering/scene_objects.h"
 
 #include "graphics/camera.h"
 
@@ -14,12 +13,12 @@ namespace manager
 	class SceneManager
 	{
 	private:
-		std::vector<std::reference_wrapper<render::Mesh>> RegisteredMeshes;
+		std::vector<std::reference_wrapper<scene::Mesh>> RegisteredMeshes;
 
 		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
 
-		std::vector<std::reference_wrapper<render::PointLight>> RegisteredPointLights;
-		std::vector<std::reference_wrapper<render::Spotlight>> RegisteredSpotlights;
+		std::vector<std::reference_wrapper<scene::PointLight>> RegisteredPointLights;
+		std::vector<std::reference_wrapper<scene::Spotlight>> RegisteredSpotlights;
 
 		size_t ActiveCameraId = 0;
 
@@ -32,18 +31,18 @@ namespace manager
 			RM = &rm;
 		}
 
-		inline void Register(render::Mesh& mesh)
+		inline void Register(scene::Mesh& mesh)
 		{
 			RegisteredMeshes.push_back(mesh);
 			RM->RegisterMesh(mesh);
 		}
 
-		inline void Register(render::PointLight& pl)
+		inline void Register(scene::PointLight& pl)
 		{
 			RegisteredPointLights.push_back(pl);
 		}
 
-		inline void Register(render::Spotlight& sl)
+		inline void Register(scene::Spotlight& sl)
 		{
 			RegisteredSpotlights.push_back(sl);
 		}

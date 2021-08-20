@@ -157,7 +157,7 @@ namespace manager
 			subpass.colorAttachmentCount = 1;
 			subpass.pColorAttachments = &colorAttachmentRef;
 			subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
+			
 			VkSubpassDependency dependency{};
 			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 			dependency.dstSubpass = 0;
@@ -388,15 +388,27 @@ namespace manager
 		depthState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		depthState.depthTestEnable = VK_TRUE;
 		depthState.depthWriteEnable = VK_TRUE;
-		depthState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthState.depthCompareOp = VK_COMPARE_OP_LESS;
 		depthState.depthBoundsTestEnable = VK_FALSE;
 		depthState.minDepthBounds = 0.0f;
 		depthState.maxDepthBounds = 1.0f;
 		depthState.stencilTestEnable = VK_FALSE;
 
+
+		const uint8_t dynamicStatesCount = 1;
+		const VkDynamicState pipelineStates[dynamicStatesCount] =
+		{
+			VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT
+		};
+
+		VkPipelineDynamicStateCreateInfo dynamicState{};
+		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicState.dynamicStateCount = dynamicStatesCount;
+		dynamicState.pDynamicStates = pipelineStates;
+
 		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, HdrPass.PassHandler, shader, layouts,
 													  inputAssembly, viewportState, rasterizer, 
-													  multisample, colorBlending, depthState);
+													  multisample, colorBlending, depthState, dynamicState);
 		if (!pipelineRes)
 			return std::nullopt;
 
@@ -471,23 +483,16 @@ namespace manager
 		depthState.maxDepthBounds = 1.0f;
 		depthState.stencilTestEnable = VK_FALSE;
 
+		VkPipelineDynamicStateCreateInfo dynamicState{};
+		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+
 		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, MainRenderPass, shader, layouts,
 													  inputAssembly, viewportState, rasterizer,
-													  multisample, colorBlending, depthState);
+													  multisample, colorBlending, depthState, dynamicState);
 		if (!pipelineRes)
 			return std::nullopt;
 
 		return pipelineRes;
-	}
-
-	void RenderManager::UpdateGlobalUBO()
-	{
-		CameraUboInfo ubo;
-		ubo.ToCamera = ActiveCamera.GetViewMatrix();
-		ubo.ToClip = ActiveCamera.GetProjection();
-		ubo.CameraPosition = { ActiveCamera.Position, 1.0f };
-
-		GlobalUBO.Update(&ubo, 1);
 	}
 
 	bool RenderManager::Setup(vk::VulkanApp& app, AssetManager& am)
@@ -586,11 +591,21 @@ namespace manager
 		vkDestroySemaphore(VulkanApp->Device, RenderFinishedSemaphore, nullptr);
 	}
 
-	void RenderManager::UpdateMeshUBO(const std::vector<std::reference_wrapper<render::Mesh>>& meshes)
+	void RenderManager::UpdateGlobalUBO()
+	{
+		CameraUboInfo ubo;
+		ubo.ToCamera = ActiveCamera.GetViewMatrix();
+		ubo.ToClip = ActiveCamera.GetProjection();
+		ubo.CameraPosition = { ActiveCamera.Position, 1.0f };
+
+		GlobalUBO.Update(&ubo, 1);
+	}
+
+	void RenderManager::UpdateMeshUBO(const std::vector<std::reference_wrapper<scene::Mesh>>& meshes)
 	{
 		for (size_t i = 0; i < meshes.size(); ++i)
 		{
-			if (i >= RenderablesInfos.GraphicsPipelines.size())
+			if (i >= RenderablesInfos.MeshUBOs.size())
 				break;
 
 			auto& mesh = meshes[i];
@@ -606,7 +621,7 @@ namespace manager
 
 		for (size_t i = 0; i < meshes.size(); ++i)
 		{
-			if (i >= RenderablesInfos.GraphicsPipelines.size())
+			if (i >= RenderablesInfos.MaterialUBOs.size())
 				break;
 
 			auto& mesh = meshes[i];
@@ -617,8 +632,8 @@ namespace manager
 
 	}
 
-	void RenderManager::UpdateLightUBO(const std::vector<std::reference_wrapper<render::PointLight>>& pointLights,
-									   const std::vector<std::reference_wrapper<render::Spotlight>>& spotlights)
+	void RenderManager::UpdateLightUBO(const std::vector<std::reference_wrapper<scene::PointLight>>& pointLights,
+									   const std::vector<std::reference_wrapper<scene::Spotlight>>& spotlights)
 	{
 		LightDataUBO lightData;
 
@@ -708,9 +723,10 @@ namespace manager
 						TERMINATE_LOG("Invalid descriptor created!")
 				}
 
-				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelineLayouts[j], 
-										0, descriptors.size(), descriptors.data(), 0, nullptr);
+				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelineLayouts[j],
+									    0, descriptors.size(), descriptors.data(), 0, nullptr);
 
+				vk::CmdSetDepthOp(*VulkanApp, CommandBuffers[i], RenderablesInfos.AdditionalInfo[j].DepthCompareOP);
 
 				vkCmdDraw(CommandBuffers[i], RenderablesInfos.Buffers[j][0].GetElementsCount(), 1, 0, 0);
 			}
@@ -726,7 +742,7 @@ namespace manager
 			vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, HdrPass.Renderable.Pipeline);
 
 			vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, HdrPass.Renderable.PipelineLayout,
-									0, 1, HdrPass.Renderable.Descriptor.GetDescriptorInfo().DescriptorSets.data(), 0, nullptr);
+				0, 1, HdrPass.Renderable.Descriptor.GetDescriptorInfo().DescriptorSets.data(), 0, nullptr);
 
 			vkCmdDraw(CommandBuffers[i], 6, 1, 0, 0);
 
@@ -868,7 +884,7 @@ namespace manager
 		return descriptors;
 	}
 
-	std::vector<vk::Buffer> RenderManager::SetupMeshBuffers(const render::Mesh& mesh, vk::Shader& shader)
+	std::vector<vk::Buffer> RenderManager::SetupMeshBuffers(const scene::Mesh& mesh, vk::Shader& shader)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
@@ -942,7 +958,7 @@ namespace manager
 		return buffers;
 	}
 
-	void RenderManager::RegisterMesh(const render::Mesh& mesh)
+	void RenderManager::RegisterMesh(const scene::Mesh& mesh)
 	{
 		if (!mesh.Material)
 		{
@@ -971,6 +987,7 @@ namespace manager
 
 		RenderablesInfos.GraphicsPipelineLayouts.push_back(pipelineRes->Layout);
 		RenderablesInfos.GraphicsPipelines.push_back(pipelineRes->Handle);
+		RenderablesInfos.AdditionalInfo.push_back(mesh.Info);
 		RenderablesInfos.Buffers.push_back(buffers);
 		RenderablesInfos.Descriptors.push_back(descriptors);
 

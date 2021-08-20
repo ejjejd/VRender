@@ -192,7 +192,8 @@ namespace vk
 												   const VkPipelineRasterizationStateCreateInfo& rasterizer,
 												   const VkPipelineMultisampleStateCreateInfo& multisample,
 												   const VkPipelineColorBlendStateCreateInfo& colorBlending,
-												   const VkPipelineDepthStencilStateCreateInfo& depthState)
+												   const VkPipelineDepthStencilStateCreateInfo& depthState,
+												   const VkPipelineDynamicStateCreateInfo& dynamicState)
 	{
 		VkPipelineLayout pipelineLayout;
 
@@ -218,7 +219,7 @@ namespace vk
 		pipelineInfo.pMultisampleState = &multisample;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDepthStencilState = &depthState;
-		pipelineInfo.pDynamicState = nullptr;
+		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = pipelineLayout;
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;

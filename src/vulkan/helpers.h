@@ -48,5 +48,15 @@ namespace vk
 												   const VkPipelineRasterizationStateCreateInfo& rasterizer,
 												   const VkPipelineMultisampleStateCreateInfo& multisample,
 												   const VkPipelineColorBlendStateCreateInfo& colorBlending,
-												   const VkPipelineDepthStencilStateCreateInfo& depthState);
+												   const VkPipelineDepthStencilStateCreateInfo& depthState,
+												   const VkPipelineDynamicStateCreateInfo& dynamicState);
+
+
+	inline void CmdSetDepthOp(const VulkanApp& app, const VkCommandBuffer& cmdBuffer, 
+							  const VkCompareOp value)
+	{
+		auto func = (PFN_vkCmdSetDepthCompareOpEXT)vkGetInstanceProcAddr(app.Instance, "vkCmdSetDepthCompareOpEXT");
+		if (func != nullptr)
+			return func(cmdBuffer, value);
+	}
 }												   

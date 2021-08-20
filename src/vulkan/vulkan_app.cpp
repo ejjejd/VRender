@@ -12,10 +12,15 @@ namespace vk
 #else
 	constexpr bool EnableValidationLayers = true;
 #endif
+	const std::vector<const char*> DesiredInstanceExtensions =
+	{
+		VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
+	};
 
 	const std::vector<const char*> DesiredDeviceExtensions =
 	{
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME
 	};
 
 	const std::vector<const char*> DesiredValidationLayers =
@@ -73,10 +78,11 @@ namespace vk
 			return false;
 
 		std::vector<const char*> desiredExtensions(glfwExtensions, glfwExtensions + extensionsCount);
+		desiredExtensions.insert(desiredExtensions.begin(), DesiredInstanceExtensions.begin(), DesiredInstanceExtensions.end());
 
 		if constexpr (EnableValidationLayers)
 			desiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
+		
 
 		uint32_t availableExtensionsCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionsCount, nullptr);
@@ -175,7 +181,7 @@ namespace vk
 			if (qf.Graphics != -1 && qf.Present != -1)
 				break;
 		}
-
+		
 		return qf;
 	}
 
@@ -286,6 +292,10 @@ namespace vk
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+		VkPhysicalDeviceExtendedDynamicStateFeaturesEXT dynamicState{};
+		dynamicState.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
+		dynamicState.extendedDynamicState = VK_TRUE;
+		
 		VkDeviceCreateInfo deviceCreateInfo{};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
@@ -293,6 +303,7 @@ namespace vk
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 		deviceCreateInfo.ppEnabledExtensionNames = DesiredDeviceExtensions.data();
 		deviceCreateInfo.enabledExtensionCount = DesiredDeviceExtensions.size();
+		deviceCreateInfo.pNext = &dynamicState;
 
 		if (vkCreateDevice(app.PhysicalDevice, &deviceCreateInfo, nullptr, &app.Device) != VK_SUCCESS)
 			return false;

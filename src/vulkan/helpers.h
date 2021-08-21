@@ -59,4 +59,12 @@ namespace vk
 		if (func != nullptr)
 			return func(cmdBuffer, value);
 	}
+
+	inline void CmdSetCullMode(const VulkanApp& app, const VkCommandBuffer& cmdBuffer,
+							   const VkCullModeFlags cullmode)
+	{
+		auto func = (PFN_vkCmdSetCullModeEXT)vkGetInstanceProcAddr(app.Instance, "vkCmdSetCullModeEXT");
+		if (func != nullptr)
+			return func(cmdBuffer, cullmode);
+	}
 }												   

@@ -360,7 +360,7 @@ namespace manager
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
-
+		
 		VkPipelineMultisampleStateCreateInfo multisample{};
 		multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		multisample.sampleShadingEnable = VK_FALSE;
@@ -395,10 +395,11 @@ namespace manager
 		depthState.stencilTestEnable = VK_FALSE;
 
 
-		const uint8_t dynamicStatesCount = 1;
+		const uint8_t dynamicStatesCount = 2;
 		const VkDynamicState pipelineStates[dynamicStatesCount] =
 		{
-			VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT
+			VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT,
+			VK_DYNAMIC_STATE_CULL_MODE_EXT
 		};
 
 		VkPipelineDynamicStateCreateInfo dynamicState{};
@@ -726,7 +727,11 @@ namespace manager
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelineLayouts[j],
 									    0, descriptors.size(), descriptors.data(), 0, nullptr);
 
+
+				//Set dynamic states values
 				vk::CmdSetDepthOp(*VulkanApp, CommandBuffers[i], RenderablesInfos.AdditionalInfo[j].DepthCompareOP);
+				vk::CmdSetCullMode(*VulkanApp, CommandBuffers[i], RenderablesInfos.AdditionalInfo[j].CullMode);
+
 
 				vkCmdDraw(CommandBuffers[i], RenderablesInfos.Buffers[j][0].GetElementsCount(), 1, 0, 0);
 			}

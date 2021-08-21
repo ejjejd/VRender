@@ -45,6 +45,8 @@ int main()
 	scene::Mesh meshCubemap;
 	meshCubemap.MeshInfo = cubeMesh;
 	meshCubemap.Material = hdrMaterial;
+	meshCubemap.Info.DepthCompareOP = VK_COMPARE_OP_LESS_OR_EQUAL;
+	meshCubemap.Info.CullMode = VK_CULL_MODE_FRONT_BIT;
 
 	engine.SceneManager.Register(mesh);
 	engine.SceneManager.Register(meshCubemap);

@@ -24,6 +24,7 @@ namespace scene
 	struct RenderInfo
 	{
 		VkCompareOp DepthCompareOP;
+		VkCullModeFlags CullMode;
 	};
 
 	class RenderObject : public SceneObject
@@ -45,6 +46,7 @@ namespace scene
 		inline Mesh()
 		{
 			Info.DepthCompareOP = VK_COMPARE_OP_LESS;
+			Info.CullMode = VK_CULL_MODE_BACK_BIT;
 		}
 
 		asset::MeshInfo MeshInfo;

@@ -35,6 +35,8 @@ set(SOURCE_FILES
     "src/vulkan/shader.h"
     "src/vulkan/shader.cpp"
     "src/debug/logger.h"
+    "src/debug/logger.cpp"
+    "src/debug/debug.h"
     "src/rendering/material.h"
     "src/managers/scene_manager.h"
     "src/managers/scene_manager.cpp"
@@ -90,6 +92,7 @@ target_include_directories(VRender PRIVATE "extern/GLFW/include")
 target_include_directories(VRender PRIVATE "extern/glm")
 target_include_directories(VRender PRIVATE "extern/assimp/include")
 target_include_directories(VRender PRIVATE "extern/SPIRV-Reflect")
+target_include_directories(VRender PRIVATE "extern/plog/include")
 
 target_link_libraries(VRender glfw3)
 target_link_libraries(VRender vulkan-1)

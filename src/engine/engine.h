@@ -9,11 +9,29 @@
 #include "managers/render_manager.h"
 #include "managers/asset_manager.h"
 #include "managers/input_manager.h"
+#include "debug/logger.h"
 
 #include "utils/timer.h"
 
 namespace app
 {
+	class StandardPrinter : public debug::BasePrinter
+	{
+	public:
+		inline void OnReceive(const std::string& message, const debug::LogSeverity severity) override
+		{
+			printf(message.c_str());
+		}
+
+		inline std::string FormatMessage(const std::string& message) override
+		{
+			char buf[1024];
+			sprintf(buf, message.c_str());
+
+			return buf;
+		}
+	};
+
 	struct API Engine
 	{
 		vk::VulkanApp VulkanApp;
@@ -31,6 +49,14 @@ namespace app
 
 		inline void StartupEngine()
 		{
+			if (!debug::GlobalLoggger.Setup("log.csv"))
+			{
+				printf("Couldn't initialize logger, probably problem with output file creation");
+				return;
+			}
+			debug::GlobalLoggger.SetPrinter<StandardPrinter>();
+
+
 			if (!vk::SetupVulkanApp(WindowWidth, WindowHeight, VulkanApp))
 				return;
 
@@ -47,6 +73,8 @@ namespace app
 			RenderManager.Cleanup();
 
 			vk::CleanVulkanApp(VulkanApp);
+
+			debug::GlobalLoggger.Cleanup();
 		}
 
 		inline void Run(const std::function<void()>& userMainLoop)

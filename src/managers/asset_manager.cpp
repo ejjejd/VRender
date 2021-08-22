@@ -17,7 +17,7 @@ namespace manager
 		if (!assimpMesh->HasTangentsAndBitangents())
 		{
 			haveTangentSpace = false;
-			LOG("Can't generate tangent space for mesh: %s", assimpMesh->mName.C_Str())
+			LOGW("Can't generate tangent space for mesh: %s", assimpMesh->mName.C_Str());
 		}
 
 		for (size_t i = 0; i < assimpMesh->mNumFaces; ++i)
@@ -64,7 +64,7 @@ namespace manager
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
-			LOG("Error loading mesh: %s", filepath)
+			LOGE("Error loading mesh: %s", filepath);
 			return -1;
 		}
 
@@ -85,7 +85,7 @@ namespace manager
 
 		if (!pixels)
 		{
-			LOG("Error loading image: %s", filepath)
+			LOGE("Error loading image: %s", filepath);
 			return -1;
 		}
 

@@ -17,11 +17,8 @@ namespace vk
 		bufferCreateInfo.usage = usageFlags;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (vkCreateBuffer(VulkanApp->Device, &bufferCreateInfo, nullptr, &BufferH) != VK_SUCCESS)
-		{
-			LOG("Buffer creation error!");
-			return;
-		}
+		auto res = vkCreateBuffer(VulkanApp->Device, &bufferCreateInfo, nullptr, &BufferH);
+		ASSERT(res == VK_SUCCESS, "Buffer creation error!");
 
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements(VulkanApp->Device, BufferH, &memRequirements);
@@ -33,11 +30,8 @@ namespace vk
 												   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 												   | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-		if (vkAllocateMemory(VulkanApp->Device, &allocInfo, nullptr, &BufferMemory) != VK_SUCCESS)
-		{
-			LOG("Couldn't allocate buffer memory!");
-			return;
-		}
+		res = vkAllocateMemory(VulkanApp->Device, &allocInfo, nullptr, &BufferMemory);
+		ASSERT(res == VK_SUCCESS, "Couldn't allocate buffer memory!");
 
 		vkBindBufferMemory(VulkanApp->Device, BufferH, BufferMemory, 0);
 	}

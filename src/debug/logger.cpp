@@ -19,22 +19,39 @@ namespace debug
 		std::tm* now = std::localtime(&t);
 
 		std::stringstream ss;
-		ss << "[" << now->tm_hour << ":" << now->tm_min << ":" << now->tm_sec << "]";
+		ss << "-[" << now->tm_hour << ":" << now->tm_min << ":" << now->tm_sec << "]";
 		ss << "[" << severityStr << "]" << " ";
 
 		return ss.str();
 	}
 
-	void Logger::Send(const std::string& message, const LogSeverity severity)
+	void Logger::Send(const LogSeverity severity, const char* format, ...)
 	{
+		va_list args;
+		va_start(args, format);
+		auto formatedMessage = Printer->FormatMessage(format, args);
+		va_end(args);
+
+		if (EnableSpamCheck)
+		{
+			uint32_t hash = std::hash<std::string>{}(formatedMessage);
+
+			auto& findRes = MessagesLookup.find(hash);
+			if (findRes == MessagesLookup.end())
+				MessagesLookup[hash] = 0;
+			else
+				return;
+		}
+
+
 		auto infoString = GenerateInfoString(severity);
 
+		auto writeString = infoString + formatedMessage + std::string("\n");
+
 		if (Printer)
-			Printer->OnReceive(infoString + message + std::string("\n"), severity);
-
-
-		auto formatedMessage = Printer->FormatMessage(message);
-
-		OutputFile << infoString + formatedMessage + std::string("\n");
+			Printer->OnReceive(severity, writeString);
+		
+		if (OutputFile.is_open())
+			OutputFile << writeString;
 	}
 }

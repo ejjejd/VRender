@@ -30,7 +30,7 @@ namespace vk
 			if (imageId >= Buffers.size()
 			    || Type == UboType::Static)
 			{
-				LOG("Invalid buffer id passed or you use static type buffer: %d", imageId)
+				LOGE("Invalid buffer id passed or you use static type buffer: %d", imageId);
 				return;
 			}
 

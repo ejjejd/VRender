@@ -1,6 +1,6 @@
 #pragma once
 #include "api.h"
-#include "debug/logger.h"
+#include "debug/debug.h"
 
 #include <iostream>
 #include <functional>

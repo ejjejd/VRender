@@ -21,7 +21,7 @@ namespace vk
 		{
 			if (elementsCount > ElementsCount || !data)
 			{
-				LOG("Wrong data passed to update buffer!");
+				LOGE("Invalid data passed to update buffer!");
 				return;
 			}
 

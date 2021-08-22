@@ -51,7 +51,7 @@ namespace manager
 
 			if (keyId >= InputMangerKeysStateLength)
 			{
-				LOG("You trying to check invalid key!")
+				LOGE("You trying to check invalid key!");
 				return false;
 			}
 
@@ -64,7 +64,7 @@ namespace manager
 
 			if (keyId >= InputMangerKeysStateLength)
 			{
-				LOG("You trying to check invalid key!")
+				LOGE("You trying to check invalid key!");
 				return false;
 			}
 
@@ -78,8 +78,8 @@ namespace manager
 
 			if (keyId >= InputMangerKeysStateLength)
 			{
-				LOG("You trying to check invalid key!")
-					return false;
+				LOGE("You trying to check invalid key!");
+				return false;
 			}
 
 			return KeysState.CurrentState[keyId];
@@ -91,7 +91,7 @@ namespace manager
 
 			if (buttonId >= InputManagerButtonsStateLength)
 			{
-				LOG("You trying to check invalid button!")
+				LOGE("You trying to check invalid button!");
 				return false;
 			}
 
@@ -104,7 +104,7 @@ namespace manager
 
 			if (buttonId >= InputManagerButtonsStateLength)
 			{
-				LOG("You trying to check invalid button!")
+				LOGE("You trying to check invalid button!");
 				return false;
 			}
 
@@ -117,8 +117,8 @@ namespace manager
 
 			if (buttonId >= InputManagerButtonsStateLength)
 			{
-				LOG("You trying to check invalid button!")
-					return false;
+				LOGE("You trying to check invalid button!");
+				return false;
 			}
 			
 			return ButtonsState.CurrentState[buttonId];
@@ -130,7 +130,7 @@ namespace manager
 
 			if (gestureId >= InputManagerGestureStateLength)
 			{
-				LOG("You trying to check invalid gesture!")
+				LOGE("You trying to check invalid gesture!");
 				return false;
 			}
 

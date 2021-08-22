@@ -33,12 +33,30 @@ namespace vk
 												 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 												 void* pUserData)
 	{
-		if (messageSeverity <= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+		if (messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
 			return VK_FALSE;
 
-		LOG("Validation layer: %s\n", pCallbackData->pMessage)
+		switch (messageSeverity)
+		{
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: 
+			{
+				LOGC("Vulkan %s", pCallbackData->pMessage);
+			} break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+			{
+				LOGC("Vulkan %s", pCallbackData->pMessage);
+			} break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+			{
+				LOGW("Vulkan %s", pCallbackData->pMessage);
+			} break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+			{
+				LOGE("Vulkan %s", pCallbackData->pMessage);
+			} break;
+		}
 
-		return VK_FALSE;
+		return VK_TRUE;
 	}
 
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
@@ -386,11 +404,8 @@ namespace vk
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-		if (vkCreateImage(app.Device, &imageCreateInfo, nullptr, &app.DepthImage) != VK_SUCCESS)
-		{
-			LOG("Couldn't allocate depth buffer!")
-			return false;
-		}
+		auto res = vkCreateImage(app.Device, &imageCreateInfo, nullptr, &app.DepthImage);
+		ASSERT(res == VK_SUCCESS, "Couldn't create depth buffer!");
 
 		VkMemoryRequirements imageMemRequirements;
 		vkGetImageMemoryRequirements(app.Device, app.DepthImage, &imageMemRequirements);
@@ -400,11 +415,8 @@ namespace vk
 		allocInfo.allocationSize = imageMemRequirements.size;
 		allocInfo.memoryTypeIndex = FindMemoryType(app, imageMemRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		if (vkAllocateMemory(app.Device, &allocInfo, nullptr, &app.DepthImageMemory) != VK_SUCCESS)
-		{
-			LOG("Couldn't allocate depth buffer!")
-			return false;
-		}
+		res = vkAllocateMemory(app.Device, &allocInfo, nullptr, &app.DepthImageMemory);
+		ASSERT(res == VK_SUCCESS, "Couldn't allocate depth buffer!");
 
 		vkBindImageMemory(app.Device, app.DepthImage, app.DepthImageMemory, 0);
 
@@ -419,11 +431,8 @@ namespace vk
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-		if (vkCreateImageView(app.Device, &imageViewCreateInfo, nullptr, &app.DepthImageView) != VK_SUCCESS)
-		{
-			LOG("Couldn't allocate depth buffer!")
-			return false;
-		}
+		res = vkCreateImageView(app.Device, &imageViewCreateInfo, nullptr, &app.DepthImageView);
+		ASSERT(res == VK_SUCCESS, "Couldn't create depth buffer!");
 	}
 
 	bool CreateSwapChain(VulkanApp& app)

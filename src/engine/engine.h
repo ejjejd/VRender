@@ -18,17 +18,28 @@ namespace app
 	class StandardPrinter : public debug::BasePrinter
 	{
 	public:
-		inline void OnReceive(const std::string& message, const debug::LogSeverity severity) override
+		inline void OnReceive(const debug::LogSeverity severity, const std::string& message) override
 		{
 			printf(message.c_str());
 		}
 
-		inline std::string FormatMessage(const std::string& message) override
+		inline std::string FormatMessage(const char* format, va_list args) override
 		{
-			char buf[1024];
-			sprintf(buf, message.c_str());
+			va_list listCopy;
 
-			return buf;
+			va_copy(listCopy, args);
+			size_t bufLength = vsnprintf(nullptr, 0, format, args);
+
+			if (bufLength < 0)
+				return {};
+
+			va_end(listCopy);
+
+
+			std::vector<char> buf(bufLength + 1);
+			vsnprintf(&buf[0], bufLength + 1, format, args);
+
+			return buf.data();
 		}
 	};
 
@@ -45,7 +56,7 @@ namespace app
 		uint16_t WindowHeight = 720;
 
 		float DeltaTime = 0.0f;
-		uint16_t Fps = 0.0f;
+		float Fps = 0.0f;
 
 		inline void StartupEngine()
 		{
@@ -55,6 +66,7 @@ namespace app
 				return;
 			}
 			debug::GlobalLoggger.SetPrinter<StandardPrinter>();
+			debug::GlobalLoggger.SetSpamSettings(2);
 
 
 			if (!vk::SetupVulkanApp(WindowWidth, WindowHeight, VulkanApp))
@@ -85,6 +97,9 @@ namespace app
 				[&]()
 				{
 					frameTimer.Start();
+
+
+					debug::GlobalLoggger.Update();
 
 
 					InputManager.Update();

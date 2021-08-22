@@ -510,12 +510,8 @@ namespace manager
 		poolCreateInfo.pPoolSizes = &poolSize;
 		poolCreateInfo.maxSets = 255;
 
-		if (vkCreateDescriptorPool(VulkanApp->Device, &poolCreateInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
-		{
-			TERMINATE_LOG("Couldn't create descriptor pool!")
-				return false;
-		}
-
+		auto res = vkCreateDescriptorPool(VulkanApp->Device, &poolCreateInfo, nullptr, &DescriptorPool);
+		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor pool!");
 
 		VkDescriptorPoolSize imagePoolSize{};
 		imagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -527,11 +523,8 @@ namespace manager
 		imagePoolInfo.pPoolSizes = &imagePoolSize;
 		imagePoolInfo.maxSets = 255;
 
-		if (vkCreateDescriptorPool(VulkanApp->Device, &imagePoolInfo, nullptr, &DescriptorPoolImage) != VK_SUCCESS)
-		{
-			TERMINATE_LOG("Couldn't create descriptor pool!")
-				return false;
-		}
+		res = vkCreateDescriptorPool(VulkanApp->Device, &imagePoolInfo, nullptr, &DescriptorPoolImage);
+		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor pool!");
 
 		if (!SetupRenderPassases())
 			return false;
@@ -716,12 +709,12 @@ namespace manager
 				{
 					auto descriptorSets = d.DescriptorSets;
 
+					ASSERT(descriptorSets.size() != 0, "Invalid descriptor created!")
+
 					if (descriptorSets.size() == Framebuffers.size())
 						descriptors.push_back(descriptorSets[i]);
-					else if (descriptorSets.size() == 1)
-						descriptors.push_back(descriptorSets[0]);
 					else
-						TERMINATE_LOG("Invalid descriptor created!")
+						descriptors.push_back(descriptorSets[0]);
 				}
 
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelineLayouts[j],
@@ -967,7 +960,7 @@ namespace manager
 	{
 		if (!mesh.Material)
 		{
-			LOG("Couldn't register mesh without material!")
+			LOGE("Couldn't register mesh without material!");
 			return;
 		}
 
@@ -985,7 +978,7 @@ namespace manager
 		auto pipelineRes = CreateMeshPipeline(shader, layouts);
 		if (!pipelineRes)
 		{
-			LOG("Couldn't create graphics pipeline for the mesh!")
+			LOGE("Couldn't create graphics pipeline for the mesh!");
 			return;
 		}
 

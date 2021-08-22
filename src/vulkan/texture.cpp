@@ -71,11 +71,8 @@ namespace vk
 		layoutCreateInfo.bindingCount = ImageInfos.LayoutBindInfos.size();
 		layoutCreateInfo.pBindings = ImageInfos.LayoutBindInfos.data();
 
-		if (vkCreateDescriptorSetLayout(app.Device, &layoutCreateInfo, nullptr, &DescriptorInfo.DescriptorSetLayout) != VK_SUCCESS)
-		{
-			TERMINATE_LOG("Couldn't create descriptor set layout!");
-			return;
-		}
+		auto res = vkCreateDescriptorSetLayout(app.Device, &layoutCreateInfo, nullptr, &DescriptorInfo.DescriptorSetLayout);
+		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor set layout!");
 
 
 		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(1, DescriptorInfo.DescriptorSetLayout);
@@ -89,11 +86,8 @@ namespace vk
 
 		DescriptorInfo.DescriptorSets.resize(descriptorLayoutsCopies.size());
 
-		if (vkAllocateDescriptorSets(app.Device, &descriptorAllocInfo, &DescriptorInfo.DescriptorSets[0]) != VK_SUCCESS)
-		{
-			TERMINATE_LOG("Couldn't create descriptor set layout!");
-			return;
-		}
+		res = vkAllocateDescriptorSets(app.Device, &descriptorAllocInfo, &DescriptorInfo.DescriptorSets[0]);
+		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor set layout!");
 
 		for (size_t j = 0; j < ImageInfos.ImageInfos.size(); ++j)
 		{

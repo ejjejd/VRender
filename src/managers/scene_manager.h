@@ -57,7 +57,7 @@ namespace manager
 		{
 			if (id >= Cameras.size())
 			{
-				LOG("Invalid camera selected!")
+				LOGE("Invalid camera selected!");
 				return;
 			}
 

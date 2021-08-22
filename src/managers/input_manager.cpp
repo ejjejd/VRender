@@ -40,7 +40,7 @@ namespace manager
 			{
 				if(key >= KeysState.CurrentState.size())
 				{
-					LOG("Invalid keys state length set!")
+					LOGE("Invalid keys state length set!");
 					return;
 				}
 
@@ -54,8 +54,8 @@ namespace manager
 			{
 				if (button >= ButtonsState.CurrentState.size())
 				{
-					LOG("Invalid buttons state length set!")
-						return;
+					LOGE("Invalid buttons state length set!");
+					return;
 				}
 
 				if (action == GLFW_PRESS)

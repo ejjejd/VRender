@@ -50,7 +50,7 @@ namespace manager
 			auto findRes = MeshesLookup.find(id);
 			if (findRes == MeshesLookup.end())
 			{
-				LOG("Error getting mesh under id: %d", id)
+				LOGE("Error getting mesh under id: %d", id);
 				return asset::MeshInfo{};
 			}
 
@@ -62,7 +62,7 @@ namespace manager
 			auto findRes = ImagesLookup.find(id);
 			if (findRes == ImagesLookup.end())
 			{
-				LOG("Error getting image under id: %d", id)
+				LOGE("Error getting image under id: %d", id);
 				return asset::ImageInfo{};
 			}
 

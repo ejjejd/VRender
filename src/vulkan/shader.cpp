@@ -76,7 +76,7 @@ namespace vk
 		auto bytecode = ReadShader(filepath);
 		if(!bytecode)
 		{	
-			LOG("Couldn't read shader %s\n", filepath)
+			LOGE("Couldn't read shader %s\n", filepath);
 			return;
 		}
 
@@ -87,11 +87,8 @@ namespace vk
 
 		ShaderModules.push_back(VkShaderModule{});
 
-		if (vkCreateShaderModule(VulkanApp->Device, &moduleCreateInfo, nullptr, &ShaderModules[ShaderModules.size() - 1]) != VK_SUCCESS)
-		{
-			LOG("Couldn't create shader module %s\n", filepath)
-			return;
-		}
+		auto res = vkCreateShaderModule(VulkanApp->Device, &moduleCreateInfo, nullptr, &ShaderModules[ShaderModules.size() - 1]);
+		ASSERT(res == VK_SUCCESS, "Couldn't create shader module %s\n", filepath);
 
 		VkPipelineShaderStageCreateInfo stageCreateInfo{};
 		stageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -101,8 +98,7 @@ namespace vk
 
 		Stages.push_back(stageCreateInfo);
 
-		if(!UpdateReflectMap(*bytecode, type))
-			LOG("Couldn't reflect shader: %s", filepath)
+		ASSERT(UpdateReflectMap(*bytecode, type), "Couldn't reflect shader: %s", filepath);
 	}
 
 	void Shader::AddInputBuffer(const VkFormat format, const uint8_t bind, const uint8_t location, 

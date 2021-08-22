@@ -9,7 +9,6 @@
 #include "managers/render_manager.h"
 #include "managers/asset_manager.h"
 #include "managers/input_manager.h"
-#include "debug/logger.h"
 
 #include "utils/timer.h"
 
@@ -23,28 +22,14 @@ namespace app
 			printf(message.c_str());
 		}
 
-		inline std::string FormatMessage(const char* format, va_list args) override
-		{
-			va_list listCopy;
-
-			va_copy(listCopy, args);
-			size_t bufLength = vsnprintf(nullptr, 0, format, args);
-
-			if (bufLength < 0)
-				return {};
-
-			va_end(listCopy);
-
-
-			std::vector<char> buf(bufLength + 1);
-			vsnprintf(&buf[0], bufLength + 1, format, args);
-
-			return buf.data();
-		}
+		std::string FormatMessage(const char* format, va_list args) override;
 	};
 
-	struct API Engine
+	class API Engine
 	{
+	private:
+		void PrintPlatformInfo();
+	public:
 		vk::VulkanApp VulkanApp;
 
 		manager::SceneManager SceneManager;
@@ -58,62 +43,10 @@ namespace app
 		float DeltaTime = 0.0f;
 		float Fps = 0.0f;
 
-		inline void StartupEngine()
-		{
-			if (!debug::GlobalLoggger.Setup("log.csv"))
-			{
-				printf("Couldn't initialize logger, probably problem with output file creation");
-				return;
-			}
-			debug::GlobalLoggger.SetPrinter<StandardPrinter>();
-			debug::GlobalLoggger.SetSpamSettings(2);
+		void StartupEngine();
 
+		void CleanupEngine();
 
-			if (!vk::SetupVulkanApp(WindowWidth, WindowHeight, VulkanApp))
-				return;
-
-			if (!RenderManager.Setup(VulkanApp, AssetManager))
-				return;
-
-			SceneManager.Setup(RenderManager);
-
-			InputManager.Setup(VulkanApp);
-		}
-
-		inline void CleanupEngine()
-		{
-			RenderManager.Cleanup();
-
-			vk::CleanVulkanApp(VulkanApp);
-
-			debug::GlobalLoggger.Cleanup();
-		}
-
-		inline void Run(const std::function<void()>& userMainLoop)
-		{
-			utils::Timer frameTimer;
-
-			vk::RunVulkanApp(VulkanApp, 
-				[&]()
-				{
-					frameTimer.Start();
-
-
-					debug::GlobalLoggger.Update();
-
-
-					InputManager.Update();
-
-					userMainLoop();
-
-					SceneManager.Update();
-
-					RenderManager.Update();
-
-
-					Fps = 1000.0f / frameTimer.GetElapsedTime();
-					DeltaTime = 1.0f / Fps;
-				});
-		}
+		void Run(const std::function<void()>& userMainLoop);
 	};
 }

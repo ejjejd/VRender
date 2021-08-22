@@ -43,6 +43,7 @@ set(SOURCE_FILES
     "src/managers/render_manager.h"
     "src/managers/render_manager.cpp"
     "src/engine/engine.h"
+    "src/engine/engine.cpp"
     "src/vrender.h"
     "src/api.h"
     "src/vulkan/vulkan_app.h"

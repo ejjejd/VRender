@@ -48,10 +48,10 @@ namespace vk
 		return true;
 	}
 
-	void Texture::Update(void* data)
+	void Texture::Update(void* data, const size_t pixelStride)
 	{
 		Buffer buffer;
-		buffer.Setup(*App, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 4, Image.GetWidth() * Image.GetHeight());
+		buffer.Setup(*App, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, pixelStride, Image.GetWidth() * Image.GetHeight());
 
 		buffer.Update(data, Image.GetWidth() * Image.GetHeight());
 

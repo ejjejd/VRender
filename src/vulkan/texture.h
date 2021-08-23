@@ -43,7 +43,7 @@ namespace vk
 			Image.Cleanup();
 		}
 
-		void Update(void* data);
+		void Update(void* data, const size_t pixelStride);
 
 		inline vk::Image GetImage() const
 		{

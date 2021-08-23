@@ -23,6 +23,8 @@ namespace asset
 		uint16_t Height;
 
 		std::vector<uint8_t> PixelsData;
+
+		bool Hdr;
 	};
 
 	using AssetId = size_t;

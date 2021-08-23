@@ -81,7 +81,19 @@ namespace manager
 	{
 		int texWidth, texHeight, texChannels;
 		stbi_set_flip_vertically_on_load(1);
-		auto pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+		auto ext = filepath.substr(filepath.find_last_of(".") + 1);
+
+		bool hdr = false;
+		if (ext == "hdr")
+			hdr = true;
+
+
+		void* pixels = nullptr;
+		if (!hdr)
+			pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		else
+			pixels = stbi_loadf(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 		if (!pixels)
 		{
@@ -92,9 +104,10 @@ namespace manager
 		asset::ImageInfo imageInfo;
 		imageInfo.Width = texWidth;
 		imageInfo.Height = texHeight;
+		imageInfo.Hdr = hdr;
 		
-		imageInfo.PixelsData.resize(texWidth * texHeight * 4);
-		memcpy(&imageInfo.PixelsData[0], pixels, texWidth * texHeight * 4);
+		imageInfo.PixelsData.resize(texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
+		memcpy(&imageInfo.PixelsData[0], pixels, texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
 
 		size_t imageId = ImagesLookup.size();
 		ImagesLookup[imageId] = imageInfo;

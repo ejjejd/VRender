@@ -420,6 +420,7 @@ namespace manager
 
 		return pipelineRes;
 	}
+
 	std::optional<vk::Pipeline> RenderManager::CreateMainPipeline(vk::Shader& shader,
 																  const std::vector<VkDescriptorSetLayout>& layouts)
 	{
@@ -504,6 +505,7 @@ namespace manager
 	bool RenderManager::Setup(vk::VulkanApp& app, AssetManager& am)
 	{
 		VulkanApp = &app;
+		AM = &am;
 
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -530,6 +532,20 @@ namespace manager
 
 		res = vkCreateDescriptorPool(VulkanApp->Device, &imagePoolInfo, nullptr, &DescriptorPoolImage);
 		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor pool!");
+
+		VkDescriptorPoolSize imageStoragePoolSize{};
+		imageStoragePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		imageStoragePoolSize.descriptorCount = app.SwapChainImages.size() * 255;
+
+		VkDescriptorPoolCreateInfo imageStoragePoolInfo{};
+		imageStoragePoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		imageStoragePoolInfo.poolSizeCount = 1;
+		imageStoragePoolInfo.pPoolSizes = &imageStoragePoolSize;
+		imageStoragePoolInfo.maxSets = 255;
+
+		res = vkCreateDescriptorPool(VulkanApp->Device, &imageStoragePoolInfo, nullptr, &DescriptorPoolImageStorage);
+		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor pool!");
+
 
 		if (!SetupRenderPassases())
 			return false;
@@ -576,6 +592,7 @@ namespace manager
 
 		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPool, nullptr);
 		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPoolImage, nullptr);
+		vkDestroyDescriptorPool(VulkanApp->Device, DescriptorPoolImageStorage, nullptr);
 
 		vkFreeCommandBuffers(VulkanApp->Device, VulkanApp->CommandPoolGQ, CommandBuffers.size(), &CommandBuffers[0]);
 
@@ -865,7 +882,16 @@ namespace manager
 					{
 						for (auto& b : d.Bindings)
 						{
-							auto texture = TM.GetOrCreate(material.GetMaterialTexturesIds()[b.BindId]);
+							auto texAccess = material.GetMaterialTexturesIds()[b.BindId];
+
+							vk::Texture texture;
+
+							auto findRes = ProceduralTextures.find(texAccess.ImageId);
+							if (findRes == ProceduralTextures.end())
+								texture = TM.GetOrCreate(texAccess);
+							else
+								texture = findRes->second;
+
 							materialTexturesDescriptor.LinkTexture(texture, b.BindId);
 						}
 					} break;
@@ -995,5 +1021,79 @@ namespace manager
 		RenderablesInfos.Descriptors.push_back(descriptors);
 
 		shader.Cleanup();
+	}
+
+	size_t RenderManager::GenerateIrradianceMap(const asset::AssetId id)
+	{
+		vk::TextureImageInfo imageInfo;
+		imageInfo.Type = VK_IMAGE_TYPE_2D;
+		imageInfo.Format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		imageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+
+		vk::TextureParams params;
+		params.MagFilter = VK_FILTER_LINEAR;
+		params.MinFilter = VK_FILTER_LINEAR;
+		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+		vk::Texture map;
+		map.Setup(*VulkanApp, 100, 100, imageInfo, params);
+
+		vk::TextureDescriptor mapDescriptor;
+		mapDescriptor.LinkTexture(map, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
+
+		vk::ComputeShader cs;
+		cs.Setup(*VulkanApp, "res/shaders/compute/generate_im.spv");
+
+		std::vector<VkDescriptorSetLayout> layouts = { mapDescriptor.GetDescriptorInfo().DescriptorSetLayout };
+
+		auto pipelineRes = vk::CreateComputePipeline(*VulkanApp, cs, layouts);
+		ASSERT(pipelineRes, "Couldn't create compute pipeline!");
+
+
+		auto cmd = vk::BeginCommands(*VulkanApp, VulkanApp->CommandPoolCQ);
+
+
+		//TODO wrap it to function
+
+		VkImageMemoryBarrier imageMemoryBarrier = {};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+		imageMemoryBarrier.image = map.GetImage().GetHandler();
+		imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+		imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkCmdPipelineBarrier(cmd,
+							 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+							 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+							 0,
+							 0, nullptr,
+							 0, nullptr,
+							 1, &imageMemoryBarrier);
+
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Handle);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Layout, 0, mapDescriptor.GetDescriptorInfo().DescriptorSets.size(),
+							    mapDescriptor.GetDescriptorInfo().DescriptorSets.data(), 0, 0);
+
+		cs.Dispatch(cmd, 100, 100, 1);
+
+		vk::EndCommands(*VulkanApp, VulkanApp->CommandPoolCQ, cmd, VulkanApp->ComputeQueue);
+
+		cs.Cleanup();
+		mapDescriptor.Destroy();
+		vk::DestoryPipeline(*VulkanApp, *pipelineRes);
+
+		size_t newId = AM->IncrementImageCounter();
+		TM.AddTexture(newId, map);
+
+		return newId;
 	}
 }

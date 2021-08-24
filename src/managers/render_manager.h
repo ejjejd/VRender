@@ -3,6 +3,7 @@
 #include "vulkan/vulkan_app.h"
 
 #include "vulkan/shader.h"
+#include "vulkan/compute_shader.h"
 #include "vulkan/buffer.h"
 #include "vulkan/ubo.h"
 #include "vulkan/texture.h"
@@ -10,8 +11,7 @@
 
 #include "rendering/material.h"
 #include "rendering/scene_objects.h"
-
-#include "graphics/camera.h"
+#include "rendering/camera.h"
 
 #include "managers/asset_manager.h"
 
@@ -55,6 +55,11 @@ namespace manager
 		}
 
 		vk::Texture GetOrCreate(const render::MaterialTexture& texture);
+
+		inline void AddTexture(const asset::AssetId id, const vk::Texture& texture)
+		{
+			TexturesLookup[id] = texture;
+		}
 	};
 
 
@@ -113,17 +118,23 @@ namespace manager
 
 		VkDescriptorPool DescriptorPool;
 		VkDescriptorPool DescriptorPoolImage;
+		VkDescriptorPool DescriptorPoolImageStorage;
+	
+
+		std::unordered_map<asset::AssetId, vk::Texture> ProceduralTextures;
 
 		vk::UniformBuffer LightUBO;
 		vk::UniformBuffer GlobalUBO;
 
-		graphics::Camera ActiveCamera;
+		render::Camera ActiveCamera;
 
 		MeshRenderablesInfos RenderablesInfos;
 
 		TextureManager TM;
 
+		manager::AssetManager* AM;
 		vk::VulkanApp* VulkanApp;
+	
 
 		bool SetupRenderPassases();
 
@@ -150,7 +161,9 @@ namespace manager
 
 		void RegisterMesh(const scene::Mesh& mesh);
 
-		inline void SetActiveCamera(const graphics::Camera& camera)
+		size_t GenerateIrradianceMap(const asset::AssetId id);
+
+		inline void SetActiveCamera(const render::Camera& camera)
 		{
 			ActiveCamera = camera;
 		}

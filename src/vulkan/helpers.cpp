@@ -100,12 +100,12 @@ namespace vk
 		{
 			barrier.srcAccessMask = 0;
 			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			
+
 			srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		}
 		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-			     && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+			&& newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		{
 			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -134,7 +134,7 @@ namespace vk
 		region.imageSubresource.layerCount = 1;
 
 		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { width, height, 1};
+		region.imageExtent = { width, height, 1 };
 
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -142,8 +142,8 @@ namespace vk
 	}
 
 	std::optional<VkRenderPass> CreateRenderPass(const VulkanApp& app, const std::vector<VkAttachmentDescription>& attachments,
-												 const std::vector<VkSubpassDescription>& subpasses,
-												 const std::vector<VkSubpassDependency>& dependencies)
+		const std::vector<VkSubpassDescription>& subpasses,
+		const std::vector<VkSubpassDependency>& dependencies)
 	{
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -163,8 +163,8 @@ namespace vk
 	}
 
 	std::optional<VkFramebuffer> CreateFramebuffer(const VulkanApp& app, const VkRenderPass& renderPass,
-												   const std::vector<VkImageView>& attachments, 
-												   const uint16_t width, const uint16_t height)
+		const std::vector<VkImageView>& attachments,
+		const uint16_t width, const uint16_t height)
 	{
 		VkFramebufferCreateInfo fboInfo{};
 		fboInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -181,6 +181,34 @@ namespace vk
 			return std::nullopt;
 
 		return fbo;
+	}
+
+	std::optional<Pipeline> CreateComputePipeline(const VulkanApp& app,
+												  const vk::ComputeShader& shader,
+												  const std::vector< VkDescriptorSetLayout>& layouts)
+	{
+		VkPipelineLayout pipelineLayout;
+
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = layouts.size();
+		pipelineLayoutInfo.pSetLayouts = layouts.data();
+
+		if (vkCreatePipelineLayout(app.Device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+			return std::nullopt;
+
+
+		VkPipeline pipeline;
+
+		VkComputePipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineInfo.stage = shader.GetStage();
+		pipelineInfo.layout = pipelineLayout;
+
+		if (vkCreateComputePipelines(app.Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
+			return std::nullopt;
+
+		return { { pipelineLayout, pipeline } };
 	}
 
 	std::optional<Pipeline> CreateGraphicsPipeline(const VulkanApp& app,
@@ -223,7 +251,6 @@ namespace vk
 		pipelineInfo.layout = pipelineLayout;
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 		if (vkCreateGraphicsPipelines(app.Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
 			return std::nullopt;

@@ -37,6 +37,9 @@ namespace manager
 	private:
 		std::unordered_map<asset::AssetId, asset::MeshInfo> MeshesLookup;
 		std::unordered_map<asset::AssetId, asset::ImageInfo> ImagesLookup;
+
+		size_t MeshCounter = 0;
+		size_t ImageCounter = 0;
 	public:
 		asset::AssetId LoadMeshInfo(const std::string& filepath);
 		asset::AssetId LoadImageInfo(const std::string& filepath);
@@ -81,6 +84,19 @@ namespace manager
 		{
 			auto findRes = ImagesLookup.find(id);
 			return (findRes != ImagesLookup.end());
+		}
+
+
+		//This functions needed for procedural content
+
+		inline size_t IncerementMeshCounter()
+		{
+			return ++MeshCounter;
+		}
+
+		inline size_t IncrementImageCounter()
+		{
+			return ++ImageCounter;
 		}
 	};
 }

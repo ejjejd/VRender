@@ -69,12 +69,11 @@ namespace manager
 		}
 
 
-		size_t meshId = MeshesLookup.size();
-		MeshesLookup[meshId] = ConvertMesh(scene->mMeshes[0]);
+		MeshesLookup[MeshCounter] = ConvertMesh(scene->mMeshes[0]);
 		
 		assimpImporter.FreeScene();
 
-		return meshId;
+		return MeshCounter++;
 	}
 
 	asset::AssetId AssetManager::LoadImageInfo(const std::string& filepath)
@@ -109,11 +108,10 @@ namespace manager
 		imageInfo.PixelsData.resize(texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
 		memcpy(&imageInfo.PixelsData[0], pixels, texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
 
-		size_t imageId = ImagesLookup.size();
-		ImagesLookup[imageId] = imageInfo;
+		ImagesLookup[ImageCounter] = imageInfo;
 
 		stbi_image_free(pixels);
 
-		return imageId;
+		return ImageCounter++;
 	}
 }

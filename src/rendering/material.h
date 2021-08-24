@@ -59,6 +59,7 @@ namespace render
 		MaterialTexture Roughness = { SIZE_MAX, CreateInfoMapTextureParams() };
 		MaterialTexture Ao = { SIZE_MAX, CreateInfoMapTextureParams() };
 		MaterialTexture Normal = { SIZE_MAX, CreateInfoMapTextureParams() };
+		MaterialTexture IrradianceMap = { SIZE_MAX, CreateInfoMapTextureParams() };
 	};
 
 	class PbrMaterial : public BaseMaterial
@@ -83,7 +84,7 @@ namespace render
 		{
 			return { Textures.Albedo, Textures.Metallic, 
 					 Textures.Roughness, Textures.Ao,
-			         Textures.Normal };
+			         Textures.Normal, Textures.IrradianceMap };
 		}
 
 		inline  size_t GetMaterialInfoStride() const override

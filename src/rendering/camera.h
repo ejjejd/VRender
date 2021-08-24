@@ -1,7 +1,7 @@
 #pragma once
 #include "vrender.h"
 
-namespace graphics
+namespace render
 {
 	enum class CameraMoveDirection
 	{

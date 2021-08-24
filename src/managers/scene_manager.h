@@ -3,8 +3,7 @@
 #include "render_manager.h"
 
 #include "rendering/scene_objects.h"
-
-#include "graphics/camera.h"
+#include "rendering/camera.h"
 
 #include "vulkan/texture.h"
 
@@ -15,7 +14,7 @@ namespace manager
 	private:
 		std::vector<std::reference_wrapper<scene::Mesh>> RegisteredMeshes;
 
-		std::vector<std::reference_wrapper<graphics::Camera>> Cameras;
+		std::vector<std::reference_wrapper<render::Camera>> Cameras;
 
 		std::vector<std::reference_wrapper<scene::PointLight>> RegisteredPointLights;
 		std::vector<std::reference_wrapper<scene::Spotlight>> RegisteredSpotlights;
@@ -47,7 +46,7 @@ namespace manager
 			RegisteredSpotlights.push_back(sl);
 		}
 
-		inline size_t Register(graphics::Camera& camera)
+		inline size_t Register(render::Camera& camera)
 		{
 			Cameras.push_back(camera);
 			return Cameras.size() - 1;

@@ -30,6 +30,7 @@ namespace vk
 		VkSampler Sampler;
 
 		VkDescriptorImageInfo Info;
+		TextureImageInfo ImageInfo;
 
 		vk::VulkanApp* App;
 	public:
@@ -76,14 +77,14 @@ namespace vk
 			CleanupDescriptor(*App, DescriptorInfo);
 		}
 
-		inline void LinkTexture(const vk::Texture& texture, const uint8_t bindId)
+		inline void LinkTexture(const vk::Texture& texture, const uint8_t bindId, const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 		{
 			VkDescriptorSetLayoutBinding layoutBinding{};
 			layoutBinding.binding = bindId;
-			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			layoutBinding.descriptorType = type;
 			layoutBinding.descriptorCount = 1;
 			layoutBinding.pImmutableSamplers = nullptr;
-			layoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+			layoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT;
 
 			ImageInfos.LayoutBindInfos.push_back({ layoutBinding });
 

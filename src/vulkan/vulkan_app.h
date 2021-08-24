@@ -5,8 +5,9 @@ namespace vk
 {
 	struct VulkanQueueFamilies
 	{
-		int32_t Graphics;
-		int32_t Present;
+		int32_t Graphics = -1;
+		int32_t Compute = -1;
+		int32_t Present = -1;
 	};
 
 	struct VulkanApp
@@ -27,9 +28,11 @@ namespace vk
 		VulkanQueueFamilies QueueFamilies;
 
 		VkQueue GraphicsQueue;
+		VkQueue ComputeQueue;
 		VkQueue PresentQueue;
 
 		VkCommandPool CommandPoolGQ;
+		VkCommandPool CommandPoolCQ;
 
 		VkSwapchainKHR SwapChain;
 

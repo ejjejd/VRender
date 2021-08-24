@@ -1,6 +1,6 @@
 #include "camera.h"
 
-namespace graphics
+namespace render
 {
 	void Camera::ComputeBasis()
 	{

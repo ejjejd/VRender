@@ -5,6 +5,7 @@
 #include "vrender.h"
 #include "vulkan_app.h"
 #include "vulkan/shader.h"
+#include "vulkan/compute_shader.h"
 
 namespace vk
 {
@@ -14,6 +15,11 @@ namespace vk
 		VkPipeline Handle;
 	};
 
+	inline void DestoryPipeline(const vk::VulkanApp& app, const Pipeline& pipeline)
+	{
+		vkDestroyPipelineLayout(app.Device, pipeline.Layout, nullptr);
+		vkDestroyPipeline(app.Device, pipeline.Handle, nullptr);
+	}
 
 	std::optional<std::vector<char>> ReadShader(const std::string& filename);
 
@@ -38,6 +44,11 @@ namespace vk
 	std::optional<VkFramebuffer> CreateFramebuffer(const VulkanApp& app, const VkRenderPass& renderPass,
 												   const std::vector<VkImageView>& attachments,
 												   const uint16_t width, const uint16_t height);
+
+	std::optional<Pipeline> CreateComputePipeline(const VulkanApp& app, 
+												  const vk::ComputeShader& shader, 
+												  const std::vector< VkDescriptorSetLayout>& layouts);
+
 
 	std::optional<Pipeline> CreateGraphicsPipeline(const VulkanApp& app,
 												   const VkRenderPass& renderPass,

@@ -33,6 +33,7 @@ int main()
 	material->Textures.Roughness.ImageId = helmetMetalRoughnessId;
 	material->Textures.Ao.ImageId = helmetAoId;
 	material->Textures.Normal.ImageId = helmetNormalId;
+	material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMapId);
 
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
 	hdrMaterial->HdrTexture.ImageId = hdrMapId;
@@ -41,6 +42,7 @@ int main()
 	mesh.MeshInfo = helmetMesh;
 	mesh.Material = material;
 	mesh.Transform.Rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>());
+
 
 	scene::Mesh meshCubemap;
 	meshCubemap.MeshInfo = cubeMesh;
@@ -51,7 +53,7 @@ int main()
 	engine.SceneManager.Register(mesh);
 	engine.SceneManager.Register(meshCubemap);
 	
-	graphics::Camera camera;
+	render::Camera camera;
 	camera.SetupAsPerspective(glm::vec3(0.0f, 0.0f, -5.0f), 45.0f, 1.77f, 5.0f, 0.1f, 1000.0f);
 
 	engine.SceneManager.Register(camera);
@@ -78,17 +80,17 @@ int main()
 			}
 
 			if (engine.InputManager.IsKeyStillPressed(input::Key::W))
-				camera.Move(graphics::CameraMoveDirection::Forward, engine.DeltaTime);
+				camera.Move(render::CameraMoveDirection::Forward, engine.DeltaTime);
 			if (engine.InputManager.IsKeyStillPressed(input::Key::S))
-				camera.Move(graphics::CameraMoveDirection::Backward, engine.DeltaTime);
+				camera.Move(render::CameraMoveDirection::Backward, engine.DeltaTime);
 			if (engine.InputManager.IsKeyStillPressed(input::Key::D))
-				camera.Move(graphics::CameraMoveDirection::Right, engine.DeltaTime);
+				camera.Move(render::CameraMoveDirection::Right, engine.DeltaTime);
 			if (engine.InputManager.IsKeyStillPressed(input::Key::A))
-				camera.Move(graphics::CameraMoveDirection::Left, engine.DeltaTime);
+				camera.Move(render::CameraMoveDirection::Left, engine.DeltaTime);
 			if (engine.InputManager.IsKeyStillPressed(input::Key::E))
-				camera.Move(graphics::CameraMoveDirection::Up, engine.DeltaTime);
+				camera.Move(render::CameraMoveDirection::Up, engine.DeltaTime);
 			if (engine.InputManager.IsKeyStillPressed(input::Key::Q))
-				camera.Move(graphics::CameraMoveDirection::Down, engine.DeltaTime);
+				camera.Move(render::CameraMoveDirection::Down, engine.DeltaTime);
 		});
 
 	engine.CleanupEngine();

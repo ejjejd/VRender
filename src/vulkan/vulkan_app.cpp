@@ -185,19 +185,25 @@ namespace vk
 		std::vector<VkQueueFamilyProperties> properties(queuesCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(pd, &queuesCount, &properties[0]);
 
-		VulkanQueueFamilies qf{ -1 };
+		VulkanQueueFamilies qf;
 		for (size_t i = 0; i < properties.size(); ++i)
 		{
 			if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 				qf.Graphics = i;
+			if (properties[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
+				qf.Compute = i;
 
 			VkBool32 presentSupport = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(pd, i, app.Surface, &presentSupport);
 			if (presentSupport)
 				qf.Present = i;
 
-			if (qf.Graphics != -1 && qf.Present != -1)
+
+			if (qf.Graphics != -1 && qf.Compute != -1
+				&& qf.Present != -1)
+			{
 				break;
+			}
 		}
 		
 		return qf;
@@ -327,17 +333,31 @@ namespace vk
 			return false;
 
 		vkGetDeviceQueue(app.Device, app.QueueFamilies.Graphics, 0, &app.GraphicsQueue);
+		vkGetDeviceQueue(app.Device, app.QueueFamilies.Compute, 0, &app.ComputeQueue);
 		vkGetDeviceQueue(app.Device, app.QueueFamilies.Present, 0, &app.PresentQueue);
 
 		vkGetPhysicalDeviceProperties(app.PhysicalDevice, &app.DeviceProperties);
 
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = app.QueueFamilies.Graphics;
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
-		if (vkCreateCommandPool(app.Device, &poolInfo, nullptr, &app.CommandPoolGQ) != VK_SUCCESS)
-			return false;
+		{
+			VkCommandPoolCreateInfo poolInfo{};
+			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			poolInfo.queueFamilyIndex = app.QueueFamilies.Graphics;
+			poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+			if (vkCreateCommandPool(app.Device, &poolInfo, nullptr, &app.CommandPoolGQ) != VK_SUCCESS)
+				return false;
+		}
+
+		{
+			VkCommandPoolCreateInfo poolInfo{};
+			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			poolInfo.queueFamilyIndex = app.QueueFamilies.Compute;
+			poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+			if (vkCreateCommandPool(app.Device, &poolInfo, nullptr, &app.CommandPoolCQ) != VK_SUCCESS)
+				return false;
+		}
 	}
 
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
@@ -559,6 +579,7 @@ namespace vk
 
 		vkDestroySwapchainKHR(app.Device, app.SwapChain, nullptr);
 
+		vkDestroyCommandPool(app.Device, app.CommandPoolCQ, nullptr);
 		vkDestroyCommandPool(app.Device, app.CommandPoolGQ, nullptr);
 
 		vkDestroyDevice(app.Device, nullptr);

@@ -19,6 +19,7 @@ layout(set = 3, binding = 1) uniform sampler2D MetallicTexture;
 layout(set = 3, binding = 2) uniform sampler2D RoughnessTexture;
 layout(set = 3, binding = 3) uniform sampler2D AoTexture;
 layout(set = 3, binding = 4) uniform sampler2D NormalTexture;
+layout(set = 3, binding = 5) uniform sampler2D IrradianceMap;
 
 struct PointLight
 {

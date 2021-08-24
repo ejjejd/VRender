@@ -44,6 +44,7 @@ namespace vk
 		info.sampler = Sampler;
 
 		Info = info;
+		ImageInfo = imageInfo;
 
 		return true;
 	}
@@ -55,9 +56,9 @@ namespace vk
 
 		buffer.Update(data, Image.GetWidth() * Image.GetHeight());
 
-		TransitionImageLayout(*App, Image.GetHandler(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		TransitionImageLayout(*App, Image.GetHandler(), ImageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		CopyBufferToImage(*App, buffer.GetHandler(), Image.GetHandler(), Image.GetWidth(), Image.GetHeight());
-		TransitionImageLayout(*App, Image.GetHandler(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		TransitionImageLayout(*App, Image.GetHandler(), ImageInfo.Format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		buffer.Cleanup();
 	}

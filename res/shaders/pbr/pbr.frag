@@ -19,7 +19,7 @@ layout(set = 3, binding = 1) uniform sampler2D MetallicTexture;
 layout(set = 3, binding = 2) uniform sampler2D RoughnessTexture;
 layout(set = 3, binding = 3) uniform sampler2D AoTexture;
 layout(set = 3, binding = 4) uniform sampler2D NormalTexture;
-layout(set = 3, binding = 5) uniform sampler2D IrradianceMap;
+layout(set = 3, binding = 5) uniform samplerCube IrradianceMap;
 
 struct PointLight
 {
@@ -160,5 +160,5 @@ void main()
 	vec3 ambient = vec3(0.03f) * Albedo * Ao;
 	vec3 color = ambient + Lo;
 
-	outColor = vec4(color, 1.0f);
+	outColor = vec4(texture(IrradianceMap, vec3(UV, 0.0f)).xyz, 1.0f);
 }

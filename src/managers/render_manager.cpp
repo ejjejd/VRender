@@ -1025,25 +1025,46 @@ namespace manager
 
 	size_t RenderManager::GenerateIrradianceMap(const asset::AssetId id)
 	{
-		vk::TextureImageInfo imageInfo;
-		imageInfo.Type = VK_IMAGE_TYPE_2D;
-		imageInfo.Format = VK_FORMAT_R8G8B8A8_UNORM;
-		imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-		imageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
-
 		vk::TextureParams params;
 		params.MagFilter = VK_FILTER_LINEAR;
 		params.MinFilter = VK_FILTER_LINEAR;
 		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
+		vk::TextureImageInfo hdrImageInfo;
+		hdrImageInfo.Type = VK_IMAGE_TYPE_2D;
+		hdrImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+		hdrImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		hdrImageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT 
+								  | VK_IMAGE_USAGE_SAMPLED_BIT 
+							      | VK_IMAGE_USAGE_STORAGE_BIT;
+		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto hdrData = AM->GetImageInfo(id);
+		vk::Texture hdrTexture;
+		hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
+		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));
+
+		vk::TextureImageInfo imageInfo;
+		imageInfo.Type = VK_IMAGE_TYPE_2D;
+		imageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		imageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		imageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
 		vk::Texture map;
-		map.Setup(*VulkanApp, 100, 100, imageInfo, params);
+		map.Setup(*VulkanApp, 100, 100, imageInfo, params, 1, 6);
+
+		vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader(*VulkanApp, VulkanApp->ComputeQueue, 
+															           VulkanApp->CommandPoolCQ, 
+																	   map.GetImage().GetHandler());
 
 		vk::TextureDescriptor mapDescriptor;
-		mapDescriptor.LinkTexture(map, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.LinkTexture(hdrTexture, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.LinkTexture(map, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 		mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
 
 		vk::ComputeShader cs;
@@ -1057,37 +1078,17 @@ namespace manager
 
 		auto cmd = vk::BeginCommands(*VulkanApp, VulkanApp->CommandPoolCQ);
 
-
-		//TODO wrap it to function
-
-		VkImageMemoryBarrier imageMemoryBarrier = {};
-		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-
-		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-		imageMemoryBarrier.image = map.GetImage().GetHandler();
-		imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		vkCmdPipelineBarrier(cmd,
-							 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-							 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-							 0,
-							 0, nullptr,
-							 0, nullptr,
-							 1, &imageMemoryBarrier);
-
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Handle);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Layout, 0, mapDescriptor.GetDescriptorInfo().DescriptorSets.size(),
-							    mapDescriptor.GetDescriptorInfo().DescriptorSets.data(), 0, 0);
+								mapDescriptor.GetDescriptorInfo().DescriptorSets.data(), 0, 0);
 
 		cs.Dispatch(cmd, 100, 100, 1);
 
 		vk::EndCommands(*VulkanApp, VulkanApp->CommandPoolCQ, cmd, VulkanApp->ComputeQueue);
 
+
 		cs.Cleanup();
+		hdrTexture.Cleanup();
 		mapDescriptor.Destroy();
 		vk::DestoryPipeline(*VulkanApp, *pipelineRes);
 

@@ -22,7 +22,7 @@ namespace asset
 		uint16_t Width;
 		uint16_t Height;
 
-		std::vector<uint8_t> PixelsData;
+		std::vector<float> PixelsData;
 
 		bool Hdr;
 	};

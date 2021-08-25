@@ -4,9 +4,10 @@
 
 namespace vk
 {
-	bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, 
-		              const VkFormat format, const VkImageUsageFlags usage, const VkImageAspectFlags& viewAspect,
-					  const uint16_t width, const uint16_t height)
+	bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, const VkFormat format, 
+					  const VkImageUsageFlags usage, const VkImageAspectFlags& viewAspect,
+					  const uint16_t width, const uint16_t height, const uint16_t depth, const uint16_t layersCount,
+					  const VkFlags flags)
 	{
 		App = &app;
 
@@ -18,16 +19,16 @@ namespace vk
 		createInfo.imageType = type;
 		createInfo.extent.width = width;
 		createInfo.extent.height = height;
-		createInfo.extent.depth = 1;
+		createInfo.extent.depth = depth;
 		createInfo.mipLevels = 1;
-		createInfo.arrayLayers = 1;
+		createInfo.arrayLayers = layersCount;
 		createInfo.format = format;
 		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		createInfo.usage = usage;
 		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		createInfo.flags = 0;
+		createInfo.flags = flags;
 
 		if (vkCreateImage(app.Device, &createInfo, nullptr, &Image) != VK_SUCCESS)
 			return false;
@@ -55,7 +56,7 @@ namespace vk
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
 		viewCreateInfo.subresourceRange.levelCount = 1;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = 1;
+		viewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
 		if (vkCreateImageView(app.Device, &viewCreateInfo, nullptr, &ImageView) != VK_SUCCESS)
 			return false;

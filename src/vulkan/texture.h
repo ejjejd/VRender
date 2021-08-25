@@ -21,6 +21,7 @@ namespace vk
 		VkImageAspectFlags ViewAspect;
 		VkImageUsageFlags UsageFlags;
 		VkImageLayout Layout;
+		VkFlags CreateFlags = 0;
 	};
 
 	class Texture
@@ -35,7 +36,8 @@ namespace vk
 		vk::VulkanApp* App;
 	public:
 		bool Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height, 
-				   const TextureImageInfo& imageInfo, const TextureParams& params);
+				   const TextureImageInfo& imageInfo, const TextureParams& params,
+				   const uint16_t depth = 1, const uint16_t layersCount = 1);
 
 		inline void Cleanup() const
 		{

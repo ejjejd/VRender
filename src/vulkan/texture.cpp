@@ -6,12 +6,14 @@
 namespace vk
 {
 	bool Texture::Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height,
-				        const TextureImageInfo& imageInfo, const TextureParams& params)
+						const TextureImageInfo& imageInfo, const TextureParams& params,
+						const uint16_t depth, const uint16_t layersCount)
 	{ 
 		App = &app;
 
 		if (!Image.Setup(app, imageInfo.Type, imageInfo.ViewType, imageInfo.Format,
-						 imageInfo.UsageFlags, imageInfo.ViewAspect, width, height))
+						 imageInfo.UsageFlags, imageInfo.ViewAspect,
+						 width, height, depth, layersCount, imageInfo.CreateFlags))
 		{
 			return false;
 		}
@@ -56,9 +58,9 @@ namespace vk
 
 		buffer.Update(data, Image.GetWidth() * Image.GetHeight());
 
-		TransitionImageLayout(*App, Image.GetHandler(), ImageInfo.Format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		layout::SetImageLayoutFromUndefinedToTransfer(*App, App->GraphicsQueue, App->CommandPoolGQ, Image.GetHandler());
 		CopyBufferToImage(*App, buffer.GetHandler(), Image.GetHandler(), Image.GetWidth(), Image.GetHeight());
-		TransitionImageLayout(*App, Image.GetHandler(), ImageInfo.Format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		layout::SetImageLayoutFromTransferToGraphicsShader(*App, App->GraphicsQueue, App->CommandPoolGQ, Image.GetHandler());
 
 		buffer.Cleanup();
 	}

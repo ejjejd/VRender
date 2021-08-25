@@ -453,6 +453,8 @@ namespace vk
 
 		res = vkCreateImageView(app.Device, &imageViewCreateInfo, nullptr, &app.DepthImageView);
 		ASSERT(res == VK_SUCCESS, "Couldn't create depth buffer!");
+
+		return true;
 	}
 
 	bool CreateSwapChain(VulkanApp& app)

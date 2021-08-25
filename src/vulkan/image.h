@@ -18,7 +18,9 @@ namespace vk
 	public:
 		bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, 
 						  const VkFormat format, const VkImageUsageFlags usage, const VkImageAspectFlags& viewAspect,
-						  const uint16_t width, const uint16_t height);
+						  const uint16_t width, const uint16_t height, const uint16_t depth, const uint16_t layersCount,
+						  const VkFlags flags);
+
 		void Cleanup() const;
 
 		inline VkImage GetHandler() const

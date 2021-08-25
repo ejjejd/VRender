@@ -53,9 +53,9 @@ layout(set = 2, binding = 0) uniform MaterialUBO
 	float Ao;
 } materialUBO;
 
-vec3 FresnelSchlick(float theta, vec3 F0)
+vec3 FresnelSchlick(float theta, vec3 F0, float roughness)
 {
-	return F0 + (1.0f - F0) * pow(max(1.0f - theta, 0.0f), 5.0f);
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(max(1.0 - theta, 0.0), 5.0);
 }
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -124,6 +124,8 @@ void main()
 	float Roughness = materialUBO.Roughness * texture(RoughnessTexture, UV).g;
 	float Ao = materialUBO.Ao * texture(AoTexture, UV).r;
 
+	vec3 F0 = vec3(0.04f);
+
 	for(int i = 0; i < min(lightUBO.PointLightsCount, MAX_POINT_LIGHTS); ++i)
 	{
 		vec3 lightPos = lightUBO.PointLights[i].Position.xyz;
@@ -136,9 +138,8 @@ void main()
 		float attenuation = 1.0f / (distance * distance);
 		vec3 radiance = lightColor * attenuation;
 
-		vec3 F0 = vec3(0.04f);
 		F0 = mix(F0, Albedo, Metallic);
-		vec3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
+		vec3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0, Roughness);
 
 		float NDF = DistributionGGX(N, H, Roughness);
 		float G = GeometrySmith(N, V, L, Roughness);
@@ -157,8 +158,15 @@ void main()
 		Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 	}
 
-	vec3 ambient = vec3(0.03f) * Albedo * Ao;
+	vec3 kS = FresnelSchlick(max(dot(N, V), 0.0f), F0, Roughness);
+	vec3 kD = vec3(1.0f) - kS;
+	kD *= 1.0f - Metallic;
+
+	vec3 irradiance = texture(IrradianceMap, N).rgb;
+	vec3 diffuse = irradiance * Albedo;
+	vec3 ambient = (kD * diffuse) * Ao;
+
 	vec3 color = ambient + Lo;
 
-	outColor = vec4(texture(IrradianceMap, vec3(UV, 0.0f)).xyz, 1.0f);
+	outColor = vec4(color, 1.0f);
 }

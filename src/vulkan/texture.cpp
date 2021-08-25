@@ -60,7 +60,6 @@ namespace vk
 
 		layout::SetImageLayoutFromUndefinedToTransfer(*App, App->GraphicsQueue, App->CommandPoolGQ, Image.GetHandler());
 		CopyBufferToImage(*App, buffer.GetHandler(), Image.GetHandler(), Image.GetWidth(), Image.GetHeight());
-		layout::SetImageLayoutFromTransferToGraphicsShader(*App, App->GraphicsQueue, App->CommandPoolGQ, Image.GetHandler());
 
 		buffer.Cleanup();
 	}

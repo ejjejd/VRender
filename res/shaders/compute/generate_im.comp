@@ -1,14 +1,86 @@
 #version 460 core
 
-layout(local_size_x = 1) in;
+#define PI 3.14f
 
-layout(binding = 0) uniform sampler2D hdrMap;
-layout(rgba32f, binding = 1) uniform imageCube img;
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(rgba32f, binding = 0) uniform readonly image2D hdrMap;
+layout(rgba32f, binding = 1) uniform writeonly imageCube map;
+
+vec3 CubeCoordToWorld(ivec3 cubeCoord, vec2 cubemapSize)
+{
+    vec2 texCoord = vec2(cubeCoord.xy) / cubemapSize;
+    texCoord = texCoord  * 2.0 - 1.0;
+
+    switch(cubeCoord.z)
+    {
+        case 0: return vec3(1.0, -texCoord.yx);
+        case 1: return vec3(-1.0, -texCoord.y, texCoord.x);
+        case 2: return vec3(texCoord.x, 1.0, texCoord.y);
+        case 3: return vec3(texCoord.x, -1.0, -texCoord.y);
+        case 4: return vec3(texCoord.x, -texCoord.y, 1.0);
+        case 5: return vec3(-texCoord.xy, -1.0);
+    }
+
+    return vec3(0.0);
+}
+
+float max3(vec3 v) 
+{
+  return max(max(v.x, v.y), v.z);
+}
+
+const vec2 invAtan = vec2(0.1591, 0.3183);
+vec2 FetchFromSphericalMap(vec3 v)
+{
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv += 0.5f;
+    return uv;
+}
+
+ivec2 TexCoordToCube(vec3 texCoord, vec2 cubemapSize)
+{
+    vec2 uvCoord = FetchFromSphericalMap(texCoord);
+
+    uvCoord = (uvCoord + 1.0) * 0.5;
+    uvCoord = uvCoord * cubemapSize;
+    uvCoord = clamp(uvCoord, vec2(0.0), cubemapSize - vec2(1.0));
+
+    return ivec2(uvCoord);
+} 
 
 void main()
 {
-    vec4 pixel = vec4(float(gl_GlobalInvocationID.x) / float(gl_NumWorkGroups.x), float(gl_GlobalInvocationID.y) / float(gl_NumWorkGroups.y), 0.0, 1.0);
-    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+    vec2 cubemapSize = imageSize (hdrMap).xy;
 
-    imageStore(img, ivec3(pixelCoord, 0), pixel);
+    ivec3 cubeCoord = ivec3(gl_GlobalInvocationID);
+    vec3 worldPos = CubeCoordToWorld(cubeCoord, cubemapSize);
+
+    vec3 normal = normalize(worldPos);
+  
+    vec3 irradiance = vec3(0.0f);
+
+    vec3 up = vec3(0.0f, 1.0f, 0.0f);
+    vec3 right = normalize(cross(up, normal));
+    up = cross(normal, right);
+
+    float delta = 0.25;
+    float nrSamples = 0.0f;
+    for(float phi = 0.0f; phi < 2.0f * PI; phi += delta)
+    {
+        for(float theta = 0.0f; theta < PI / 2.0f; theta += delta)
+        {
+            vec3 tangentSample = vec3(sin(theta) * cos(phi),  sin(theta) * sin(phi), cos(theta));
+            vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
+
+            ivec2 sampleCoord = TexCoordToCube(sampleVec, cubemapSize);
+
+            irradiance += imageLoad(hdrMap, sampleCoord).rgb * cos(theta) * sin(theta);
+            nrSamples++;
+        }
+    }
+
+    irradiance = PI * irradiance * (1.0 / float(nrSamples));
+    imageStore(map, cubeCoord, vec4(irradiance, 1.0));
 }

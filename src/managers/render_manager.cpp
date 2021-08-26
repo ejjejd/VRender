@@ -78,9 +78,6 @@ namespace manager
 				char pixels[] = { -1, -1, -1, -1 };
 				t.Setup(*App, 1, 1, imageInfo, render::CreateInfoMapTextureParams());
 				t.Update(pixels, 4);
-
-				vk::layout::SetImageLayoutFromTransferToGraphicsShader(*App, App->GraphicsQueue, 
-																	   App->CommandPoolGQ, t.GetImage().GetHandler());
 			}
 			else
 			{
@@ -92,10 +89,11 @@ namespace manager
 
 				t.Setup(*App, image.Width, image.Height, imageInfo, texture.TextureParams);
 				t.Update(image.PixelsData.data(), 4 * (image.Hdr ? sizeof(float) : 1));
-
-				vk::layout::SetImageLayoutFromTransferToGraphicsShader(*App, App->GraphicsQueue,
-																       App->CommandPoolGQ, t.GetImage().GetHandler());
 			}
+
+
+			t.SetLayout(App->GraphicsQueue, App->CommandPoolGQ,
+						vk::layout::SetImageLayoutFromTransferToGraphicsShader);
 
 			TexturesLookup[texture.ImageId] = t;
 
@@ -1052,9 +1050,9 @@ namespace manager
 		hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
 		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));
 
-		vk::layout::SetImageLayoutFromTransferToComputeRead(*VulkanApp, VulkanApp->ComputeQueue,
-															VulkanApp->CommandPoolCQ,
-															hdrTexture.GetImage().GetHandler());
+		hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+							 vk::layout::SetImageLayoutFromTransferToComputeRead);
+
 
 		vk::TextureImageInfo imageInfo;
 		imageInfo.Type = VK_IMAGE_TYPE_2D;
@@ -1066,11 +1064,11 @@ namespace manager
 		imageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 		vk::Texture map;
-		map.Setup(*VulkanApp, 100, 100, imageInfo, params, 1, 6);
+		map.Setup(*VulkanApp, 64, 64, imageInfo, params, 1, 6);
 
-		vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader(*VulkanApp, VulkanApp->ComputeQueue, 
-															           VulkanApp->CommandPoolCQ, 
-																	   map.GetImage().GetHandler());
+		map.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+					  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
+
 
 		vk::TextureDescriptor mapDescriptor;
 		mapDescriptor.LinkTexture(hdrTexture, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);

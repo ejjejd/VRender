@@ -52,7 +52,7 @@ ivec2 TexCoordToCube(vec3 texCoord, vec2 cubemapSize)
 
 void main()
 {
-    vec2 cubemapSize = imageSize (hdrMap).xy;
+    vec2 cubemapSize = imageSize(map).xy;
 
     ivec3 cubeCoord = ivec3(gl_GlobalInvocationID);
     vec3 worldPos = CubeCoordToWorld(cubeCoord, cubemapSize);

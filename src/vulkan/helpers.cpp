@@ -7,7 +7,7 @@ namespace vk
 	namespace layout
 	{
 		void SetImageLayoutFromUndefinedToTransfer(const vk::VulkanApp& app, const VkQueue queue,
-												   const VkCommandPool commandPool, const VkImage& image)
+												   const VkCommandPool commandPool, const VkImage image)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 
@@ -33,7 +33,7 @@ namespace vk
 		}
 
 		void SetImageLayoutFromTransferToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
-										                const VkCommandPool commandPool, const VkImage& image)
+										                const VkCommandPool commandPool, const VkImage image)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 
@@ -59,7 +59,7 @@ namespace vk
 		}
 
 		void SetImageLayoutFromTransferToComputeRead(const vk::VulkanApp& app, const VkQueue queue,
-														const VkCommandPool commandPool, const VkImage& image)
+														const VkCommandPool commandPool, const VkImage image)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 
@@ -85,7 +85,7 @@ namespace vk
 		}
 
 		void SetCubeImageLayoutFromComputeWriteToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
-															    const VkCommandPool commandPool, const VkImage& image)
+															    const VkCommandPool commandPool, const VkImage image)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 

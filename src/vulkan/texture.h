@@ -48,6 +48,13 @@ namespace vk
 
 		void Update(void* data, const size_t pixelStride);
 
+		inline void SetLayout(const VkQueue queue, const VkCommandPool commandPool,
+						      void(*layoutFunc)(const vk::VulkanApp&, const VkQueue, const VkCommandPool, const VkImage))
+		{
+			if (layoutFunc)
+				layoutFunc(*App, queue, commandPool, Image.GetHandler());
+		}
+
 		inline vk::Image GetImage() const
 		{
 			return Image;

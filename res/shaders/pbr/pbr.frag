@@ -53,9 +53,9 @@ layout(set = 2, binding = 0) uniform MaterialUBO
 	float Ao;
 } materialUBO;
 
-vec3 FresnelSchlick(float theta, vec3 F0, float roughness)
+vec3 FresnelSchlick(float theta, vec3 F0)
 {
-	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(max(1.0 - theta, 0.0), 5.0);
+	return F0 + (1.0f - F0) * pow(max(1.0f - theta, 0.0f), 5.0f);
 }
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -109,8 +109,7 @@ void main()
 		b = b - dot(n, b) * n - dot(t, b) * t;
 
 		mat3 tbn = mat3(t, b, n);
-
-		N = (mat3(t, b, n) * texture(NormalTexture, UV).xyz) * 2.0f - 1.0f;
+		N = tbn * normalize(texture(NormalTexture, UV).xyz * 2.0f - 1.0f);
 	}
 	else 
 		N = normalize(Normal);
@@ -125,6 +124,7 @@ void main()
 	float Ao = materialUBO.Ao * texture(AoTexture, UV).r;
 
 	vec3 F0 = vec3(0.04f);
+	F0 = mix(F0, Albedo, Metallic);
 
 	for(int i = 0; i < min(lightUBO.PointLightsCount, MAX_POINT_LIGHTS); ++i)
 	{
@@ -138,34 +138,22 @@ void main()
 		float attenuation = 1.0f / (distance * distance);
 		vec3 radiance = lightColor * attenuation;
 
-		F0 = mix(F0, Albedo, Metallic);
-		vec3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0, Roughness);
-
 		float NDF = DistributionGGX(N, H, Roughness);
 		float G = GeometrySmith(N, V, L, Roughness);
+		vec3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
+
+		vec3 kD = vec3(1.0f) - F;
+		kD *= 1.0f - Metallic;
 
 		vec3 numerator = NDF * G * F;
 		float denom = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f);
-
 		vec3 specular = numerator / max(denom, 0.001f);
-
-		vec3 kS = F;
-		vec3 kD = vec3(1.0f) - kS;
-
-		kD *= 1.0f - Metallic;
 
 		float NdotL = max(dot(N, L), 0.0f);
 		Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 	}
 
-	vec3 kS = FresnelSchlick(max(dot(N, V), 0.0f), F0, Roughness);
-	vec3 kD = vec3(1.0f) - kS;
-	kD *= 1.0f - Metallic;
-
-	vec3 irradiance = texture(IrradianceMap, N).rgb;
-	vec3 diffuse = irradiance * Albedo;
-	vec3 ambient = (kD * diffuse) * Ao;
-
+	vec3 ambient = vec3(0.03f) * Albedo * Ao;
 	vec3 color = ambient + Lo;
 
 	outColor = vec4(color, 1.0f);

@@ -33,7 +33,7 @@ int main()
 	material->Textures.Roughness.ImageId = helmetMetalRoughnessId;
 	material->Textures.Ao.ImageId = helmetAoId;
 	material->Textures.Normal.ImageId = helmetNormalId;
-	material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMapId);
+	//material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMapId);
 
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
 	hdrMaterial->HdrTexture.ImageId = hdrMapId;

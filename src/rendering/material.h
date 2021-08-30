@@ -55,11 +55,11 @@ namespace render
 	struct PbrMaterialTextures
 	{
 		MaterialTexture Albedo = { SIZE_MAX, CreateColorMapTextureParams() };
-		MaterialTexture Metallic = { SIZE_MAX, CreateInfoMapTextureParams() };
-		MaterialTexture Roughness = { SIZE_MAX, CreateInfoMapTextureParams() };
-		MaterialTexture Ao = { SIZE_MAX, CreateInfoMapTextureParams() };
-		MaterialTexture Normal = { SIZE_MAX, CreateInfoMapTextureParams() };
-		MaterialTexture IrradianceMap = { SIZE_MAX, CreateInfoMapTextureParams() };
+		MaterialTexture Metallic = { SIZE_MAX, CreateColorMapTextureParams() };
+		MaterialTexture Roughness = { SIZE_MAX, CreateColorMapTextureParams() };
+		MaterialTexture Ao = { SIZE_MAX, CreateColorMapTextureParams() };
+		MaterialTexture Normal = { SIZE_MAX, CreateColorMapTextureParams() };
+		MaterialTexture IrradianceMap = { SIZE_MAX, CreateColorMapTextureParams() };
 	};
 
 	class PbrMaterial : public BaseMaterial

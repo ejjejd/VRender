@@ -27,11 +27,10 @@ layout(location = 5) out vec3 Bitangent;
 
 void main()
 {
-	FragPos = (meshUbo.Transform * vec4(position, 1.0f)).xyz;
-	Normal = transpose(inverse(mat3(meshUbo.Transform))) * normal;
-	UV = uv;
 	Camera = globalUbo.Camera.xyz;
-
+	FragPos = vec3(meshUbo.Transform * vec4(position, 1.0f));
+	UV = uv;
+	Normal = transpose(inverse(mat3(meshUbo.Transform))) * normal;
 	Tangent = mat3(meshUbo.Transform) * tangent;
 	Bitangent = mat3(meshUbo.Transform) * bitangent;
 

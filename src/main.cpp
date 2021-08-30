@@ -29,10 +29,11 @@ int main()
 
 	auto material = std::make_shared<render::PbrMaterial>();
 	material->Textures.Albedo.ImageId = helmetAlbedoId;
+	material->Textures.Normal.ImageId = helmetNormalId;
 	material->Textures.Metallic.ImageId = helmetMetalRoughnessId;
 	material->Textures.Roughness.ImageId = helmetMetalRoughnessId;
 	material->Textures.Ao.ImageId = helmetAoId;
-	material->Textures.Normal.ImageId = helmetNormalId;
+
 	//material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMapId);
 
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
@@ -41,8 +42,7 @@ int main()
 	scene::Mesh mesh;
 	mesh.MeshInfo = helmetMesh;
 	mesh.Material = material;
-	mesh.Transform.Rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>());
-
+	mesh.Transform.Rotation = { 0.0f, 1.0f, 0.0f, glm::pi<float>() };
 
 	scene::Mesh meshCubemap;
 	meshCubemap.MeshInfo = cubeMesh;
@@ -61,8 +61,8 @@ int main()
 
 
 	scene::PointLight pl;
-	pl.Position = glm::vec3(5.0f, 3.0f, -5.0f);
-	pl.Color = glm::vec3(550.0f);
+	pl.Position = glm::vec3(0.0f, 0.0f, 10.0f);
+	pl.Color = glm::vec3(150.0f);
 
 	engine.SceneManager.Register(pl);
 

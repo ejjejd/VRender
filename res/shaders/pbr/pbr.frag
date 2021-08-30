@@ -113,6 +113,7 @@ void main()
 	}
 	else 
 		N = normalize(Normal);
+		
 
 	vec3 V = normalize(Camera - FragPos);
 

@@ -11,7 +11,7 @@ void main()
     vec3 color = texture(Texture, UV).xyz;
 
     //Tone mapping
-    const float exposure = 0.6f;
+    const float exposure = 1.0f;
     color = vec3(1.0f) - exp(-color * exposure);
 
     OutputColor = vec4(color, 1.0f);

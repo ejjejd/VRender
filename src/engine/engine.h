@@ -37,8 +37,8 @@ namespace app
 		manager::AssetManager AssetManager;
 		manager::InputManager InputManager;
 
-		uint16_t WindowWidth = 1280;
-		uint16_t WindowHeight = 720;
+		uint16_t WindowWidth = 1920;
+		uint16_t WindowHeight = 1080;
 
 		float DeltaTime = 0.0f;
 		float Fps = 0.0f;

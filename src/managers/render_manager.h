@@ -34,6 +34,9 @@ namespace manager
 	constexpr uint8_t ShaderDescriptorBindCameraUBO = 0;
 	constexpr uint8_t ShaderDescriptorBindLightUBO = 1;
 
+	constexpr auto FromHdrToCubemapShader = "res/shaders/compute/generate_cubemap.spv";
+	constexpr auto IrradianceMapComputeShader = "res/shaders/compute/generate_im.spv";
+
 	class TextureManager
 	{
 	private:
@@ -121,8 +124,6 @@ namespace manager
 		VkDescriptorPool DescriptorPoolImageStorage;
 	
 
-		std::unordered_map<asset::AssetId, vk::Texture> ProceduralTextures;
-
 		vk::UniformBuffer LightUBO;
 		vk::UniformBuffer GlobalUBO;
 
@@ -161,12 +162,13 @@ namespace manager
 
 		void RegisterMesh(const scene::Mesh& mesh);
 
-		size_t GenerateIrradianceMap(const asset::AssetId id);
-
 		inline void SetActiveCamera(const render::Camera& camera)
 		{
 			ActiveCamera = camera;
 		}
+
+		size_t GenerateCubemapFromHDR(const asset::AssetId id, const uint16_t resolution = 512);
+		size_t GenerateIrradianceMap(const asset::AssetId id);
 	};
 
 }

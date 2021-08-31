@@ -26,7 +26,6 @@ int main()
 
 	auto hdrMapId = engine.AssetManager.LoadImageInfo("res/textures/hdr/Chiricahua_Plaza/GravelPlaza_REF.hdr");
 
-
 	auto material = std::make_shared<render::PbrMaterial>();
 	material->Textures.Albedo.ImageId = helmetAlbedoId;
 	material->Textures.Normal.ImageId = helmetNormalId;
@@ -37,7 +36,7 @@ int main()
 	//material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMapId);
 
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
-	hdrMaterial->HdrTexture.ImageId = hdrMapId;
+	hdrMaterial->HdrTexture.ImageId = engine.RenderManager.GenerateCubemapFromHDR(hdrMapId, 1024);
 
 	scene::Mesh mesh;
 	mesh.MeshInfo = helmetMesh;
@@ -62,7 +61,7 @@ int main()
 
 	scene::PointLight pl;
 	pl.Position = glm::vec3(0.0f, 0.0f, 10.0f);
-	pl.Color = glm::vec3(150.0f);
+	pl.Color = glm::vec3(250.0f);
 
 	engine.SceneManager.Register(pl);
 

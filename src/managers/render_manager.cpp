@@ -888,13 +888,7 @@ namespace manager
 						{
 							auto texAccess = material.GetMaterialTexturesIds()[b.BindId];
 
-							vk::Texture texture;
-
-							auto findRes = ProceduralTextures.find(texAccess.ImageId);
-							if (findRes == ProceduralTextures.end())
-								texture = TM.GetOrCreate(texAccess);
-							else
-								texture = findRes->second;
+							auto texture = TM.GetOrCreate(texAccess);
 
 							materialTexturesDescriptor.LinkTexture(texture, b.BindId);
 						}
@@ -1027,6 +1021,69 @@ namespace manager
 		shader.Cleanup();
 	}
 
+	size_t RenderManager::GenerateCubemapFromHDR(const asset::AssetId id, const uint16_t resolution)
+	{
+		vk::TextureParams params;
+		params.MagFilter = VK_FILTER_LINEAR;
+		params.MinFilter = VK_FILTER_LINEAR;
+		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+		vk::TextureImageInfo hdrImageInfo;
+		hdrImageInfo.Type = VK_IMAGE_TYPE_2D;
+		hdrImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+		hdrImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		hdrImageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT
+								  | VK_IMAGE_USAGE_SAMPLED_BIT
+								  | VK_IMAGE_USAGE_STORAGE_BIT;
+		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto hdrData = AM->GetImageInfo(id);
+		vk::Texture hdrTexture;
+		hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
+		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));
+
+		hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+							 vk::layout::SetImageLayoutFromTransferToComputeRead);
+
+		vk::TextureImageInfo cubemapImageInfo;
+		cubemapImageInfo.Type = VK_IMAGE_TYPE_2D;
+		cubemapImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		cubemapImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		cubemapImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		cubemapImageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		cubemapImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		cubemapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+		vk::Texture cubemap;
+		cubemap.Setup(*VulkanApp, resolution, resolution, cubemapImageInfo, params, 1, 6);
+
+		cubemap.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+						  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
+
+		vk::TextureDescriptor mapDescriptor;
+		mapDescriptor.LinkTexture(hdrTexture, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.LinkTexture(cubemap, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
+
+		vk::ComputeShader cs;
+		cs.Setup(*VulkanApp, FromHdrToCubemapShader);
+
+		const int workGroups = 16;
+		vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
+							 resolution / workGroups, resolution / workGroups, 6);
+
+		cs.Cleanup();
+		hdrTexture.Cleanup();
+		mapDescriptor.Destroy();
+
+		size_t newId = AM->IncrementImageCounter();
+		TM.AddTexture(newId, cubemap);
+
+		return newId;
+	}
+
 	size_t RenderManager::GenerateIrradianceMap(const asset::AssetId id)
 	{
 		vk::TextureParams params;
@@ -1076,30 +1133,15 @@ namespace manager
 		mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
 
 		vk::ComputeShader cs;
-		cs.Setup(*VulkanApp, "res/shaders/compute/generate_im.spv");
-
-		std::vector<VkDescriptorSetLayout> layouts = { mapDescriptor.GetDescriptorInfo().DescriptorSetLayout };
-
-		auto pipelineRes = vk::CreateComputePipeline(*VulkanApp, cs, layouts);
-		ASSERT(pipelineRes, "Couldn't create compute pipeline!");
-
-
-		auto cmd = vk::BeginCommands(*VulkanApp, VulkanApp->CommandPoolCQ);
-
-		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Handle);
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Layout, 0, mapDescriptor.GetDescriptorInfo().DescriptorSets.size(),
-								mapDescriptor.GetDescriptorInfo().DescriptorSets.data(), 0, 0);
+		cs.Setup(*VulkanApp, IrradianceMapComputeShader);
 
 		const int workGroups = 16;
-		cs.Dispatch(cmd, hdrData.Width / workGroups, hdrData.Height / workGroups, 6);
-
-		vk::EndCommands(*VulkanApp, VulkanApp->CommandPoolCQ, cmd, VulkanApp->ComputeQueue);
-
+		vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
+							 hdrData.Width / workGroups, hdrData.Height / workGroups, 6);
 
 		cs.Cleanup();
 		hdrTexture.Cleanup();
 		mapDescriptor.Destroy();
-		vk::DestoryPipeline(*VulkanApp, *pipelineRes);
 
 		size_t newId = AM->IncrementImageCounter();
 		TM.AddTexture(newId, map);

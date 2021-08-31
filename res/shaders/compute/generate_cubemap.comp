@@ -1,0 +1,45 @@
+#version 460 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(rgba32f, binding = 0) uniform readonly image2D hdrMap;
+layout(rgba32f, binding = 1) uniform writeonly imageCube map;
+
+vec3 CubeCoordToWorld(ivec3 cubeCoord, vec2 cubemapSize)
+{
+    vec2 texCoord = vec2(cubeCoord.xy) / cubemapSize;
+    texCoord = texCoord  * 2.0 - 1.0;
+
+    switch(cubeCoord.z)
+    {
+        case 0: return vec3(1.0, -texCoord.yx);
+        case 1: return vec3(-1.0, -texCoord.y, texCoord.x);
+        case 2: return vec3(texCoord.x, 1.0, texCoord.y);
+        case 3: return vec3(texCoord.x, -1.0, -texCoord.y);
+        case 4: return vec3(texCoord.x, -texCoord.y, 1.0);
+        case 5: return vec3(-texCoord.xy, -1.0);
+    }
+
+    return vec3(0.0);
+}
+
+const vec2 invAtan = vec2(0.1591, 0.3183);
+vec2 FetchFromSphericalMap(vec3 v)
+{
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv  += 0.5f;
+    return uv;
+}
+
+void main()
+{
+    ivec3 cubeCoord = ivec3(gl_GlobalInvocationID);
+    vec3 normCoord = normalize(CubeCoordToWorld(cubeCoord, imageSize(map)));
+
+    ivec2 uv = ivec2(FetchFromSphericalMap(normCoord) * imageSize(hdrMap));
+
+    vec3 color = imageLoad(hdrMap, uv).rgb;
+
+    imageStore(map, cubeCoord, vec4(color, 1.0));
+}

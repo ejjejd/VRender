@@ -6,6 +6,7 @@
 #include "vulkan_app.h"
 #include "vulkan/shader.h"
 #include "vulkan/compute_shader.h"
+#include "vulkan/descriptor.h"
 
 namespace vk
 {
@@ -70,6 +71,8 @@ namespace vk
 												   const VkPipelineDepthStencilStateCreateInfo& depthState,
 												   const VkPipelineDynamicStateCreateInfo& dynamicState);
 
+	void RunComputeShader(const VulkanApp& app, const vk::ComputeShader& cs, const Descriptor& descriptor, 
+					      const uint16_t workGroupsX, const uint16_t workGroupsY, const uint16_t workGroupsZ);
 
 	inline void CmdSetDepthOp(const VulkanApp& app, const VkCommandBuffer& cmdBuffer, 
 							  const VkCompareOp value)

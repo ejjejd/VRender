@@ -316,4 +316,26 @@ namespace vk
 
 		return { { pipelineLayout, pipeline } };
 	}
+
+	void RunComputeShader(const VulkanApp& app, const vk::ComputeShader& cs, const Descriptor& descriptor, 
+						  const uint16_t workGroupsX, const uint16_t workGroupsY, const uint16_t workGroupsZ)
+	{
+		std::vector<VkDescriptorSetLayout> layouts = { descriptor.DescriptorSetLayout };
+
+		auto pipelineRes = vk::CreateComputePipeline(app, cs, layouts);
+		ASSERT(pipelineRes, "Couldn't create compute pipeline!");
+
+		auto cmd = vk::BeginCommands(app, app.CommandPoolCQ);
+
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Handle);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Layout, 0, descriptor.DescriptorSets.size(),
+							    descriptor.DescriptorSets.data(), 0, 0);
+
+		const int workGroups = 16;
+		cs.Dispatch(cmd, workGroupsX, workGroupsY, workGroupsZ);
+
+		vk::EndCommands(app, app.CommandPoolCQ, cmd, app.ComputeQueue);
+
+		vk::DestoryPipeline(app, *pipelineRes);
+	}
 }

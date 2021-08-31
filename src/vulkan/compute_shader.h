@@ -22,7 +22,7 @@ namespace vk
 		inline void ComputeShader::Dispatch(const VkCommandBuffer commandBuffer,
 											const uint32_t workGroupsX,
 											const uint32_t workGroupsY,
-											const uint32_t workGroupsZ)
+											const uint32_t workGroupsZ) const
 		{
 			vkCmdDispatch(commandBuffer, workGroupsX, workGroupsY, workGroupsZ);
 		}

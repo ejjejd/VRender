@@ -74,7 +74,6 @@ namespace manager
 
 			if (!AM->IsImageLoaded(texture.ImageId))
 			{
-
 				char pixels[] = { -1, -1, -1, -1 };
 				t.Setup(*App, 1, 1, imageInfo, render::CreateInfoMapTextureParams());
 				t.Update(pixels, 4);
@@ -1100,33 +1099,27 @@ namespace manager
 		vk::TextureImageInfo hdrImageInfo;
 		hdrImageInfo.Type = VK_IMAGE_TYPE_2D;
 		hdrImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+		hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
 		hdrImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
 		hdrImageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT 
 								  | VK_IMAGE_USAGE_SAMPLED_BIT 
 							      | VK_IMAGE_USAGE_STORAGE_BIT;
 		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		hdrImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-		auto hdrData = AM->GetImageInfo(id);
-		vk::Texture hdrTexture;
-		hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
-		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));
+		auto hdrTexture = TM.GetOrCreate({ id, params });
 
-		hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
-							 vk::layout::SetImageLayoutFromTransferToComputeRead);
-
-
-		vk::TextureImageInfo imageInfo;
-		imageInfo.Type = VK_IMAGE_TYPE_2D;
-		imageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
-		imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-		imageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
-		imageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		vk::TextureImageInfo mapImageInfo;
+		mapImageInfo.Type = VK_IMAGE_TYPE_2D;
+		mapImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		mapImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		mapImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		mapImageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		mapImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		mapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 		vk::Texture map;
-		map.Setup(*VulkanApp, 64, 64, imageInfo, params, 1, 6);
+		map.Setup(*VulkanApp, 64, 64, mapImageInfo, params, 1, 6);
 
 		map.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
 					  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
@@ -1142,10 +1135,9 @@ namespace manager
 
 		const int workGroups = 16;
 		vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
-							 hdrData.Width / workGroups, hdrData.Height / workGroups, 6);
+							 64 / workGroups, 64 / workGroups, 6);
 
 		cs.Cleanup();
-		hdrTexture.Cleanup();
 		mapDescriptor.Destroy();
 
 		size_t newId = AM->IncrementImageCounter();

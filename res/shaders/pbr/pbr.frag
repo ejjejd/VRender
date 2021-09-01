@@ -154,7 +154,15 @@ void main()
 		Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 	}
 
+	vec3 kS = FresnelSchlick(max(dot(N, V), 0.0f), F0);
+	vec3 kD = 1.0f - kS;
+	vec3 iblIrradiance = texture(IrradianceMap, N).rgb;
+	vec3 diffuse = iblIrradiance * Albedo;
+
 	vec3 ambient = vec3(0.03f) * Albedo * Ao;
+	if(textureSize(IrradianceMap, 0).x > 1)
+		ambient = (kD * diffuse) * Ao;
+
 	vec3 color = ambient + Lo;
 
 	outColor = vec4(color, 1.0f);

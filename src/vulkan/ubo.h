@@ -65,6 +65,11 @@ namespace vk
 
 			return bufferInfos;
 		}
+
+		inline UboType GetType() const
+		{
+			return Type;
+		}
 	};
 
 	class UboDescriptor
@@ -78,7 +83,15 @@ namespace vk
 			std::vector<std::vector<VkDescriptorBufferInfo>> BufferInfos;
 		} UboInfos;
 
+		UboType FirstBufferType;
+
 		VulkanApp* App;
+
+		inline void SetType(const UniformBuffer& ubo)
+		{
+			if (UboInfos.BufferInfos.empty())
+				FirstBufferType = ubo.GetType();
+		}
 	public:
 		void Create(VulkanApp& app, const VkDescriptorPool& descriptorPool);
 
@@ -89,6 +102,14 @@ namespace vk
 
 		inline void LinkUBO(const UniformBuffer& ubo, const uint8_t bindId)
 		{
+			SetType(ubo);
+
+			if (ubo.GetType() != FirstBufferType)
+			{
+				LOGE("Invalid descriptor ubo formed, all buffers types must be the same!");
+				return;
+			}
+
 			VkDescriptorSetLayoutBinding layoutBinding{};
 			layoutBinding.binding = bindId;
 			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

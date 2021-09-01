@@ -682,6 +682,49 @@ namespace manager
 		LightUBO.Update(&lightData, 1);
 	}
 
+	void RenderManager::Draw(const uint8_t imageId)
+	{
+		for (size_t j = 0; j < RenderablesInfos.GraphicsPipelines.size(); ++j)
+		{
+			vkCmdBindPipeline(CommandBuffers[imageId], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelines[j]);
+
+
+			std::vector<VkBuffer> buffers;
+			for (const auto& b : RenderablesInfos.Buffers[j])
+				buffers.push_back(b.GetHandler());
+
+			std::vector<VkDeviceSize> offsets(buffers.size(), 0);
+
+			vkCmdBindVertexBuffers(CommandBuffers[imageId], 0, buffers.size(), buffers.data(), offsets.data());
+
+
+			std::vector<VkDescriptorSet> descriptors;
+
+			for (auto d : RenderablesInfos.Descriptors[j])
+			{
+				auto descriptorSets = d.DescriptorSets;
+
+				ASSERT(descriptorSets.size() != 0, "Invalid descriptor created!")
+
+				if (descriptorSets.size() == Framebuffers.size())
+					descriptors.push_back(descriptorSets[imageId]);
+				else
+					descriptors.push_back(descriptorSets[0]);
+			}
+
+			vkCmdBindDescriptorSets(CommandBuffers[imageId], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelineLayouts[j],
+									0, descriptors.size(), descriptors.data(), 0, nullptr);
+
+
+			//Set dynamic states values
+			vk::CmdSetDepthOp(*VulkanApp, CommandBuffers[imageId], RenderablesInfos.AdditionalInfo[j].DepthCompareOP);
+			vk::CmdSetCullMode(*VulkanApp, CommandBuffers[imageId], RenderablesInfos.AdditionalInfo[j].CullMode);
+
+
+			vkCmdDraw(CommandBuffers[imageId], RenderablesInfos.Buffers[j][0].GetElementsCount(), 1, 0, 0);
+		}
+	}
+
 	void RenderManager::Update()
 	{
 		UpdateGlobalUBO();
@@ -715,45 +758,7 @@ namespace manager
 
 			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			for (size_t j = 0; j < RenderablesInfos.GraphicsPipelines.size(); ++j)
-			{
-				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelines[j]);
-
-
-				std::vector<VkBuffer> buffers;
-				for (const auto& b : RenderablesInfos.Buffers[j])
-					buffers.push_back(b.GetHandler());
-
-				std::vector<VkDeviceSize> offsets(buffers.size(), 0);
-
-				vkCmdBindVertexBuffers(CommandBuffers[i], 0, buffers.size(), buffers.data(), offsets.data());
-
-
-				std::vector<VkDescriptorSet> descriptors;
-
-				for (auto d : RenderablesInfos.Descriptors[j])
-				{
-					auto descriptorSets = d.DescriptorSets;
-
-					ASSERT(descriptorSets.size() != 0, "Invalid descriptor created!")
-
-					if (descriptorSets.size() == Framebuffers.size())
-						descriptors.push_back(descriptorSets[i]);
-					else
-						descriptors.push_back(descriptorSets[0]);
-				}
-
-				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, RenderablesInfos.GraphicsPipelineLayouts[j],
-									    0, descriptors.size(), descriptors.data(), 0, nullptr);
-
-
-				//Set dynamic states values
-				vk::CmdSetDepthOp(*VulkanApp, CommandBuffers[i], RenderablesInfos.AdditionalInfo[j].DepthCompareOP);
-				vk::CmdSetCullMode(*VulkanApp, CommandBuffers[i], RenderablesInfos.AdditionalInfo[j].CullMode);
-
-
-				vkCmdDraw(CommandBuffers[i], RenderablesInfos.Buffers[j][0].GetElementsCount(), 1, 0, 0);
-			}
+			Draw(i);
 
 			vkCmdEndRenderPass(CommandBuffers[i]);
 
@@ -846,7 +851,7 @@ namespace manager
 				case ShaderDescriptorSetMeshUBO:
 					{
 						vk::UniformBuffer meshUBO;
-						meshUBO.Setup(*VulkanApp, vk::UboType::Dynamic, sizeof(MeshUBO), 1);
+						meshUBO.Setup(*VulkanApp, vk::UboType::Static, sizeof(MeshUBO), 1);
 
 						meshUboDescriptor.LinkUBO(meshUBO, 0);
 
@@ -876,7 +881,7 @@ namespace manager
 				case ShaderDescriptorSetMaterialUBO:
 					{
 						vk::UniformBuffer materialUBO;
-						materialUBO.Setup(*VulkanApp, vk::UboType::Dynamic, material.GetMaterialInfoStride(), 1);
+						materialUBO.Setup(*VulkanApp, vk::UboType::Static, material.GetMaterialInfoStride(), 1);
 
 						materialUboDescriptor.LinkUBO(materialUBO, 0);
 

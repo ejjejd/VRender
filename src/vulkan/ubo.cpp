@@ -31,16 +31,20 @@ namespace vk
 		auto res = vkCreateDescriptorSetLayout(app.Device, &layoutCreateInfo, nullptr, &DescriptorInfo.DescriptorSetLayout);
 		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor set layout!");
 
-		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(app.SwapChainImages.size(), DescriptorInfo.DescriptorSetLayout);
+		size_t copiesCount = 1;
+		if (FirstBufferType == UboType::Dynamic)
+			copiesCount = app.SwapChainImages.size();
+
+		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(copiesCount, DescriptorInfo.DescriptorSetLayout);
 
 		VkDescriptorSetAllocateInfo descriptorAllocInfo{};
 		descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		descriptorAllocInfo.descriptorPool = descriptorPool;
-		descriptorAllocInfo.descriptorSetCount = descriptorLayoutsCopies.size();
+		descriptorAllocInfo.descriptorSetCount = copiesCount;
 		descriptorAllocInfo.pSetLayouts = descriptorLayoutsCopies.data();
 
 
-		DescriptorInfo.DescriptorSets.resize(descriptorLayoutsCopies.size());
+		DescriptorInfo.DescriptorSets.resize(copiesCount);
 
 		res = vkAllocateDescriptorSets(app.Device, &descriptorAllocInfo, &DescriptorInfo.DescriptorSets[0]);
 		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor set layout!");

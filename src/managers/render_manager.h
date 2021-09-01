@@ -149,6 +149,8 @@ namespace manager
 													     const vk::Shader& shader);
 
 		void UpdateGlobalUBO();
+
+		void Draw(const uint8_t imageId);
 	public:
 		void UpdateMeshUBO(const std::vector<std::reference_wrapper<scene::Mesh>>& meshes);
 		void UpdateLightUBO(const std::vector<std::reference_wrapper<scene::PointLight>>& pointLights,

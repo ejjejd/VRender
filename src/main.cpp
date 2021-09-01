@@ -36,7 +36,7 @@ int main()
 	//material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMapId);
 
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
-	hdrMaterial->HdrTexture.ImageId = engine.RenderManager.GenerateCubemapFromHDR(hdrMapId, 1024);
+	hdrMaterial->HdrTexture.ImageId = engine.RenderManager.GenerateCubemapFromHDR(hdrMapId);
 
 	scene::Mesh mesh;
 	mesh.MeshInfo = helmetMesh;

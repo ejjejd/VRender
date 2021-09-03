@@ -12,10 +12,28 @@ namespace vk
 		uint32_t LocationId;
 	};
 
+	enum class DescriptorImageType
+	{
+		NotImage,
+		Image2d,
+		Cubemap
+	};
+
+	inline DescriptorImageType FromSpvImageDimToDescriptorImageType(const SpvDim dim)
+	{
+		switch(dim)
+		{
+		case SpvDim2D:	return DescriptorImageType::Image2d;
+		case SpvDimCube: return DescriptorImageType::Cubemap;
+		default: return DescriptorImageType::NotImage;
+		}
+	}
+
 	struct ShaderReflectDescriptorBinding
 	{
 		std::string Name;
 		uint32_t BindId;
+		DescriptorImageType ImageType;
 	};
 
 	struct ShaderReflectDescriptorSet

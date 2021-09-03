@@ -9,13 +9,6 @@ int main()
 	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("res/models/cube.obj");
 	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
 
-	//auto pistolMeshId = engine.AssetManager.LoadMeshInfo("res/models/pistol.fbx");
-	//auto pistolMesh = engine.AssetManager.GetMeshInfo(pistolMeshId);
-
-	//auto pistolAldeboId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_C.jpg");
-	//auto pistolSpecId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_S.jpg");
-	//auto pistolNormalId = engine.AssetManager.LoadImageInfo("res/textures/pistol/handgun_N.jpg");
-
 	auto helmetMeshId = engine.AssetManager.LoadMeshInfo("res/models/DamagedHelmet.blend");
 	auto helmetMesh = engine.AssetManager.GetMeshInfo(helmetMeshId);
 
@@ -27,7 +20,7 @@ int main()
 	auto hdrMapId = engine.AssetManager.LoadImageInfo("res/textures/hdr/Chiricahua_Plaza/GravelPlaza_REF.hdr");
 
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
-	hdrMaterial->HdrTexture.ImageId = engine.RenderManager.GenerateIrradianceMap(engine.RenderManager.GenerateCubemapFromHDR(hdrMapId));
+	hdrMaterial->HdrTexture.ImageId = engine.RenderManager.GenerateCubemapFromHDR(hdrMapId);
 
 	auto material = std::make_shared<render::PbrMaterial>();
 	material->Textures.Albedo.ImageId = helmetAlbedoId;

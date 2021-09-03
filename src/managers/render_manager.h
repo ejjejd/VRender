@@ -57,7 +57,7 @@ namespace manager
 				t.Cleanup();
 		}
 
-		vk::Texture GetOrCreate(const render::MaterialTexture& texture);
+		vk::Texture GetOrCreate(const render::MaterialTexture& texture, const vk::DescriptorImageType type);
 
 		inline void AddTexture(const asset::AssetId id, const vk::Texture& texture)
 		{

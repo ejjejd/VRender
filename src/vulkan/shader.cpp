@@ -40,7 +40,7 @@ namespace vk
 
 			SpvReflectDescriptorSet** descriptors = new SpvReflectDescriptorSet*[objCount];
 			spvReflectEnumerateDescriptorSets(&spvModule, &objCount, descriptors);
-
+			
 			for (size_t i = 0; i < objCount; ++i)
 			{
 				auto set = descriptors[i];
@@ -53,6 +53,9 @@ namespace vk
 					ShaderReflectDescriptorBinding bindingInfo;
 					bindingInfo.BindId = set->bindings[j]->binding;
 					bindingInfo.Name = set->bindings[j]->name;
+
+					DescriptorImageType imageType = FromSpvImageDimToDescriptorImageType(set->bindings[j]->image.dim);
+					bindingInfo.ImageType = imageType;
 
 					setInfo.Bindings.push_back(bindingInfo);
 				}

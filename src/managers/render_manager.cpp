@@ -56,7 +56,7 @@ namespace manager
 		vkDestroyRenderPass(app.Device, pass.PassHandler, nullptr);
 	}
 
-	vk::Texture TextureManager::GetOrCreate(const render::MaterialTexture& texture)
+	vk::Texture TextureManager::GetOrCreate(const render::MaterialTexture& texture, const vk::DescriptorImageType type)
 	{
 		auto& findRes = TexturesLookup.find(texture.ImageId);
 		if (findRes == TexturesLookup.end())
@@ -65,18 +65,38 @@ namespace manager
 
 			vk::TextureImageInfo imageInfo;
 			imageInfo.Type = VK_IMAGE_TYPE_2D;
-			imageInfo.Format = VK_FORMAT_R8G8B8A8_SRGB;
 			imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+			imageInfo.Format = VK_FORMAT_R8G8B8A8_SRGB;
 			imageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
 			imageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT 
 								   | VK_IMAGE_USAGE_SAMPLED_BIT;
 			imageInfo.Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-			if (!AM->IsImageLoaded(texture.ImageId))
+				
+			if (type == vk::DescriptorImageType::Cubemap)
 			{
-				char pixels[] = { -1, -1, -1, -1 };
-				t.Setup(*App, 1, 1, imageInfo, render::CreateInfoMapTextureParams());
-				t.Update(pixels, 4);
+				imageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+				imageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT;
+				imageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+				imageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+			}
+
+			if (!AM->IsImageLoaded(texture.ImageId)) 
+			{
+				if (type == vk::DescriptorImageType::Image2d)
+				{
+					t.Setup(*App, 1, 1, imageInfo, render::CreateInfoMapTextureParams());
+
+					//Fill texture with white color if the texture view is 2d
+					char pixels[] = { -1, -1, -1, -1 };
+					t.Update(pixels, 4);
+				}
+				else if (type == vk::DescriptorImageType::Cubemap)
+				{
+					t.Setup(*App, 1, 1, imageInfo, render::CreateInfoMapTextureParams(), 1, 6);
+
+					t.SetLayout(App->ComputeQueue, App->CommandPoolCQ,
+								vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
+				}
 			}
 			else
 			{
@@ -88,11 +108,9 @@ namespace manager
 
 				t.Setup(*App, image.Width, image.Height, imageInfo, texture.TextureParams);
 				t.Update(image.PixelsData.data(), 4 * (image.Hdr ? sizeof(float) : 1));
+				t.SetLayout(App->GraphicsQueue, App->CommandPoolGQ,
+							vk::layout::SetImageLayoutFromTransferToGraphicsShader);
 			}
-
-
-			t.SetLayout(App->GraphicsQueue, App->CommandPoolGQ,
-						vk::layout::SetImageLayoutFromTransferToGraphicsShader);
 
 			TexturesLookup[texture.ImageId] = t;
 
@@ -891,8 +909,7 @@ namespace manager
 						for (auto& b : d.Bindings)
 						{
 							auto texAccess = material.GetMaterialTexturesIds()[b.BindId];
-
-							auto texture = TM.GetOrCreate(texAccess);
+							auto texture = TM.GetOrCreate(texAccess, b.ImageType);
 
 							materialTexturesDescriptor.LinkTexture(texture, b.BindId);
 						}
@@ -1107,7 +1124,7 @@ namespace manager
 		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
 		hdrImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-		auto hdrTexture = TM.GetOrCreate({ id, params });
+		auto hdrTexture = TM.GetOrCreate({ id, params }, vk::DescriptorImageType::Cubemap);
 
 		vk::TextureImageInfo mapImageInfo;
 		mapImageInfo.Type = VK_IMAGE_TYPE_2D;

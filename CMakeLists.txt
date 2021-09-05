@@ -13,7 +13,6 @@ set(SOURCE_FILES
     "src/scene/scene_hi.h"
     "src/vulkan/compute_shader.h"
     "src/vulkan/compute_shader.cpp"
-    "src/rendering/scene_objects.h"
     "src/vendors/stb/stb_image.h"
     "src/vendors/stb/stb_image.cpp"
     "src/vulkan/texture.h"

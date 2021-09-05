@@ -7,7 +7,14 @@ namespace manager
 		if(Cameras.size() >= 0)
 			RM->SetActiveCamera(Cameras[ActiveCameraId]);
 
-		RM->UpdateMeshUBO(RegisteredMeshes);
-		RM->UpdateLightUBO(RegisteredPointLights, RegisteredSpotlights);
+		if (RootNode)
+		{
+			auto meshV = RootNode->GetNodesWithChannel<scene::MeshRenderable>(scene::NodeChannel::MeshRenderable);
+			RM->UpdateMeshUBO(meshV);
+
+			auto plV = RootNode->GetNodesWithChannel<scene::PointLight>(scene::NodeChannel::PointLight);
+			auto slV = RootNode->GetNodesWithChannel<scene::Spotlight>(scene::NodeChannel::Spotlight);
+			RM->UpdateLightUBO(plV, slV);
+		}
 	}
 }

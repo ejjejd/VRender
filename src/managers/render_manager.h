@@ -10,7 +10,7 @@
 #include "vulkan/helpers.h"
 
 #include "rendering/material.h"
-#include "rendering/scene_objects.h"
+#include "scene/scene_hi.h"
 #include "rendering/camera.h"
 
 #include "managers/asset_manager.h"
@@ -144,7 +144,7 @@ namespace manager
 		std::optional<vk::Pipeline> CreateMainPipeline(vk::Shader& shader,
 													   const std::vector<VkDescriptorSetLayout>& layouts);
 
-		std::vector<vk::Buffer> SetupMeshBuffers(const scene::Mesh& mesh, vk::Shader& shader);
+		std::vector<vk::Buffer> SetupMeshBuffers(const std::shared_ptr<scene::MeshRenderable>& mesh, vk::Shader& shader);
 		std::vector<vk::Descriptor> SetupMeshDescriptors(const render::BaseMaterial& material, 
 													     const vk::Shader& shader);
 
@@ -152,9 +152,9 @@ namespace manager
 
 		void Draw(const uint8_t imageId);
 	public:
-		void UpdateMeshUBO(const std::vector<std::reference_wrapper<scene::Mesh>>& meshes);
-		void UpdateLightUBO(const std::vector<std::reference_wrapper<scene::PointLight>>& pointLights,
-							const std::vector<std::reference_wrapper<scene::Spotlight>>& spotlights);
+		void UpdateMeshUBO(const std::vector<std::shared_ptr<scene::MeshRenderable>>& meshes);
+		void UpdateLightUBO(const std::vector<std::shared_ptr<scene::PointLight>>& pointLights,
+							const std::vector<std::shared_ptr<scene::Spotlight>>& spotlights);
 
 		bool Setup(vk::VulkanApp& app, AssetManager& am);
 
@@ -162,7 +162,7 @@ namespace manager
 
 		void Update();
 
-		void RegisterMesh(const scene::Mesh& mesh);
+		void RegisterMesh(const std::shared_ptr<scene::MeshRenderable>& mesh);
 
 		inline void SetActiveCamera(const render::Camera& camera)
 		{

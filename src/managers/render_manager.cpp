@@ -638,7 +638,7 @@ namespace manager
 		GlobalUBO.Update(&ubo, 1);
 	}
 
-	void RenderManager::UpdateMeshUBO(const std::vector<std::reference_wrapper<scene::Mesh>>& meshes)
+	void RenderManager::UpdateMeshUBO(const const std::vector<std::shared_ptr<scene::MeshRenderable>>& meshes)
 	{
 		for (size_t i = 0; i < meshes.size(); ++i)
 		{
@@ -646,12 +646,11 @@ namespace manager
 				break;
 
 			auto& mesh = meshes[i];
-			auto& meshTransform = mesh.get().Transform;
 
 			glm::mat4 transform(1.0f);
-			transform = glm::rotate(transform, meshTransform.Rotation.w, glm::vec3(meshTransform.Rotation));
-			transform = glm::scale(transform, meshTransform.Scale);
-			transform = glm::translate(transform, meshTransform.Translate);
+			transform = glm::rotate(transform, mesh->GetWorldRotation().w, glm::vec3(mesh->GetWorldRotation()));
+			transform = glm::scale(transform, mesh->GetWorldScale());
+			transform = glm::translate(transform, mesh->GetWorldPosition());
 
 			RenderablesInfos.MeshUBOs[i].Update(&transform, 1);
 		}
@@ -662,35 +661,35 @@ namespace manager
 				break;
 
 			auto& mesh = meshes[i];
-			auto& material = mesh.get().Material;
+			auto& material = mesh->Material;
 
 			RenderablesInfos.MaterialUBOs[i].Update(material->GetMaterialData(), 1);
 		}
 
 	}
 
-	void RenderManager::UpdateLightUBO(const std::vector<std::reference_wrapper<scene::PointLight>>& pointLights,
-									   const std::vector<std::reference_wrapper<scene::Spotlight>>& spotlights)
+	void RenderManager::UpdateLightUBO(const std::vector<std::shared_ptr<scene::PointLight>>& pointLights,
+									   const std::vector<std::shared_ptr<scene::Spotlight>>& spotlights)
 	{
 		LightDataUBO lightData;
 
 		for (size_t i = 0; i < pointLights.size(); ++i)
 		{
-			auto& l = pointLights[i].get();
+			auto& l = pointLights[i];
 
-			lightData.PointLights[i].Position = { l.Position, 1.0f };
-			lightData.PointLights[i].Color = { l.Color, 1.0f };
+			lightData.PointLights[i].Position = { l->Position, 1.0f };
+			lightData.PointLights[i].Color = { l->Color, 1.0f };
 		}
 
 		for (size_t i = 0; i < spotlights.size(); ++i)
 		{
-			auto& l = spotlights[i].get();
+			auto& l = spotlights[i];
 
-			lightData.Spotlights[i].Position = { l.Position, 1.0f };
-			lightData.Spotlights[i].Direction = { l.Direction, 0.0f };
-			lightData.Spotlights[i].Color = { l.Color, 1.0f };
-			lightData.Spotlights[i].OuterAngle = l.OuterAngle;
-			lightData.Spotlights[i].InnerAngle = l.InnerAngle;
+			lightData.Spotlights[i].Position = { l->Position, 1.0f };
+			lightData.Spotlights[i].Direction = { glm::vec3(l->GetWorldRotation()), 0.0f };
+			lightData.Spotlights[i].Color = { l->Color, 1.0f };
+			lightData.Spotlights[i].OuterAngle = l->OuterAngle;
+			lightData.Spotlights[i].InnerAngle = l->InnerAngle;
 		}
 
 		lightData.PointLightsCount = pointLights.size();
@@ -734,8 +733,8 @@ namespace manager
 
 
 			//Set dynamic states values
-			vk::CmdSetDepthOp(*VulkanApp, CommandBuffers[imageId], RenderablesInfos.AdditionalInfo[j].DepthCompareOP);
-			vk::CmdSetCullMode(*VulkanApp, CommandBuffers[imageId], RenderablesInfos.AdditionalInfo[j].CullMode);
+			vk::CmdSetDepthOp(*VulkanApp, CommandBuffers[imageId], RenderablesInfos.AdditionalInfo[j].DepthCompareOp);
+			vk::CmdSetCullMode(*VulkanApp, CommandBuffers[imageId], RenderablesInfos.AdditionalInfo[j].FacesCullMode);
 
 
 			vkCmdDraw(CommandBuffers[imageId], RenderablesInfos.Buffers[j][0].GetElementsCount(), 1, 0, 0);
@@ -932,7 +931,7 @@ namespace manager
 		return descriptors;
 	}
 
-	std::vector<vk::Buffer> RenderManager::SetupMeshBuffers(const scene::Mesh& mesh, vk::Shader& shader)
+	std::vector<vk::Buffer> RenderManager::SetupMeshBuffers(const std::shared_ptr<scene::MeshRenderable>& mesh, vk::Shader& shader)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
@@ -951,8 +950,8 @@ namespace manager
 			case ShaderInputPositionLocation:
 				{
 					vk::Buffer positionBuffer;
-					positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Positions[0]), mesh.MeshInfo.Positions.size());
-					positionBuffer.Update((void*)mesh.MeshInfo.Positions.data(), mesh.MeshInfo.Positions.size());
+					positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Positions[0]), mesh->Info.Positions.size());
+					positionBuffer.Update((void*)mesh->Info.Positions.data(), mesh->Info.Positions.size());
 
 					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputPositionLocation, 0, positionBuffer.GetStride());
 
@@ -961,8 +960,8 @@ namespace manager
 			case ShaderInputNormalLocation:
 				{
 					vk::Buffer normalBuffer;
-					normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Normals[0]), mesh.MeshInfo.Normals.size());
-					normalBuffer.Update((void*)mesh.MeshInfo.Normals.data(), mesh.MeshInfo.Normals.size());
+					normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Normals[0]), mesh->Info.Normals.size());
+					normalBuffer.Update((void*)mesh->Info.Normals.data(), mesh->Info.Normals.size());
 
 					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputNormalLocation, 0, normalBuffer.GetStride());
 
@@ -971,8 +970,8 @@ namespace manager
 			case ShaderInputUvLocation:
 				{
 					vk::Buffer uvBuffer;
-					uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.UVs[0]), mesh.MeshInfo.UVs.size());
-					uvBuffer.Update((void*)mesh.MeshInfo.UVs.data(), mesh.MeshInfo.UVs.size());
+					uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.UVs[0]), mesh->Info.UVs.size());
+					uvBuffer.Update((void*)mesh->Info.UVs.data(), mesh->Info.UVs.size());
 
 					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
 
@@ -981,8 +980,8 @@ namespace manager
 			case ShaderInputTangentLocation:
 				{
 					vk::Buffer tangentBuffer;
-					tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Tangents[0]), mesh.MeshInfo.Tangents.size());
-					tangentBuffer.Update((void*)mesh.MeshInfo.Tangents.data(), mesh.MeshInfo.Tangents.size());
+					tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Tangents[0]), mesh->Info.Tangents.size());
+					tangentBuffer.Update((void*)mesh->Info.Tangents.data(), mesh->Info.Tangents.size());
 
 					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputTangentLocation, 0, tangentBuffer.GetStride());
 
@@ -991,8 +990,8 @@ namespace manager
 			case ShaderInputBitangentLocation:
 				{
 					vk::Buffer bitangentBuffer;
-					bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh.MeshInfo.Bitangents[0]), mesh.MeshInfo.Bitangents.size());
-					bitangentBuffer.Update((void*)mesh.MeshInfo.Bitangents.data(), mesh.MeshInfo.Bitangents.size());
+					bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Bitangents[0]), mesh->Info.Bitangents.size());
+					bitangentBuffer.Update((void*)mesh->Info.Bitangents.data(), mesh->Info.Bitangents.size());
 
 					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputBitangentLocation, 0, bitangentBuffer.GetStride());
 
@@ -1006,20 +1005,20 @@ namespace manager
 		return buffers;
 	}
 
-	void RenderManager::RegisterMesh(const scene::Mesh& mesh)
+	void RenderManager::RegisterMesh(const std::shared_ptr<scene::MeshRenderable>& mesh)
 	{
-		if (!mesh.Material)
+		if (!mesh->Material)
 		{
 			LOGE("Couldn't register mesh without material!");
 			return;
 		}
 
 
-		auto shader = mesh.Material->CreateShader(*VulkanApp);
+		auto shader = mesh->Material->CreateShader(*VulkanApp);
 
 		auto buffers = SetupMeshBuffers(mesh, shader);
 
-		auto descriptors = SetupMeshDescriptors(*mesh.Material, shader);
+		auto descriptors = SetupMeshDescriptors(*mesh->Material, shader);
 
 		std::vector<VkDescriptorSetLayout> layouts;
 		for (auto& d : descriptors)
@@ -1035,7 +1034,7 @@ namespace manager
 
 		RenderablesInfos.GraphicsPipelineLayouts.push_back(pipelineRes->Layout);
 		RenderablesInfos.GraphicsPipelines.push_back(pipelineRes->Handle);
-		RenderablesInfos.AdditionalInfo.push_back(mesh.Info);
+		RenderablesInfos.AdditionalInfo.push_back(mesh->Render);
 		RenderablesInfos.Buffers.push_back(buffers);
 		RenderablesInfos.Descriptors.push_back(descriptors);
 

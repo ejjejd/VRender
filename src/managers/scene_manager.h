@@ -2,7 +2,7 @@
 #include "vrender.h"
 #include "render_manager.h"
 
-#include "rendering/scene_objects.h"
+#include "scene/scene_hi.h"
 #include "rendering/camera.h"
 
 #include "vulkan/texture.h"
@@ -12,39 +12,19 @@ namespace manager
 	class SceneManager
 	{
 	private:
-		std::vector<std::reference_wrapper<scene::Mesh>> RegisteredMeshes;
-
 		std::vector<std::reference_wrapper<render::Camera>> Cameras;
-
-		std::vector<std::reference_wrapper<scene::PointLight>> RegisteredPointLights;
-		std::vector<std::reference_wrapper<scene::Spotlight>> RegisteredSpotlights;
-
 		size_t ActiveCameraId = 0;
+
+		std::shared_ptr<scene::Node> RootNode;
 
 		RenderManager* RM;
 	public:
-		void Update();
-
 		inline void Setup(RenderManager& rm)
 		{
 			RM = &rm;
 		}
 
-		inline void Register(scene::Mesh& mesh)
-		{
-			RegisteredMeshes.push_back(mesh);
-			RM->RegisterMesh(mesh);
-		}
-
-		inline void Register(scene::PointLight& pl)
-		{
-			RegisteredPointLights.push_back(pl);
-		}
-
-		inline void Register(scene::Spotlight& sl)
-		{
-			RegisteredSpotlights.push_back(sl);
-		}
+		void Update();
 
 		inline size_t Register(render::Camera& camera)
 		{
@@ -61,6 +41,15 @@ namespace manager
 			}
 
 			ActiveCameraId = 0;
+		}
+
+		inline void SetRoot(const std::shared_ptr<scene::Node>& node)
+		{
+			RootNode = node;
+
+			auto meshV = RootNode->GetNodesWithChannel<scene::MeshRenderable>(scene::NodeChannel::MeshRenderable);
+			for (auto& m : meshV)
+				RM->RegisterMesh(m);
 		}
 	};
 }

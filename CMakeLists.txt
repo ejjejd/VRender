@@ -56,6 +56,7 @@ set(SOURCE_FILES
     "src/main.cpp"
     )
 
+#Build project files structure with vs filters
 IF(MSVC)
     foreach(source IN LISTS SOURCE_FILES)
         get_filename_component(source_path "${source}" PATH)
@@ -70,21 +71,16 @@ link_directories("extern/assimp/lib")
 
 add_executable(VRender ${SOURCE_FILES})
 
-add_custom_command(TARGET VRender POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory 
-                   "${CMAKE_SOURCE_DIR}/res"
-                   "$<TARGET_FILE_DIR:VRender>/res")
-
 #Copy dll
 add_custom_command(TARGET VRender POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
                    "${CMAKE_SOURCE_DIR}/extern/assimp/assimp-vc142-mt.dll"
-                   "$<TARGET_FILE_DIR:VRender>")
+                   "${PROJECT_BINARY_DIR}")
 
 add_custom_command(TARGET VRender POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
                    "${CMAKE_SOURCE_DIR}/extern/assimp/assimp-vc142-mt.dll"
-                   "${PROJECT_BINARY_DIR}")
+                   "$<TARGET_FILE_DIR:VRender>")
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink 
                 "${CMAKE_SOURCE_DIR}/res"
@@ -104,4 +100,4 @@ target_link_libraries(VRender glfw3)
 target_link_libraries(VRender vulkan-1)
 target_link_libraries(VRender assimp-vc142-mt)
 
-target_compile_definitions(VRender PRIVATE LIB)
+target_compile_definitions(VRender PRIVATE LIB WORKING_DIR="${PROJECT_BINARY_DIR}")

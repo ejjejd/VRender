@@ -1,5 +1,7 @@
 #include "engine.h"
 
+#include <filesystem>
+
 namespace app
 {
 	std::string StandardPrinter::FormatMessage(const char* format, va_list args)
@@ -28,11 +30,18 @@ namespace app
 		uint32_t patchApi = VK_API_VERSION_PATCH(VulkanApp.DeviceProperties.apiVersion);
 
 		LOGC("Device: %s", VulkanApp.DeviceProperties.deviceName);
-		LOGC("Vulkan version: %d.%d.%d", majorApi, minorApi, patchApi);
+		LOGC("Vulkan version: %d.%d.%d\n", majorApi, minorApi, patchApi);
+
+		auto workingDir = std::filesystem::current_path().string();
+		LOGC("Working directory: %s\n", workingDir.c_str());
 	}
 
 	void Engine::StartupEngine()
 	{
+		//Set working path as a project build directory, TODO remove only if need to distribute binaries
+		std::filesystem::current_path(WORKING_DIR);
+
+		
 		if (!debug::GlobalLoggger.Setup("log.txt"))
 		{
 			printf("Couldn't initialize logger, probably problem with output file creation");

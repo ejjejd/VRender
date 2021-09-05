@@ -33,7 +33,7 @@ namespace app
 
 	void Engine::StartupEngine()
 	{
-		if (!debug::GlobalLoggger.Setup("log.csv"))
+		if (!debug::GlobalLoggger.Setup("log.txt"))
 		{
 			printf("Couldn't initialize logger, probably problem with output file creation");
 			return;

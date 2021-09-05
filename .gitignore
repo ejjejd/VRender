@@ -1,3 +1,7 @@
 #Directories
 build/
 bin/
+vim/
+
+#Files
+compile_commands.json

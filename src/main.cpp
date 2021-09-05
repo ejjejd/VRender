@@ -3,7 +3,7 @@
 int main()
 {
 	app::Engine engine;
-
+                                                    
 	engine.StartupEngine();
 
 	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("res/models/cube.obj");

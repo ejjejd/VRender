@@ -2,12 +2,15 @@ cmake_minimum_required(VERSION 3.10)
 
 project(VRender)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/scene/scene_hi.h"
     "src/vulkan/compute_shader.h"
     "src/vulkan/compute_shader.cpp"
     "src/rendering/scene_objects.h"

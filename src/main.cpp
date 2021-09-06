@@ -32,28 +32,28 @@ int main()
 	material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.ImageId);
 
 
-	auto rootNode = std::make_shared<scene::Node>();
+	scene::Node rootNode;
 
-	auto pl = std::make_shared<scene::PointLight>();
-	pl->Position = glm::vec3(0.0f, 0.0f, 10.0f);
-	pl->Color = glm::vec3(250.0f);
+	scene::PointLight pl;
+	pl.Position = glm::vec3(0.0f, 0.0f, 10.0f);
+	pl.Color = glm::vec3(250.0f);
 
-	auto generalMesh = std::make_shared<scene::MeshRenderable>();
-	generalMesh->Info = helmetMesh;
-	generalMesh->Material = material;
-	generalMesh->Rotation = { 0.0f, 1.0f, 0.0f, glm::pi<float>() };
+	scene::MeshRenderable generalMesh;
+	generalMesh.Info = helmetMesh;
+	generalMesh.Material = material;
+	generalMesh.Rotation = { 0.0f, 1.0f, 0.0f, glm::pi<float>() };
 
-	auto cubemapMesh = std::make_shared<scene::MeshRenderable>();
-	cubemapMesh->Info = cubeMesh;
-	cubemapMesh->Material = hdrMaterial;
-	cubemapMesh->Render.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-	cubemapMesh->Render.FacesCullMode = VK_CULL_MODE_FRONT_BIT;
+	scene::MeshRenderable cubemapMesh;
+	cubemapMesh.Info = cubeMesh;
+	cubemapMesh.Material = hdrMaterial;
+	cubemapMesh.Render.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	cubemapMesh.Render.FacesCullMode = VK_CULL_MODE_FRONT_BIT;
 
-	rootNode->AttachChild(pl);
-	rootNode->AttachChild(generalMesh);
-	rootNode->AttachChild(cubemapMesh);
+	rootNode.AttachChild(&pl);
+	rootNode.AttachChild(&generalMesh);
+	rootNode.AttachChild(&cubemapMesh);
 
-	engine.SceneManager.SetRoot(rootNode);
+	engine.SceneManager.SetRoot(&rootNode);
 
 
 	render::Camera camera;

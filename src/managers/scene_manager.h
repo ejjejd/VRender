@@ -15,7 +15,7 @@ namespace manager
 		std::vector<std::reference_wrapper<render::Camera>> Cameras;
 		size_t ActiveCameraId = 0;
 
-		std::shared_ptr<scene::Node> RootNode;
+		scene::Node* RootNode;
 
 		RenderManager* RM;
 	public:
@@ -43,7 +43,7 @@ namespace manager
 			ActiveCameraId = 0;
 		}
 
-		inline void SetRoot(const std::shared_ptr<scene::Node>& node)
+		inline void SetRoot(scene::Node* node)
 		{
 			RootNode = node;
 

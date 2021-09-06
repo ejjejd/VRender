@@ -638,7 +638,7 @@ namespace manager
 		GlobalUBO.Update(&ubo, 1);
 	}
 
-	void RenderManager::UpdateMeshUBO(const const std::vector<std::shared_ptr<scene::MeshRenderable>>& meshes)
+	void RenderManager::UpdateMeshUBO(const std::vector<scene::MeshRenderable*>& meshes)
 	{
 		for (size_t i = 0; i < meshes.size(); ++i)
 		{
@@ -668,8 +668,8 @@ namespace manager
 
 	}
 
-	void RenderManager::UpdateLightUBO(const std::vector<std::shared_ptr<scene::PointLight>>& pointLights,
-									   const std::vector<std::shared_ptr<scene::Spotlight>>& spotlights)
+	void RenderManager::UpdateLightUBO(const std::vector<scene::PointLight*>& pointLights,
+									   const std::vector<scene::Spotlight*>& spotlights)
 	{
 		LightDataUBO lightData;
 
@@ -931,7 +931,7 @@ namespace manager
 		return descriptors;
 	}
 
-	std::vector<vk::Buffer> RenderManager::SetupMeshBuffers(const std::shared_ptr<scene::MeshRenderable>& mesh, vk::Shader& shader)
+	std::vector<vk::Buffer> RenderManager::SetupMeshBuffers(const scene::MeshRenderable* mesh, vk::Shader& shader)
 	{
 		auto reflectMap = shader.GetReflectMap();
 
@@ -1005,7 +1005,7 @@ namespace manager
 		return buffers;
 	}
 
-	void RenderManager::RegisterMesh(const std::shared_ptr<scene::MeshRenderable>& mesh)
+	void RenderManager::RegisterMesh(scene::MeshRenderable* mesh)
 	{
 		if (!mesh->Material)
 		{

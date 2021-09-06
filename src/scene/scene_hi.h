@@ -39,24 +39,22 @@ namespace scene
 	class Node : public Spatial
 	{
 	private:
-        Node* Parent;
-		std::unordered_map<size_t, std::shared_ptr<Node>> Childs;
+        Node* Parent = nullptr;
+		std::unordered_map<size_t, Node*> Childs;
 	public:
         inline void SetParent(Node* node)
         {
            Parent = node;
         }
         
-        template<typename T>
-        inline void AttachChild(std::shared_ptr<T>& node)
+        inline void AttachChild(Node* node)
         {
            Childs[node->GetHandle()] = node;
 
            node->SetParent(this);
         }
 
-        template<typename T>
-        inline void DetachChild(std::shared_ptr<T>& node)
+        inline void DetachChild(Node* node)
         {
            Childs.erase(node->GetHandle());
 
@@ -98,9 +96,9 @@ namespace scene
 
         //Looks up through child nodes and return nodes with desired channel
         template<typename T, std::enable_if_t<std::is_base_of_v<Node, T>>* = nullptr>
-        std::vector<std::shared_ptr<T>> GetNodesWithChannel(const NodeChannel channel)
+        std::vector<T*> GetNodesWithChannel(const NodeChannel channel)
         {
-            std::vector<std::shared_ptr<T>> v;
+            std::vector<T*> v;
 
             for (auto&[h, c] : Childs)
             {
@@ -108,7 +106,7 @@ namespace scene
                 v.insert(v.end(), cv.begin(), cv.end());
 
                 if (c->CheckChannel(channel))
-                    v.push_back(std::dynamic_pointer_cast<T>(c));
+                    v.push_back(dynamic_cast<T*>(c));
             }
 
             return v;

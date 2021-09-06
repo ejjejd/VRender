@@ -4,18 +4,20 @@
 #include "managers/asset_manager.h"
 #include "rendering/material.h"
 
+#include <type_traits>
+
 namespace scene
 {
-    inline size_t  GlobalNodeCounter = 0;
+    inline size_t GlobalObjectCounter = 0;
     
     class Object
     {
     private:
-        size_t Handle = GlobalNodeCounter++;
+        size_t Handle = GlobalObjectCounter++;
     public:
         virtual ~Object() {}
 
-        inline size_t GetHandle()
+        inline size_t GetHandle() const
         {
             return Handle;
         }
@@ -27,13 +29,6 @@ namespace scene
         glm::vec3 Position = glm::vec3(0.0f);
         glm::vec3 Scale = glm::vec3(1.0f);
         glm::vec4 Rotation = { glm::vec3(1.0f), 0.0f };
-    };
-
-    enum class NodeChannel
-    {
-        MeshRenderable,
-        PointLight,
-        Spotlight
     };
 
 	class Node : public Spatial
@@ -89,24 +84,20 @@ namespace scene
             return rot;
         }
 
-        virtual bool CheckChannel(const NodeChannel c) const 
-        { 
-            return false;
-        }
-
         //Looks up through child nodes and return nodes with desired channel
         template<typename T, std::enable_if_t<std::is_base_of_v<Node, T>>* = nullptr>
-        std::vector<T*> GetNodesWithChannel(const NodeChannel channel)
+        std::vector<T*> GetNodesWithChannel()
         {
             std::vector<T*> v;
 
             for (auto&[h, c] : Childs)
             {
-                auto cv = c->GetNodesWithChannel<T>(channel);
+                auto cv = c->GetNodesWithChannel<T>();
                 v.insert(v.end(), cv.begin(), cv.end());
 
-                if (c->CheckChannel(channel))
-                    v.push_back(dynamic_cast<T*>(c));
+                auto ptr = dynamic_cast<T*>(c);
+                if (ptr)
+                    v.push_back(ptr);
             }
 
             return v;
@@ -122,27 +113,17 @@ namespace scene
     class MeshRenderable : public Node
     {
     public:
-        RenderInfo Render;
-
         std::shared_ptr<render::BaseMaterial> Material;
 
         asset::MeshInfo Info;
 
-        virtual bool CheckChannel(const NodeChannel c) const override
-        {
-            return (c == NodeChannel::MeshRenderable);
-        }
+        RenderInfo Render;
     };
 
     class PointLight : public Node
     {
     public:
         glm::vec3 Color;
-
-        virtual bool CheckChannel(const NodeChannel c) const override
-        {
-            return (c == NodeChannel::PointLight);
-        }
     };
 
     class Spotlight : public PointLight
@@ -150,10 +131,5 @@ namespace scene
     public:
         float OuterAngle;
         float InnerAngle;
-
-        virtual bool CheckChannel(const NodeChannel c) const override
-        {
-            return (c == NodeChannel::Spotlight);
-        }
     };
 }

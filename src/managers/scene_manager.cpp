@@ -9,11 +9,11 @@ namespace manager
 
 		if (RootNode)
 		{
-			auto meshV = RootNode->GetNodesWithChannel<scene::MeshRenderable>(scene::NodeChannel::MeshRenderable);
+			auto meshV = RootNode->GetNodesWithChannel<scene::MeshRenderable>();
 			RM->UpdateMeshUBO(meshV);
 
-			auto plV = RootNode->GetNodesWithChannel<scene::PointLight>(scene::NodeChannel::PointLight);
-			auto slV = RootNode->GetNodesWithChannel<scene::Spotlight>(scene::NodeChannel::Spotlight);
+			auto plV = RootNode->GetNodesWithChannel<scene::PointLight>();
+			auto slV = RootNode->GetNodesWithChannel<scene::Spotlight>();
 			RM->UpdateLightUBO(plV, slV);
 		}
 	}

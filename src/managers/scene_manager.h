@@ -47,7 +47,7 @@ namespace manager
 		{
 			RootNode = node;
 
-			auto meshV = RootNode->GetNodesWithChannel<scene::MeshRenderable>(scene::NodeChannel::MeshRenderable);
+			auto meshV = RootNode->GetNodesWithChannel<scene::MeshRenderable>();
 			for (auto& m : meshV)
 				RM->RegisterMesh(m);
 		}

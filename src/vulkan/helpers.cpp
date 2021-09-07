@@ -244,7 +244,8 @@ namespace vk
 
 	std::optional<Pipeline> CreateComputePipeline(const VulkanApp& app,
 												  const vk::ComputeShader& shader,
-												  const std::vector< VkDescriptorSetLayout>& layouts)
+												  const std::vector<VkDescriptorSetLayout>& layouts,
+												  const std::vector<VkPushConstantRange>& pushConstansRanges)
 	{
 		VkPipelineLayout pipelineLayout;
 
@@ -252,6 +253,9 @@ namespace vk
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = layouts.size();
 		pipelineLayoutInfo.pSetLayouts = layouts.data();
+		pipelineLayoutInfo.pushConstantRangeCount = pushConstansRanges.size();
+		pipelineLayoutInfo.pPushConstantRanges = pushConstansRanges.data();
+
 
 		if (vkCreatePipelineLayout(app.Device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 			return std::nullopt;
@@ -322,7 +326,7 @@ namespace vk
 	{
 		std::vector<VkDescriptorSetLayout> layouts = { descriptor.DescriptorSetLayout };
 
-		auto pipelineRes = vk::CreateComputePipeline(app, cs, layouts);
+		auto pipelineRes = vk::CreateComputePipeline(app, cs, layouts, {});
 		ASSERT(pipelineRes, "Couldn't create compute pipeline!");
 
 		auto cmd = vk::BeginCommands(app, app.CommandPoolCQ);

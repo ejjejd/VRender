@@ -170,7 +170,7 @@ namespace manager
 		}
 
 		size_t GenerateCubemapFromHDR(const asset::AssetId id, const uint16_t resolution = 512);
-		size_t GenerateIrradianceMap(const asset::AssetId id);
+		size_t GenerateIrradianceMap(const asset::AssetId id, const uint16_t resolution = 64);
 	};
 
 }

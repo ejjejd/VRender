@@ -56,7 +56,8 @@ namespace vk
 
 	std::optional<Pipeline> CreateComputePipeline(const VulkanApp& app, 
 												  const vk::ComputeShader& shader, 
-												  const std::vector< VkDescriptorSetLayout>& layouts);
+												  const std::vector< VkDescriptorSetLayout>& layouts,
+											      const std::vector<VkPushConstantRange>& pushConstansRanges);
 
 
 	std::optional<Pipeline> CreateGraphicsPipeline(const VulkanApp& app,

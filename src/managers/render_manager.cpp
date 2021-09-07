@@ -1104,7 +1104,7 @@ namespace manager
 		return newId;
 	}
 
-	size_t RenderManager::GenerateIrradianceMap(const asset::AssetId id)
+	size_t RenderManager::GenerateIrradianceMap(const asset::AssetId id, const uint16_t resolution)
 	{
 		vk::TextureParams params;
 		params.MagFilter = VK_FILTER_LINEAR;
@@ -1135,7 +1135,7 @@ namespace manager
 		mapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 		vk::Texture map;
-		map.Setup(*VulkanApp, 64, 64, mapImageInfo, params, 1, 6);
+		map.Setup(*VulkanApp, resolution, resolution, mapImageInfo, params, 1, 6);
 
 		map.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
 					  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
@@ -1149,12 +1149,17 @@ namespace manager
 		vk::ComputeShader cs;
 		cs.Setup(*VulkanApp, IrradianceMapComputeShader);
 
+		auto descriptor = mapDescriptor.GetDescriptorInfo();
+		std::vector<VkDescriptorSetLayout> layouts = { descriptor.DescriptorSetLayout };
+
 		const int workGroups = 16;
 		vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
-							 64 / workGroups, 64 / workGroups, 6);
+							  resolution / workGroups, resolution / workGroups, 6);
+
 
 		cs.Cleanup();
 		mapDescriptor.Destroy();
+
 
 		size_t newId = AM->IncrementImageCounter();
 		TM.AddTexture(newId, map);

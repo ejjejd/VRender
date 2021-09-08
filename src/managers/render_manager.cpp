@@ -1108,7 +1108,7 @@ namespace manager
 	{
 		const int maxTileSize = 64;
 
-		if (resolution % 64 != 0)
+		if (resolution % maxTileSize != 0)
 			LOGE("Irradiance map resolution must be multiplicity of %d", maxTileSize);
 
 		vk::TextureParams params;

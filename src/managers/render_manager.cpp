@@ -1106,6 +1106,11 @@ namespace manager
 
 	size_t RenderManager::GenerateIrradianceMap(const asset::AssetId id, const uint16_t resolution)
 	{
+		const int maxTileSize = 64;
+
+		if (resolution % 64 != 0)
+			LOGE("Irradiance map resolution must be multiplicity of %d", maxTileSize);
+
 		vk::TextureParams params;
 		params.MagFilter = VK_FILTER_LINEAR;
 		params.MinFilter = VK_FILTER_LINEAR;
@@ -1149,13 +1154,58 @@ namespace manager
 		vk::ComputeShader cs;
 		cs.Setup(*VulkanApp, IrradianceMapComputeShader);
 
+		struct
+		{
+			int Face;
+			int MaxTiles;
+			int CurrentTileX;
+			int CurrentTileY;
+		} header;
+
 		auto descriptor = mapDescriptor.GetDescriptorInfo();
 		std::vector<VkDescriptorSetLayout> layouts = { descriptor.DescriptorSetLayout };
 
-		const int workGroups = 16;
-		vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
-							  resolution / workGroups, resolution / workGroups, 6);
+		VkPushConstantRange pushConstant;
+		pushConstant.offset = 0;
+		pushConstant.size = sizeof(header);
+		pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
+		auto pipelineRes = vk::CreateComputePipeline(*VulkanApp, cs, layouts, { pushConstant });
+		ASSERT(pipelineRes, "Couldn't create compute pipeline!");
+
+		auto cmd = vk::BeginCommands(*VulkanApp, VulkanApp->CommandPoolCQ);
+
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Handle);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Layout, 0, descriptor.DescriptorSets.size(),
+								descriptor.DescriptorSets.data(), 0, 0);
+
+		const int workGroups = 16;
+		const int tilesCount = resolution / maxTileSize;
+		const int size = resolution / workGroups / tilesCount;
+
+		header.MaxTiles = tilesCount;
+
+		for (int f = 0; f < 6; ++f)
+		{
+			header.Face = f;
+
+			for (int i = 0; i < tilesCount; ++i)
+			{
+				header.CurrentTileX = i;
+
+				for (int j = 0; j < tilesCount; ++j)
+				{
+					header.CurrentTileY = j;
+
+					vkCmdPushConstants(cmd, pipelineRes->Layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(header), &header);
+					cs.Dispatch(cmd, size, size, 1);
+				}
+			}
+		}
+
+		vk::EndCommands(*VulkanApp, VulkanApp->CommandPoolCQ, cmd, VulkanApp->ComputeQueue);
+
+		vk::DestoryPipeline(*VulkanApp, *pipelineRes);
 
 		cs.Cleanup();
 		mapDescriptor.Destroy();

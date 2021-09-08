@@ -7,6 +7,14 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) uniform readonly imageCube hdrMap;
 layout(rgba32f, binding = 1) uniform writeonly imageCube map;
 
+layout(push_constant) uniform Header
+{
+    int Face;
+    int MaxTiles;
+    int CurrentTileX;
+    int CurrentTileY;
+} header;
+
 vec3 CubeCoordToWorld(ivec3 cubeCoord, vec2 cubemapSize)
 {
     vec2 texCoord = vec2(cubeCoord.xy) / cubemapSize;
@@ -62,13 +70,16 @@ ivec3 TexCoordToCube(vec3 texCoord, vec2 cubemapSize)
     uvCoord = clamp(uvCoord, vec2(0.0), cubemapSize - vec2(1.0));
 
     return ivec3(ivec2(uvCoord), int(cubeFace));
-} 
+}
 
 void main()
 {
     vec2 cubemapSize = imageSize(map).xy;
 
     ivec3 cubeCoord = ivec3(gl_GlobalInvocationID);
+    cubeCoord.xy += ivec2(header.CurrentTileX, header.CurrentTileY) * int(gl_NumWorkGroups.x * gl_WorkGroupSize.x);
+    cubeCoord.z = header.Face;
+
     vec3 worldPos = CubeCoordToWorld(cubeCoord, cubemapSize);
 
     vec3 normal = normalize(worldPos);
@@ -96,6 +107,6 @@ void main()
         }
     }
 
-    irradiance = PI * irradiance * (1.0 / float(nrSamples * 2.0f));
+    irradiance = PI * irradiance * (1.0 / float(nrSamples));
     imageStore(map, cubeCoord, vec4(irradiance, 1.0));
 }

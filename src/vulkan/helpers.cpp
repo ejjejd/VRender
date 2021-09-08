@@ -201,8 +201,8 @@ namespace vk
 	}
 
 	std::optional<VkRenderPass> CreateRenderPass(const VulkanApp& app, const std::vector<VkAttachmentDescription>& attachments,
-		const std::vector<VkSubpassDescription>& subpasses,
-		const std::vector<VkSubpassDependency>& dependencies)
+												 const std::vector<VkSubpassDescription>& subpasses,
+												 const std::vector<VkSubpassDependency>& dependencies)
 	{
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -222,8 +222,8 @@ namespace vk
 	}
 
 	std::optional<VkFramebuffer> CreateFramebuffer(const VulkanApp& app, const VkRenderPass& renderPass,
-		const std::vector<VkImageView>& attachments,
-		const uint16_t width, const uint16_t height)
+												   const std::vector<VkImageView>& attachments,
+												   const uint16_t width, const uint16_t height)
 	{
 		VkFramebufferCreateInfo fboInfo{};
 		fboInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

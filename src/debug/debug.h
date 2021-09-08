@@ -13,7 +13,7 @@
 	inline utils::Timer GlobalTimer;
 
 	#define START_TIMER() GlobalTimer.Start()
-	#define END_TIMER() LOGW(GlobalTimer.GetElapsedTime())
+	#define END_TIMER() LOGW("%f", GlobalTimer.GetElapsedTime())
 #else
 	#define LOGC(...)
 	#define LOGW(...)

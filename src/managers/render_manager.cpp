@@ -71,6 +71,7 @@ namespace manager
 			imageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT 
 								   | VK_IMAGE_USAGE_SAMPLED_BIT;
 			imageInfo.Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfo.Channels = texture.Channels;
 				
 			if (type == vk::DescriptorImageType::Cubemap)
 			{
@@ -1213,6 +1214,13 @@ namespace manager
 
 		size_t newId = AM->IncrementImageCounter();
 		TM.AddTexture(newId, map);
+
+		return newId;
+	}
+
+	size_t RenderManager::GeneratePreFilteredMap(const asset::AssetId id, const uint16_t resolution)
+	{
+		size_t newId = AM->IncrementImageCounter();
 
 		return newId;
 	}

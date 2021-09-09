@@ -4,7 +4,7 @@
 #include "vulkan/descriptor.h"
 
 namespace vk
-{
+{	
 	struct TextureParams
 	{
 		VkFilter MagFilter;
@@ -22,6 +22,7 @@ namespace vk
 		VkImageUsageFlags UsageFlags;
 		VkImageLayout Layout;
 		VkFlags CreateFlags = 0;
+		ImageChannels Channels;
 	};
 
 	class Texture

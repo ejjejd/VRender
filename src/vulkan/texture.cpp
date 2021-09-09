@@ -13,7 +13,7 @@ namespace vk
 
 		if (!Image.Setup(app, imageInfo.Type, imageInfo.ViewType, imageInfo.Format,
 						 imageInfo.UsageFlags, imageInfo.ViewAspect,
-						 width, height, depth, layersCount, imageInfo.CreateFlags))
+						 width, height, depth, layersCount, imageInfo.CreateFlags, imageInfo.Channels))
 		{
 			return false;
 		}

@@ -120,8 +120,8 @@ void main()
 	vec3 Lo = vec3(0.0f);
 
 	vec3 Albedo = materialUBO.Albedo * texture(AlbedoTexture, UV).xyz;
-	float Metallic = materialUBO.Metallic * texture(MetallicTexture, UV).b;
-	float Roughness = materialUBO.Roughness * texture(RoughnessTexture, UV).g;
+	float Metallic = materialUBO.Metallic * texture(MetallicTexture, UV).r;
+	float Roughness = materialUBO.Roughness * texture(RoughnessTexture, UV).r;
 	float Ao = materialUBO.Ao * texture(AoTexture, UV).r;
 
 	vec3 F0 = vec3(0.04f);

@@ -25,9 +25,15 @@ int main()
 	auto material = std::make_shared<render::PbrMaterial>();
 	material->Textures.Albedo.ImageId = helmetAlbedoId;
 	material->Textures.Normal.ImageId = helmetNormalId;
+
 	material->Textures.Metallic.ImageId = helmetMetalRoughnessId;
+	material->Textures.Metallic.Channels = { IC::B, IC::B, IC::B, IC::B };
+
 	material->Textures.Roughness.ImageId = helmetMetalRoughnessId;
+	material->Textures.Roughness.Channels = { IC::G, IC::G, IC::G, IC::G };
+
 	material->Textures.Ao.ImageId = helmetAoId;
+
 
 	material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.ImageId, 64);
 

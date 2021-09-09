@@ -7,7 +7,7 @@ namespace vk
 	bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, const VkFormat format, 
 					  const VkImageUsageFlags usage, const VkImageAspectFlags& viewAspect,
 					  const uint16_t width, const uint16_t height, const uint16_t depth, const uint16_t layersCount,
-					  const VkFlags flags)
+					  const VkFlags flags, const ImageChannels channels)
 	{
 		App = &app;
 
@@ -57,7 +57,9 @@ namespace vk
 		viewCreateInfo.subresourceRange.levelCount = 1;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+		viewCreateInfo.components = FromImageChannelsToSwizzleMap(channels);
 
+		
 		if (vkCreateImageView(app.Device, &viewCreateInfo, nullptr, &ImageView) != VK_SUCCESS)
 			return false;
 

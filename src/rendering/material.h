@@ -11,6 +11,7 @@ namespace render
 	{
 		asset::AssetId ImageId;
 		vk::TextureParams TextureParams;
+		ImageChannels Channels;
 	};
 
 	inline vk::TextureParams CreateColorMapTextureParams()

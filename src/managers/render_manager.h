@@ -171,6 +171,7 @@ namespace manager
 
 		size_t GenerateCubemapFromHDR(const asset::AssetId id, const uint16_t resolution = 512);
 		size_t GenerateIrradianceMap(const asset::AssetId id, const uint16_t resolution = 64);
+		size_t GeneratePreFilteredMap(const asset::AssetId id, const uint16_t resolution = 64);
 	};
 
 }

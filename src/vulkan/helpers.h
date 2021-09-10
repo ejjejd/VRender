@@ -14,6 +14,8 @@ namespace vk
 	{
 		void SetImageLayoutFromUndefinedToTransfer(const vk::VulkanApp& app, const VkQueue queue,
 												   const VkCommandPool commandPool, const VkImage image);
+		void SetImageLayoutFromUndefinedToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
+														 const VkCommandPool commandPool, const VkImage image);
 		void SetImageLayoutFromTransferToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
 														const VkCommandPool commandPool, const VkImage image);
 		void SetImageLayoutFromTransferToComputeRead(const vk::VulkanApp& app, const VkQueue queue,

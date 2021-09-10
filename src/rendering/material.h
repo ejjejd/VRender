@@ -7,6 +7,13 @@
 
 namespace render
 {
+	//Generate unique image ids for the images that will remain empty
+	inline size_t GetDefaultImageId()
+	{
+		static size_t numberOfCalls = 0;
+		return SIZE_MAX - numberOfCalls++;
+	}
+
 	struct MaterialTexture
 	{
 		asset::AssetId ImageId;
@@ -55,12 +62,12 @@ namespace render
 
 	struct PbrMaterialTextures
 	{
-		MaterialTexture Albedo = { SIZE_MAX, CreateColorMapTextureParams() };
-		MaterialTexture Metallic = { SIZE_MAX, CreateColorMapTextureParams() };
-		MaterialTexture Roughness = { SIZE_MAX, CreateColorMapTextureParams() };
-		MaterialTexture Ao = { SIZE_MAX, CreateColorMapTextureParams() };
-		MaterialTexture Normal = { SIZE_MAX, CreateColorMapTextureParams() };
-		MaterialTexture IrradianceMap = { SIZE_MAX, CreateColorMapTextureParams() };
+		MaterialTexture Albedo = { GetDefaultImageId(), CreateColorMapTextureParams() };
+		MaterialTexture Metallic = { GetDefaultImageId(), CreateColorMapTextureParams() };
+		MaterialTexture Roughness = { GetDefaultImageId(), CreateColorMapTextureParams() };
+		MaterialTexture Ao = { GetDefaultImageId(), CreateColorMapTextureParams() };
+		MaterialTexture Normal = { GetDefaultImageId(), CreateColorMapTextureParams() };
+		MaterialTexture IrradianceMap = { GetDefaultImageId(), CreateColorMapTextureParams() };
 	};
 
 	class PbrMaterial : public BaseMaterial
@@ -102,7 +109,7 @@ namespace render
 	class HdrMaterial : public BaseMaterial
 	{
 	public:
-		MaterialTexture HdrTexture = { SIZE_MAX, CreateColorMapTextureParams() };
+		MaterialTexture HdrTexture = { GetDefaultImageId(), CreateColorMapTextureParams() };
 
 		inline vk::Shader CreateShader(vk::VulkanApp& app) const override
 		{

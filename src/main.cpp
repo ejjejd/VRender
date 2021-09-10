@@ -34,7 +34,6 @@ int main()
 
 	material->Textures.Ao.ImageId = helmetAoId;
 
-
 	material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.ImageId, 64);
 
 	scene::Node rootNode;

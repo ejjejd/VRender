@@ -83,13 +83,14 @@ namespace manager
 
 			if (!AM->IsImageLoaded(texture.ImageId)) 
 			{
+				imageInfo.Channels = { IC::One, IC::One, IC::One, IC::One };
+
 				if (type == vk::DescriptorImageType::Image2d)
 				{
 					t.Setup(*App, 1, 1, imageInfo, render::CreateInfoMapTextureParams());
 
-					//Fill texture with white color if the texture view is 2d
-					char pixels[] = { -1, -1, -1, -1 };
-					t.Update(pixels, 4);
+					t.SetLayout(App->GraphicsQueue, App->CommandPoolGQ,
+								vk::layout::SetImageLayoutFromUndefinedToGraphicsShader);
 				}
 				else if (type == vk::DescriptorImageType::Cubemap)
 				{

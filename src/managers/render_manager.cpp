@@ -1111,7 +1111,10 @@ namespace manager
 		const int maxTileSize = 64;
 
 		if (resolution % maxTileSize != 0)
+		{
 			LOGE("Irradiance map resolution must be multiplicity of %d", maxTileSize);
+			return -1;
+		}
 
 		vk::TextureParams params;
 		params.MagFilter = VK_FILTER_LINEAR;
@@ -1221,6 +1224,86 @@ namespace manager
 
 	size_t RenderManager::GeneratePreFilteredMap(const asset::AssetId id, const uint16_t resolution)
 	{
+		vk::TextureParams params;
+		params.MagFilter = VK_FILTER_LINEAR;
+		params.MinFilter = VK_FILTER_LINEAR;
+		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+		vk::TextureImageInfo hdrImageInfo;
+		hdrImageInfo.Type = VK_IMAGE_TYPE_2D;
+		hdrImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		hdrImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		hdrImageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT
+								  | VK_IMAGE_USAGE_SAMPLED_BIT
+								  | VK_IMAGE_USAGE_STORAGE_BIT;
+		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		hdrImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+		auto hdrTexture = TM.GetOrCreate({ id, params }, vk::DescriptorImageType::Cubemap);
+
+		vk::TextureImageInfo mapImageInfo;
+		mapImageInfo.Type = VK_IMAGE_TYPE_2D;
+		mapImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		mapImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		mapImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		mapImageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		mapImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		mapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+		vk::Texture map;
+		map.Setup(*VulkanApp, resolution, resolution, mapImageInfo, params, 1, 6);
+
+		map.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+					  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
+
+
+		vk::TextureDescriptor mapDescriptor;
+		mapDescriptor.LinkTexture(hdrTexture, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.LinkTexture(map, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
+
+		vk::ComputeShader cs;
+		cs.Setup(*VulkanApp, PreFilterMapComputeShader);
+
+		struct
+		{
+			int MipMapSizeX;
+			int MipMapSizeY;
+			float Roughness;
+		} header;
+
+		auto descriptor = mapDescriptor.GetDescriptorInfo();
+		std::vector<VkDescriptorSetLayout> layouts = { descriptor.DescriptorSetLayout };
+
+		VkPushConstantRange pushConstant;
+		pushConstant.offset = 0;
+		pushConstant.size = sizeof(header);
+		pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		auto pipelineRes = vk::CreateComputePipeline(*VulkanApp, cs, layouts, { pushConstant });
+		ASSERT(pipelineRes, "Couldn't create compute pipeline!");
+
+		auto cmd = vk::BeginCommands(*VulkanApp, VulkanApp->CommandPoolCQ);
+
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Handle);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineRes->Layout, 0, descriptor.DescriptorSets.size(),
+								descriptor.DescriptorSets.data(), 0, 0);
+
+		const int workGroups = 16;
+		const int size = resolution / workGroups;
+
+		vkCmdPushConstants(cmd, pipelineRes->Layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(header), &header);
+		cs.Dispatch(cmd, size, size, 1);
+
+		vk::EndCommands(*VulkanApp, VulkanApp->CommandPoolCQ, cmd, VulkanApp->ComputeQueue);
+
+		vk::DestoryPipeline(*VulkanApp, *pipelineRes);
+
+		cs.Cleanup();
+		mapDescriptor.Destroy();
+
 		size_t newId = AM->IncrementImageCounter();
 
 		return newId;

@@ -1,0 +1,112 @@
+#version 460 core
+
+#include "cube_sample.glsl"
+
+#define PI 3.14f
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform samplerCube hdrMap;
+layout(rgba32f, binding = 1) uniform writeonly imageCube map;
+
+layout(push_constant) uniform Params
+{
+    int MipMapSizeX;
+    int MipMapSizeY;
+    float Roughness;
+} params;
+
+float RadicalInverse_Vdc(uint bits)
+{
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+
+    return float(bits) * 2.3283064365386963e-10;   
+}
+
+vec2 Hammersley(uint i, uint n)
+{
+    return vec2(float(i) / float(n), RadicalInverse_Vdc(i));
+}
+
+vec3 ImportanceSampleGGX(vec2 xI, vec3 n, float roughness)
+{
+    float a = roughness * roughness;
+
+    float phi = 2.0f * PI * xI.x;
+    float cosTheta = sqrt((1.0f - xI.y) / (1.0f + (a * a - 1.0f) * xI.y));
+    float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+
+    vec3 H;
+    H.x = cos(phi) * sinTheta;
+    H.y = sin(phi) * sinTheta;
+    H.z = cosTheta;
+
+    vec3 up = abs(n.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
+    vec3 tangent = normalize(cross(up, n));
+    vec3 bitangent = cross(n, tangent);
+
+    vec3 sampleVec = tangent * H.x + bitangent * H.y * n * H.z;
+    return normalize(sampleVec);
+}
+
+float d_ggx(float dotNH, float roughness)
+{
+    float alpha = roughness * roughness;
+    float alpha2 = alpha * alpha;
+    float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
+    return alpha2 / (PI * denom * denom); 
+}
+
+void main()
+{
+    ivec3 cubeCoord = ivec3(gl_GlobalInvocationID);
+    vec3 worldPos = CubeCoordToWorld(cubeCoord, vec2(params.MipMapSizeX, params.MipMapSizeY));
+
+    vec3 N = normalize(worldPos);
+
+    vec3 R = N;
+    vec3 V = R;
+
+    float roughness = max(params.Roughness, 0.04f);
+    float totalWeight = 0.0f;
+    vec3 prefilteredColor = vec3(0.0f);
+
+    const uint sampleCount = 1024u;
+    const vec2 cubemapSize = imageSize(map).xy;
+    const float originalSamples = cubemapSize.x * cubemapSize.y; 
+
+    for(uint i = 0; i < sampleCount; ++i)
+    {
+        vec2 xI = Hammersley(i, sampleCount);
+        vec3 H = ImportanceSampleGGX(xI, N, roughness);
+        
+        float hDotV = dot(H, V);
+
+        vec3 L = normalize(2.0f * hDotV * H - V);
+
+        float nDotL = max(dot(N, L), 0.0f);
+
+        if(nDotL > 0.0f)
+        {
+            float nDotH = max(dot(N, H), 0.0);
+            hDotV = max(hDotV, 0.0);
+
+            float D = d_ggx(nDotH, roughness);
+            float pdf = D * nDotH / (4.0 * hDotV) + 0.0001; 
+
+            float saTexel  = 4.0 * PI / (6.0 * originalSamples);
+            float saSample = 1.0 / (sampleCount * pdf + 0.0001);
+            float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel); 
+
+            prefilteredColor += textureLod(hdrMap, L, mipLevel).rgb * nDotL;
+            totalWeight += nDotL;
+        }
+    }
+
+    prefilteredColor = prefilteredColor / totalWeight;
+    imageStore(map, cubeCoord, vec4(prefilteredColor, 1.0f));
+}

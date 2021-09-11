@@ -7,12 +7,14 @@ namespace vk
 	bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, const VkFormat format, 
 					  const VkImageUsageFlags usage, const VkImageAspectFlags& viewAspect,
 					  const uint16_t width, const uint16_t height, const uint16_t depth, const uint16_t layersCount,
-					  const VkFlags flags, const ImageChannels channels)
+					  const VkFlags flags, const ImageChannels channels, const uint8_t mipLevels)
 	{
 		App = &app;
 
 		Width = width;
 		Height = height;
+
+		MipLevels = mipLevels;
 
 		VkImageCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -20,7 +22,7 @@ namespace vk
 		createInfo.extent.width = width;
 		createInfo.extent.height = height;
 		createInfo.extent.depth = depth;
-		createInfo.mipLevels = 1;
+		createInfo.mipLevels = mipLevels;
 		createInfo.arrayLayers = layersCount;
 		createInfo.format = format;
 		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -54,7 +56,7 @@ namespace vk
 		viewCreateInfo.format = format;
 		viewCreateInfo.subresourceRange.aspectMask = viewAspect;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.levelCount = mipLevels;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 		viewCreateInfo.components = FromImageChannelsToSwizzleMap(channels);

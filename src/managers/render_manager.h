@@ -36,6 +36,7 @@ namespace manager
 
 	constexpr auto FromHdrToCubemapShader = "res/shaders/compute/generate_cubemap.spv";
 	constexpr auto IrradianceMapComputeShader = "res/shaders/compute/generate_im.spv";
+	constexpr auto PreFilterMapComputeShader = "res/shaders/compute/generate_pm.spv";
 
 	class TextureManager
 	{

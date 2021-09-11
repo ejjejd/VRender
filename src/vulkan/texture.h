@@ -38,7 +38,7 @@ namespace vk
 	public:
 		bool Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height, 
 				   const TextureImageInfo& imageInfo, const TextureParams& params,
-				   const uint16_t depth = 1, const uint16_t layersCount = 1);
+				   const uint16_t depth = 1, const uint16_t layersCount = 1, const uint8_t mipLevels = 1);
 
 		inline void Cleanup() const
 		{
@@ -50,10 +50,10 @@ namespace vk
 		void Update(void* data, const size_t pixelStride);
 
 		inline void SetLayout(const VkQueue queue, const VkCommandPool commandPool,
-						      void(*layoutFunc)(const vk::VulkanApp&, const VkQueue, const VkCommandPool, const VkImage))
+						      void(*layoutFunc)(const vk::VulkanApp&, const VkQueue, const VkCommandPool, const VkImage, const uint8_t))
 		{
 			if (layoutFunc)
-				layoutFunc(*App, queue, commandPool, Image.GetHandler());
+				layoutFunc(*App, queue, commandPool, Image.GetHandler(), Image.GetMipLevels());
 		}
 
 		inline vk::Image GetImage() const

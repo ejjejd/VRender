@@ -60,12 +60,14 @@ namespace vk
 		uint16_t Width;
 		uint16_t Height;
 
+		uint8_t MipLevels;
+
 		VulkanApp* App;
 	public:
 		bool Image::Setup(VulkanApp& app, const VkImageType type, const VkImageViewType viewType, 
 						  const VkFormat format, const VkImageUsageFlags usage, const VkImageAspectFlags& viewAspect,
 						  const uint16_t width, const uint16_t height, const uint16_t depth, const uint16_t layersCount,
-						  const VkFlags flags, const ImageChannels channels);
+						  const VkFlags flags, const ImageChannels channels, const uint8_t mipLevels);
 
 		void Cleanup() const;
 
@@ -87,6 +89,11 @@ namespace vk
 		inline uint16_t GetHeight() const
 		{
 			return Height;
+		}
+
+		inline uint8_t GetMipLevels() const
+		{
+			return MipLevels;
 		}
 	};
 }

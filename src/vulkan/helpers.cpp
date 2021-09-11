@@ -7,7 +7,8 @@ namespace vk
 	namespace layout
 	{
 		void SetImageLayoutFromUndefinedToTransfer(const vk::VulkanApp& app, const VkQueue queue,
-												   const VkCommandPool commandPool, const VkImage image)
+												   const VkCommandPool commandPool, const VkImage image, 
+												   const uint8_t mipLevels)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 
@@ -20,7 +21,7 @@ namespace vk
 			barrier.image = image;
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.levelCount = mipLevels;
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = 1;
 			barrier.srcAccessMask = 0;
@@ -33,7 +34,8 @@ namespace vk
 		}
 
 		void SetImageLayoutFromUndefinedToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
-			const VkCommandPool commandPool, const VkImage image)
+														 const VkCommandPool commandPool, const VkImage image, 
+														 const uint8_t mipLevels)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 
@@ -46,7 +48,7 @@ namespace vk
 			barrier.image = image;
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.levelCount = mipLevels;
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = 1;
 			barrier.srcAccessMask = 0;
@@ -59,7 +61,8 @@ namespace vk
 		}
 
 		void SetImageLayoutFromTransferToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
-										                const VkCommandPool commandPool, const VkImage image)
+										                const VkCommandPool commandPool, const VkImage image, 
+														const uint8_t mipLevels)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 
@@ -72,7 +75,7 @@ namespace vk
 			barrier.image = image;
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.levelCount = mipLevels;
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = 1;
 			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -85,7 +88,8 @@ namespace vk
 		}
 
 		void SetImageLayoutFromTransferToComputeRead(const vk::VulkanApp& app, const VkQueue queue,
-														const VkCommandPool commandPool, const VkImage image)
+													 const VkCommandPool commandPool, const VkImage image, 
+													 const uint8_t mipLevels)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 
@@ -98,7 +102,7 @@ namespace vk
 			barrier.image = image;
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.levelCount = mipLevels;
 			barrier.subresourceRange.baseArrayLayer = 0;
 			barrier.subresourceRange.layerCount = 1;
 			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -111,7 +115,8 @@ namespace vk
 		}
 
 		void SetCubeImageLayoutFromComputeWriteToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
-															    const VkCommandPool commandPool, const VkImage image)
+															    const VkCommandPool commandPool, const VkImage image, 
+																const uint8_t mipLevels)
 		{
 			auto cmd = BeginCommands(app, commandPool);
 
@@ -121,7 +126,11 @@ namespace vk
 			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
 			imageMemoryBarrier.image = image;
-			imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 6 };
+			imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
+			imageMemoryBarrier.subresourceRange.levelCount = mipLevels;
+			imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+			imageMemoryBarrier.subresourceRange.layerCount = 6;
 			imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
 			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

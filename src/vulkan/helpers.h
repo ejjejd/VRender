@@ -13,15 +13,20 @@ namespace vk
 	namespace layout
 	{
 		void SetImageLayoutFromUndefinedToTransfer(const vk::VulkanApp& app, const VkQueue queue,
-												   const VkCommandPool commandPool, const VkImage image);
+												   const VkCommandPool commandPool, const VkImage image, 
+												   const uint8_t mipLevels = 1);
 		void SetImageLayoutFromUndefinedToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
-														 const VkCommandPool commandPool, const VkImage image);
+														 const VkCommandPool commandPool, const VkImage image,
+														 const uint8_t mipLevels = 1);
 		void SetImageLayoutFromTransferToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
-														const VkCommandPool commandPool, const VkImage image);
+														const VkCommandPool commandPool, const VkImage image, 
+													    const uint8_t mipLevels = 1);
 		void SetImageLayoutFromTransferToComputeRead(const vk::VulkanApp& app, const VkQueue queue,
-													 const VkCommandPool commandPool, const VkImage image);
+													 const VkCommandPool commandPool, const VkImage image, 
+													 const uint8_t mipLevels = 1);
 		void SetCubeImageLayoutFromComputeWriteToGraphicsShader(const vk::VulkanApp& app, const VkQueue queue,
-																const VkCommandPool commandPool, const VkImage image);
+																const VkCommandPool commandPool, const VkImage image, 
+																const uint8_t mipLevels = 1);
 	}
 
 	struct Pipeline

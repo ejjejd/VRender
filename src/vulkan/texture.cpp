@@ -7,13 +7,13 @@ namespace vk
 {
 	bool Texture::Setup(vk::VulkanApp& app, const uint16_t width, const uint16_t height,
 						const TextureImageInfo& imageInfo, const TextureParams& params,
-						const uint16_t depth, const uint16_t layersCount)
+						const uint16_t depth, const uint16_t layersCount, const uint8_t mipLevels)
 	{ 
 		App = &app;
 
 		if (!Image.Setup(app, imageInfo.Type, imageInfo.ViewType, imageInfo.Format,
 						 imageInfo.UsageFlags, imageInfo.ViewAspect,
-						 width, height, depth, layersCount, imageInfo.CreateFlags, imageInfo.Channels))
+						 width, height, depth, layersCount, imageInfo.CreateFlags, imageInfo.Channels, mipLevels))
 		{
 			return false;
 		}

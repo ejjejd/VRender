@@ -104,14 +104,14 @@ namespace manager
 			{
 				auto image = AM->GetImageInfo(texture.ImageId);
 
-				if (image.Hdr)
-					imageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+				//if (image.Hdr)
+				//	imageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
 
 
-				t.Setup(*App, image.Width, image.Height, imageInfo, texture.TextureParams);
-				t.Update(image.PixelsData.data(), 4 * (image.Hdr ? sizeof(float) : 1));
-				t.SetLayout(App->GraphicsQueue, App->CommandPoolGQ,
-							vk::layout::SetImageLayoutFromTransferToGraphicsShader);
+				//t.Setup(*App, image.Width, image.Height, imageInfo, texture.TextureParams);
+				//t.Update(image.PixelsData.data(), 4 * (image.Hdr ? sizeof(float) : 1));
+				//t.SetLayout(App->GraphicsQueue, App->CommandPoolGQ,
+				//			vk::layout::SetImageLayoutFromTransferToGraphicsShader);
 			}
 
 			TexturesLookup[texture.ImageId] = t;
@@ -947,59 +947,59 @@ namespace manager
 
 		for (auto i : findShaderInfo->second.Inputs)
 		{
-			switch (i.LocationId)
-			{
-			case ShaderInputPositionLocation:
-				{
-					vk::Buffer positionBuffer;
-					positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Positions[0]), mesh->Info.Positions.size());
-					positionBuffer.Update((void*)mesh->Info.Positions.data(), mesh->Info.Positions.size());
+			//switch (i.LocationId)
+			//{
+			//case ShaderInputPositionLocation:
+			//	{
+			//		vk::Buffer positionBuffer;
+			//		positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Positions[0]), mesh->Info.Positions.size());
+			//		positionBuffer.Update((void*)mesh->Info.Positions.data(), mesh->Info.Positions.size());
 
-					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputPositionLocation, 0, positionBuffer.GetStride());
+			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputPositionLocation, 0, positionBuffer.GetStride());
 
-					buffers.push_back(positionBuffer);
-				} break;
-			case ShaderInputNormalLocation:
-				{
-					vk::Buffer normalBuffer;
-					normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Normals[0]), mesh->Info.Normals.size());
-					normalBuffer.Update((void*)mesh->Info.Normals.data(), mesh->Info.Normals.size());
+			//		buffers.push_back(positionBuffer);
+			//	} break;
+			//case ShaderInputNormalLocation:
+			//	{
+			//		vk::Buffer normalBuffer;
+			//		normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Normals[0]), mesh->Info.Normals.size());
+			//		normalBuffer.Update((void*)mesh->Info.Normals.data(), mesh->Info.Normals.size());
 
-					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputNormalLocation, 0, normalBuffer.GetStride());
+			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputNormalLocation, 0, normalBuffer.GetStride());
 
-					buffers.push_back(normalBuffer);
-				} break;
-			case ShaderInputUvLocation:
-				{
-					vk::Buffer uvBuffer;
-					uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.UVs[0]), mesh->Info.UVs.size());
-					uvBuffer.Update((void*)mesh->Info.UVs.data(), mesh->Info.UVs.size());
+			//		buffers.push_back(normalBuffer);
+			//	} break;
+			//case ShaderInputUvLocation:
+			//	{
+			//		vk::Buffer uvBuffer;
+			//		uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.UVs[0]), mesh->Info.UVs.size());
+			//		uvBuffer.Update((void*)mesh->Info.UVs.data(), mesh->Info.UVs.size());
 
-					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
+			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
 
-					buffers.push_back(uvBuffer);
-				} break;
-			case ShaderInputTangentLocation:
-				{
-					vk::Buffer tangentBuffer;
-					tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Tangents[0]), mesh->Info.Tangents.size());
-					tangentBuffer.Update((void*)mesh->Info.Tangents.data(), mesh->Info.Tangents.size());
+			//		buffers.push_back(uvBuffer);
+			//	} break;
+			//case ShaderInputTangentLocation:
+			//	{
+			//		vk::Buffer tangentBuffer;
+			//		tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Tangents[0]), mesh->Info.Tangents.size());
+			//		//tangentBuffer.Update((void*)mesh->Info.Tangents.data(), mesh->Info.Tangents.size());
 
-					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputTangentLocation, 0, tangentBuffer.GetStride());
+			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputTangentLocation, 0, tangentBuffer.GetStride());
 
-					buffers.push_back(tangentBuffer);
-				} break;
-			case ShaderInputBitangentLocation:
-				{
-					vk::Buffer bitangentBuffer;
-					bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Bitangents[0]), mesh->Info.Bitangents.size());
-					bitangentBuffer.Update((void*)mesh->Info.Bitangents.data(), mesh->Info.Bitangents.size());
+			//		buffers.push_back(tangentBuffer);
+			//	} break;
+			//case ShaderInputBitangentLocation:
+			//	{
+			//		vk::Buffer bitangentBuffer;
+			//		bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Bitangents[0]), mesh->Info.Bitangents.size());
+			//		//bitangentBuffer.Update((void*)mesh->Info.Bitangents.data(), mesh->Info.Bitangents.size());
 
-					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputBitangentLocation, 0, bitangentBuffer.GetStride());
+			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputBitangentLocation, 0, bitangentBuffer.GetStride());
 
-					buffers.push_back(bitangentBuffer);
-				} break;
-			}
+			//		buffers.push_back(bitangentBuffer);
+			//	} break;
+			//}
 
 			++bindId;
 		}
@@ -1063,8 +1063,8 @@ namespace manager
 
 		auto hdrData = AM->GetImageInfo(id);
 		vk::Texture hdrTexture;
-		hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
-		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));
+		/*hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
+		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));*/
 
 		hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
 							 vk::layout::SetImageLayoutFromTransferToComputeRead);

@@ -6,11 +6,52 @@
 
 #include "vendors/stb/stb_image.h"
 
+#include <filesystem>
+
 namespace manager
 {
-	asset::MeshInfo ConvertMesh(const aiMesh* assimpMesh)
+	void AssetManager::LoadAssetsFromFolder(const std::string& path)
 	{
-		asset::MeshInfo mesh;
+		auto strPath = std::filesystem::path(path).wstring();
+		for (auto& c : strPath) //Covert path to one format
+		{
+			if (c == '\\' || c == '/')
+				c = std::filesystem::path::preferred_separator;
+		}
+
+		auto relPath = std::filesystem::path::preferred_separator + strPath;
+		auto p = std::filesystem::current_path().wstring() + relPath;
+
+		auto str = std::filesystem::path(p).string();
+		LOGC("Loading assets from %s...", str.c_str());
+
+		utils::Timer t;
+		t.Start();
+
+		for (auto& c : std::filesystem::recursive_directory_iterator(p))
+		{
+			if (c.is_directory())
+				continue;
+
+			auto str = c.path().string();
+			if(!LoadSingleAsset(str))
+				LOGE("Couldn't load asset: %s", str.c_str());
+			else
+				LOGC("Asset loaded: %s", str.c_str());
+		}
+
+		LOGC("Assets loaded in %fms", t.GetElapsedTime());
+	}	
+
+	template<typename T, typename T1>
+	inline void MergeVector(std::vector<T>& v, const std::vector<T1>& v1)
+	{
+		v.insert(v.end(), v1.begin(), v1.end());
+	}
+
+	MeshData ConvertMesh(const aiMesh* assimpMesh)
+	{
+		MeshData mesh;
 
 		bool haveTangentSpace = true;
 
@@ -56,32 +97,53 @@ namespace manager
 		return mesh;
 	}
 
-	asset::AssetId AssetManager::LoadMeshInfo(const std::string& filepath)
+	bool AssetManager::TryToLoadAsMesh(const utils::HashString& filepath)
 	{
 		Assimp::Importer assimpImporter;
 
-		const auto scene = assimpImporter.ReadFile(filepath, aiProcess_Triangulate | aiProcess_CalcTangentSpace);
+		const auto scene = assimpImporter.ReadFile(filepath.GetString(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-		{
-			LOGE("Error loading mesh: %s", filepath);
-			return -1;
-		}
+			return false;
+
+		asset::MeshInfo info;
+		info.NameOffset = MeshesData.Names.size();
+		info.PositionsRDO.StartPosition = MeshesData.Positions.size();
+		info.NormalsRDO.StartPosition = MeshesData.Normals.size();
+		info.UvsRDO.StartPosition = MeshesData.UVs.size();
+		info.TangentsRDO.StartPosition = MeshesData.Tangents.size();
+		info.BitangentsRDO.StartPosition = MeshesData.Bitangents.size();
 
 
-		MeshesLookup[MeshCounter] = ConvertMesh(scene->mMeshes[0]);
-		
+		auto meshData = ConvertMesh(scene->mMeshes[0]);
+
+		MeshesData.Names.push_back(meshData.Name);
+		MergeVector(MeshesData.Positions, meshData.Positions);
+		MergeVector(MeshesData.Normals, meshData.Normals);
+		MergeVector(MeshesData.UVs, meshData.UVs);
+		MergeVector(MeshesData.Tangents, meshData.Tangents);
+		MergeVector(MeshesData.Bitangents, meshData.Bitangents);
+
+
+		info.PositionsRDO.EndPosition = MeshesData.Positions.size() - 1;
+		info.NormalsRDO.EndPosition = MeshesData.Normals.size() - 1;
+		info.UvsRDO.EndPosition = MeshesData.UVs.size() - 1;
+		info.TangentsRDO.EndPosition = MeshesData.Tangents.size() - 1;
+		info.BitangentsRDO.EndPosition = MeshesData.Bitangents.size() -1;
+
+		MeshesOffsetLookup[filepath.GetHash()] = info;
+
 		assimpImporter.FreeScene();
 
-		return MeshCounter++;
+		return true;
 	}
 
-	asset::AssetId AssetManager::LoadImageInfo(const std::string& filepath)
+	bool AssetManager::TryToLoadAsImage(const utils::HashString& filepath)
 	{
 		int texWidth, texHeight, texChannels;
 		stbi_set_flip_vertically_on_load(1);
 
-		auto ext = filepath.substr(filepath.find_last_of(".") + 1);
+		auto ext = filepath.GetString().substr(filepath.GetString().find_last_of(".") + 1);
 
 		bool hdr = false;
 		if (ext == "hdr")
@@ -90,28 +152,37 @@ namespace manager
 
 		void* pixels = nullptr;
 		if (!hdr)
-			pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+			pixels = stbi_load(filepath.GetString().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		else
-			pixels = stbi_loadf(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+			pixels = stbi_loadf(filepath.GetString().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 		if (!pixels)
-		{
-			LOGE("Error loading image: %s", filepath);
-			return -1;
-		}
+			return false;
 
-		asset::ImageInfo imageInfo;
-		imageInfo.Width = texWidth;
-		imageInfo.Height = texHeight;
-		imageInfo.Hdr = hdr;
+		ImageData data;
+		data.Width = texWidth;
+		data.Height = texHeight;
+		data.Hdr = hdr;
 		
-		imageInfo.PixelsData.resize(texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
-		memcpy(&imageInfo.PixelsData[0], pixels, texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
+		data.PixelsData.resize(texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
+		memcpy(&data.PixelsData[0], pixels, texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
 
-		ImagesLookup[ImageCounter] = imageInfo;
+
+		asset::ImageInfo info;
+		info.SizeOffset = ImagesData.Sizes.size();
+		info.HdrStateOffset = ImagesData.HdrStates.size();
+		info.PixelsRDO.StartPosition = ImagesData.Pixels.size();
+		
+		ImagesData.Sizes.push_back({ data.Width, data.Height });
+		ImagesData.HdrStates.push_back(data.Hdr);
+		MergeVector(ImagesData.Pixels, data.PixelsData);
+
+		info.PixelsRDO.EndPosition = ImagesData.Pixels.size() - 1;
+
+		ImagesOffsetLookup[filepath.GetHash()] = info;
 
 		stbi_image_free(pixels);
 
-		return ImageCounter++;
+		return true;
 	}
 }

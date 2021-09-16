@@ -6,6 +6,8 @@ int main()
                                                     
 	engine.StartupEngine();
 
+	engine.AssetManager.LoadAssetsFromFolder("res/assets");
+
 	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("res/models/cube.obj");
 	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
 

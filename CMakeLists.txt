@@ -93,7 +93,6 @@ target_include_directories(VRender PRIVATE "extern/GLFW/include")
 target_include_directories(VRender PRIVATE "extern/glm")
 target_include_directories(VRender PRIVATE "extern/assimp/include")
 target_include_directories(VRender PRIVATE "extern/SPIRV-Reflect")
-target_include_directories(VRender PRIVATE "extern/plog/include")
 
 target_link_libraries(VRender glfw3)
 target_link_libraries(VRender vulkan-1)

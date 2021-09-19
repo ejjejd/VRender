@@ -6,24 +6,19 @@
 
 #include "vendors/stb/stb_image.h"
 
-#include <filesystem>
-
 namespace manager
 {
 	void AssetManager::LoadAssetsFromFolder(const std::string& path)
 	{
-		auto strPath = std::filesystem::path(path).wstring();
-		for (auto& c : strPath) //Covert path to one format
-		{
-			if (c == '\\' || c == '/')
-				c = std::filesystem::path::preferred_separator;
-		}
+		auto wstrPath = std::filesystem::path(path).wstring();
 
-		auto relPath = std::filesystem::path::preferred_separator + strPath;
-		auto p = std::filesystem::current_path().wstring() + relPath;
+		auto relPath = std::filesystem::path::preferred_separator + wstrPath;
+		auto p = std::filesystem::current_path() / wstrPath;
 
-		auto str = std::filesystem::path(p).string();
-		LOGC("Loading assets from %s...", str.c_str());
+		auto strPath = std::filesystem::path(p).string();
+		LOGC("Loading assets from %s...", strPath.c_str());
+
+		LoadedDirectories.push_back(strPath);
 
 		utils::Timer t;
 		t.Start();
@@ -106,7 +101,7 @@ namespace manager
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 			return false;
 
-		asset::MeshInfo info;
+		MeshInfo info;
 		info.NameOffset = MeshesData.Names.size();
 		info.PositionsRDO.StartPosition = MeshesData.Positions.size();
 		info.NormalsRDO.StartPosition = MeshesData.Normals.size();
@@ -168,7 +163,7 @@ namespace manager
 		memcpy(&data.PixelsData[0], pixels, texWidth * texHeight * 4 * (hdr ? sizeof(float) : 1));
 
 
-		asset::ImageInfo info;
+		ImageInfo info;
 		info.SizeOffset = ImagesData.Sizes.size();
 		info.HdrStateOffset = ImagesData.HdrStates.size();
 		info.PixelsRDO.StartPosition = ImagesData.Pixels.size();

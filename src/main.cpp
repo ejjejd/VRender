@@ -6,37 +6,24 @@ int main()
                                                     
 	engine.StartupEngine();
 
-	engine.AssetManager.LoadAssetsFromFolder("res/assets");
-
-	auto cubeMeshId = engine.AssetManager.LoadMeshInfo("res/models/cube.obj");
-	auto cubeMesh = engine.AssetManager.GetMeshInfo(cubeMeshId);
-
-	auto helmetMeshId = engine.AssetManager.LoadMeshInfo("res/models/DamagedHelmet.blend");
-	auto helmetMesh = engine.AssetManager.GetMeshInfo(helmetMeshId);
-
-	auto helmetAlbedoId = engine.AssetManager.LoadImageInfo("res/textures/helmet/Default_albedo.jpg");
-	auto helmetMetalRoughnessId = engine.AssetManager.LoadImageInfo("res/textures/helmet/Default_metalRoughness.jpg");
-	auto helmetAoId = engine.AssetManager.LoadImageInfo("res/textures/helmet/Default_AO.jpg");
-	auto helmetNormalId = engine.AssetManager.LoadImageInfo("res/textures/helmet/Default_normal.jpg");
-
-	auto hdrMapId = engine.AssetManager.LoadImageInfo("res/textures/hdr/Chiricahua_Plaza/GravelPlaza_REF.hdr");
+	engine.AssetManager.LoadAssetsFromFolder("res/assets"_ep);
 
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
-	hdrMaterial->HdrTexture.ImageId = engine.RenderManager.GenerateCubemapFromHDR(hdrMapId, 2048);
+	//hdrMaterial->HdrTexture.ImageId = engine.RenderManager.GenerateCubemapFromHDR(hdrMapId, 2048);
 
 	auto material = std::make_shared<render::PbrMaterial>();
-	material->Textures.Albedo.ImageId = helmetAlbedoId;
-	material->Textures.Normal.ImageId = helmetNormalId;
+	material->Textures.Albedo.Image = "textures/helmet/Default_albedo.jpghs"_ep;
+	material->Textures.Normal.Image = "textures/helmet/Default_normal.jpg"_ep;
 
-	material->Textures.Metallic.ImageId = helmetMetalRoughnessId;
+	material->Textures.Metallic.Image = "textures/helmet/Default_metalRoughness.jpg"_ep;
 	material->Textures.Metallic.Channels = { IC::B, IC::B, IC::B, IC::B };
 
-	material->Textures.Roughness.ImageId = helmetMetalRoughnessId;
+	material->Textures.Roughness.Image = "textures/helmet/Default_metalRoughness.jpg"_ep;
 	material->Textures.Roughness.Channels = { IC::G, IC::G, IC::G, IC::G };
 
-	material->Textures.Ao.ImageId = helmetAoId;
+	material->Textures.Ao.Image = "textures/helmet/Default_AO.jpg"_ep;
 
-	material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.ImageId, 64);
+	//material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.ImageId, 64);
 
 	scene::Node rootNode;
 
@@ -45,12 +32,12 @@ int main()
 	pl.Color = glm::vec3(250.0f);
 
 	scene::MeshRenderable generalMesh;
-	generalMesh.Info = helmetMesh;
+	generalMesh.Mesh = "models/DamagedHelmet.blend";
 	generalMesh.Material = material;
 	generalMesh.Rotation = { 0.0f, 1.0f, 0.0f, glm::pi<float>() };
 
 	scene::MeshRenderable cubemapMesh;
-	cubemapMesh.Info = cubeMesh;
+	cubemapMesh.Mesh = "models/cube.obj";
 	cubemapMesh.Material = hdrMaterial;
 	cubemapMesh.Render.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 	cubemapMesh.Render.FacesCullMode = VK_CULL_MODE_FRONT_BIT;

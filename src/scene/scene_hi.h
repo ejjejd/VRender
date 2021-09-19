@@ -115,7 +115,7 @@ namespace scene
     public:
         std::shared_ptr<render::BaseMaterial> Material;
 
-        asset::MeshInfo Info;
+        utils::HashString Mesh;
 
         RenderInfo Render;
     };

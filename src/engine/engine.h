@@ -14,12 +14,19 @@
 
 namespace app
 {
+	inline const char* g_FontColorModes[] =
+	{
+	   "\033[0m",  //White
+	   "\033[31m", //Red
+	   "\033[33m"  //Yellow
+	};
+
 	class StandardPrinter : public debug::BasePrinter
 	{
 	public:
 		inline void OnReceive(const debug::LogSeverity severity, const std::string& message) override
 		{
-			printf(message.c_str());
+			printf("%s %s", g_FontColorModes[(size_t)severity], message.c_str());
 		}
 
 		std::string FormatMessage(const char* format, va_list args) override;

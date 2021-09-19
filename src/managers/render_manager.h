@@ -41,7 +41,7 @@ namespace manager
 	class TextureManager
 	{
 	private:
-		std::unordered_map<asset::AssetId, vk::Texture> TexturesLookup;
+		std::unordered_map<manager::AssetId, vk::Texture> TexturesLookup;
 
 		vk::VulkanApp* App;
 		AssetManager* AM;
@@ -60,7 +60,7 @@ namespace manager
 
 		vk::Texture GetOrCreate(const render::MaterialTexture& texture, const vk::DescriptorImageType type);
 
-		inline void AddTexture(const asset::AssetId id, const vk::Texture& texture)
+		inline void AddTexture(const manager::AssetId id, const vk::Texture& texture)
 		{
 			TexturesLookup[id] = texture;
 		}
@@ -170,9 +170,9 @@ namespace manager
 			ActiveCamera = camera;
 		}
 
-		size_t GenerateCubemapFromHDR(const asset::AssetId id, const uint16_t resolution = 512);
-		size_t GenerateIrradianceMap(const asset::AssetId id, const uint16_t resolution = 64);
-		size_t GeneratePreFilteredMap(const asset::AssetId id, const uint16_t resolution = 64);
+		size_t GenerateCubemapFromHDR(const manager::AssetId id, const uint16_t resolution = 512);
+		size_t GenerateIrradianceMap(const manager::AssetId id, const uint16_t resolution = 64);
+		size_t GeneratePreFilteredMap(const manager::AssetId id, const uint16_t resolution = 64);
 	};
 
 }

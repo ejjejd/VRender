@@ -16,7 +16,7 @@ namespace render
 
 	struct MaterialTexture
 	{
-		asset::AssetId ImageId;
+		utils::HashString Image;
 		vk::TextureParams TextureParams;
 		ImageChannels Channels;
 	};
@@ -62,12 +62,12 @@ namespace render
 
 	struct PbrMaterialTextures
 	{
-		MaterialTexture Albedo = { GetDefaultImageId(), CreateColorMapTextureParams() };
-		MaterialTexture Metallic = { GetDefaultImageId(), CreateColorMapTextureParams() };
-		MaterialTexture Roughness = { GetDefaultImageId(), CreateColorMapTextureParams() };
-		MaterialTexture Ao = { GetDefaultImageId(), CreateColorMapTextureParams() };
-		MaterialTexture Normal = { GetDefaultImageId(), CreateColorMapTextureParams() };
-		MaterialTexture IrradianceMap = { GetDefaultImageId(), CreateColorMapTextureParams() };
+		MaterialTexture Albedo = { "", CreateColorMapTextureParams() };
+		MaterialTexture Metallic = { "", CreateColorMapTextureParams() };
+		MaterialTexture Roughness = { "", CreateColorMapTextureParams() };
+		MaterialTexture Ao = { "", CreateColorMapTextureParams() };
+		MaterialTexture Normal = { "", CreateColorMapTextureParams() };
+		MaterialTexture IrradianceMap = { "", CreateColorMapTextureParams() };
 	};
 
 	class PbrMaterial : public BaseMaterial
@@ -109,7 +109,7 @@ namespace render
 	class HdrMaterial : public BaseMaterial
 	{
 	public:
-		MaterialTexture HdrTexture = { GetDefaultImageId(), CreateColorMapTextureParams() };
+		MaterialTexture HdrTexture = { "", CreateColorMapTextureParams() };
 
 		inline vk::Shader CreateShader(vk::VulkanApp& app) const override
 		{

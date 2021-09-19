@@ -3,19 +3,29 @@
 
 #include <vector>
 #include <optional>
+#include <filesystem>
 
 namespace utils
 {
 	class HashString
 	{
 	private:
-		size_t HashValue;
+		size_t HashValue = -1;
 		std::string StringValue;
 	public:
+		HashString() = default;
+		~HashString() = default;
+
 		inline HashString(const std::string& str)
 			: StringValue(str)
 		{
 			HashValue = std::hash<std::string>{}(str);
+		}
+
+		inline HashString(const char* str)
+			: StringValue(str)
+		{
+			HashValue = std::hash<const char*>{}(str);
 		}
 
 		inline void operator = (const std::string& str)
@@ -44,11 +54,19 @@ namespace utils
 		HashString& operator = (HashString&&) = default;
 		HashString& operator = (const HashString&) = default;
 	};
+}
 
-	inline HashString operator"" _hs(const char* str)
+//Convert engine path to platform dependent
+inline std::string operator"" _ep(const char* path, const size_t length)
+{
+	auto wstrPath = std::filesystem::path(path).wstring();
+	for (auto& c : wstrPath) //Convert path to one format
 	{
-		return HashString(str);
+		if (c == '\\' || c == '/')
+			c = std::filesystem::path::preferred_separator;
 	}
+
+	return std::filesystem::path(wstrPath).string();
 }
 
 namespace manager
@@ -152,6 +170,7 @@ namespace manager
 		std::unordered_map<AssetId, MeshInfo> MeshesOffsetLookup;
 		std::unordered_map<AssetId, ImageInfo> ImagesOffsetLookup;
 
+		std::vector<std::string> LoadedDirectories;
 
 		bool TryToLoadAsMesh(const utils::HashString& filepath);
 		bool TryToLoadAsImage(const utils::HashString& filepath);
@@ -179,26 +198,34 @@ namespace manager
 
         inline MeshInfo GetMeshData(const utils::HashString& filepath)
 		{
-			auto findRes = MeshesOffsetLookup.find(filepath.GetHash());
-			if (findRes == MeshesOffsetLookup.end())
+			for (const auto& pd : LoadedDirectories)
 			{
-				LOGE("Error getting mesh info under id: %d", filepath.GetHash());
-				return MeshInfo{};
+				utils::HashString hs = (std::filesystem::path(pd) 
+										/ std::filesystem::path(filepath.GetString())).string();
+
+				auto findRes = MeshesOffsetLookup.find(hs.GetHash());
+				if (findRes != MeshesOffsetLookup.end())
+					return findRes->second;
 			}
 
-			return findRes->second;
+			LOGE("Error getting mesh info under path: %s", filepath.GetString().c_str());
+			return MeshInfo{};
 		}
 
 		inline ImageInfo GetImageData(const utils::HashString& filepath)
 		{
-			auto findRes = ImagesOffsetLookup.find(filepath.GetHash());
-			if (findRes == ImagesOffsetLookup.end())
+			for (const auto& pd : LoadedDirectories)
 			{
-				LOGE("Error getting image info under id: %d", filepath.GetHash());
-				return ImageInfo{};
+				utils::HashString hs = (std::filesystem::path(pd)
+										/ std::filesystem::path(filepath.GetString())).string();
+
+				auto findRes = ImagesOffsetLookup.find(hs.GetHash());
+				if (findRes != ImagesOffsetLookup.end())
+					return findRes->second;
 			}
 
-			return findRes->second;
+			LOGE("Error getting image info under path: %s", filepath.GetString().c_str());
+			return ImageInfo{};
 		}
 
 		inline bool IsMeshLoaded(const AssetId id)
@@ -218,7 +245,7 @@ namespace manager
 			return {};
 		}
 
-		asset::AssetId LoadImageInfo(const std::string& filepath)
+		AssetId LoadImageInfo(const std::string& filepath)
 		{
 			return {};
 		}	

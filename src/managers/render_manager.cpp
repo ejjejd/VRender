@@ -58,7 +58,7 @@ namespace manager
 
 	vk::Texture TextureManager::GetOrCreate(const render::MaterialTexture& texture, const vk::DescriptorImageType type)
 	{
-		auto& findRes = TexturesLookup.find(texture.ImageId);
+		auto& findRes = TexturesLookup.find(texture.Image.GetHash());
 		if (findRes == TexturesLookup.end())
 		{
 			vk::Texture t;
@@ -81,7 +81,7 @@ namespace manager
 				imageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 			}
 
-			if (!AM->IsImageLoaded(texture.ImageId)) 
+			if (!AM->IsImageLoaded(texture.Image.GetHash())) 
 			{
 				imageInfo.Channels = { IC::One, IC::One, IC::One, IC::One };
 
@@ -102,7 +102,7 @@ namespace manager
 			}
 			else
 			{
-				auto image = AM->GetImageInfo(texture.ImageId);
+				//auto image = AM->GetImageInfo(texture.ImageId);
 
 				//if (image.Hdr)
 				//	imageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -114,7 +114,7 @@ namespace manager
 				//			vk::layout::SetImageLayoutFromTransferToGraphicsShader);
 			}
 
-			TexturesLookup[texture.ImageId] = t;
+			TexturesLookup[texture.Image.GetHash()] = t;
 
 			return t;
 		}
@@ -1043,70 +1043,70 @@ namespace manager
 		shader.Cleanup();
 	}
 
-	size_t RenderManager::GenerateCubemapFromHDR(const asset::AssetId id, const uint16_t resolution)
+	size_t RenderManager::GenerateCubemapFromHDR(const manager::AssetId id, const uint16_t resolution)
 	{
-		vk::TextureParams params;
-		params.MagFilter = VK_FILTER_LINEAR;
-		params.MinFilter = VK_FILTER_LINEAR;
-		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		//vk::TextureParams params;
+		//params.MagFilter = VK_FILTER_LINEAR;
+		//params.MinFilter = VK_FILTER_LINEAR;
+		//params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		//params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
-		vk::TextureImageInfo hdrImageInfo;
-		hdrImageInfo.Type = VK_IMAGE_TYPE_2D;
-		hdrImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
-		hdrImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		hdrImageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT
-								  | VK_IMAGE_USAGE_SAMPLED_BIT
-								  | VK_IMAGE_USAGE_STORAGE_BIT;
-		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		//vk::TextureImageInfo hdrImageInfo;
+		//hdrImageInfo.Type = VK_IMAGE_TYPE_2D;
+		//hdrImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		//hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+		//hdrImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		//hdrImageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT
+		//						  | VK_IMAGE_USAGE_SAMPLED_BIT
+		//						  | VK_IMAGE_USAGE_STORAGE_BIT;
+		//hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
 
-		auto hdrData = AM->GetImageInfo(id);
-		vk::Texture hdrTexture;
-		/*hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
-		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));*/
+		//auto hdrData = AM->GetImageInfo(id);
+		//vk::Texture hdrTexture;
+		///*hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
+		//hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));*/
 
-		hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
-							 vk::layout::SetImageLayoutFromTransferToComputeRead);
+		//hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+		//					 vk::layout::SetImageLayoutFromTransferToComputeRead);
 
-		vk::TextureImageInfo cubemapImageInfo;
-		cubemapImageInfo.Type = VK_IMAGE_TYPE_2D;
-		cubemapImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		cubemapImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
-		cubemapImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		cubemapImageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-		cubemapImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
-		cubemapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		//vk::TextureImageInfo cubemapImageInfo;
+		//cubemapImageInfo.Type = VK_IMAGE_TYPE_2D;
+		//cubemapImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		//cubemapImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		//cubemapImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		//cubemapImageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		//cubemapImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		//cubemapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-		vk::Texture cubemap;
-		cubemap.Setup(*VulkanApp, resolution, resolution, cubemapImageInfo, params, 1, 6);
+		//vk::Texture cubemap;
+		//cubemap.Setup(*VulkanApp, resolution, resolution, cubemapImageInfo, params, 1, 6);
 
-		cubemap.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
-						  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
+		//cubemap.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+		//				  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
 
-		vk::TextureDescriptor mapDescriptor;
-		mapDescriptor.LinkTexture(hdrTexture, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		mapDescriptor.LinkTexture(cubemap, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
+		//vk::TextureDescriptor mapDescriptor;
+		//mapDescriptor.LinkTexture(hdrTexture, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		//mapDescriptor.LinkTexture(cubemap, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		//mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
 
-		vk::ComputeShader cs;
-		cs.Setup(*VulkanApp, FromHdrToCubemapShader);
+		//vk::ComputeShader cs;
+		//cs.Setup(*VulkanApp, FromHdrToCubemapShader);
 
-		const int workGroups = 16;
-		vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
-							 resolution / workGroups, resolution / workGroups, 6);
+		//const int workGroups = 16;
+		//vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
+		//					 resolution / workGroups, resolution / workGroups, 6);
 
-		cs.Cleanup();
-		hdrTexture.Cleanup();
-		mapDescriptor.Destroy();
+		//cs.Cleanup();
+		//hdrTexture.Cleanup();
+		//mapDescriptor.Destroy();
 
 		size_t newId = AM->IncrementImageCounter();
-		TM.AddTexture(newId, cubemap);
+		//TM.AddTexture(newId, cubemap);
 
 		return newId;
 	}
 
-	size_t RenderManager::GenerateIrradianceMap(const asset::AssetId id, const uint16_t resolution)
+	size_t RenderManager::GenerateIrradianceMap(const manager::AssetId id, const uint16_t resolution)
 	{
 		const int maxTileSize = 64;
 
@@ -1133,7 +1133,7 @@ namespace manager
 		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
 		hdrImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-		auto hdrTexture = TM.GetOrCreate({ id, params }, vk::DescriptorImageType::Cubemap);
+		auto hdrTexture = TM.GetOrCreate({ "", params }, vk::DescriptorImageType::Cubemap);
 
 		vk::TextureImageInfo mapImageInfo;
 		mapImageInfo.Type = VK_IMAGE_TYPE_2D;
@@ -1222,7 +1222,7 @@ namespace manager
 		return newId;
 	}
 
-	size_t RenderManager::GeneratePreFilteredMap(const asset::AssetId id, const uint16_t resolution)
+	size_t RenderManager::GeneratePreFilteredMap(const manager::AssetId id, const uint16_t resolution)
 	{
 		vk::TextureParams params;
 		params.MagFilter = VK_FILTER_LINEAR;
@@ -1241,7 +1241,8 @@ namespace manager
 		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
 		hdrImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-		auto hdrTexture = TM.GetOrCreate({ id, params }, vk::DescriptorImageType::Cubemap);
+		//TODO Should be id instead ""
+		auto hdrTexture = TM.GetOrCreate({ "", params }, vk::DescriptorImageType::Cubemap);
 
 		vk::TextureImageInfo mapImageInfo;
 		mapImageInfo.Type = VK_IMAGE_TYPE_2D;

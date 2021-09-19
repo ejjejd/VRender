@@ -170,8 +170,8 @@ namespace manager
 			ActiveCamera = camera;
 		}
 
-		size_t GenerateCubemapFromHDR(const manager::AssetId id, const uint16_t resolution = 512);
-		size_t GenerateIrradianceMap(const manager::AssetId id, const uint16_t resolution = 64);
+		utils::HashString GenerateCubemapFromHDR(const utils::HashString& filepath, const uint16_t resolution = 512);
+		utils::HashString GenerateIrradianceMap(const utils::HashString& filepath, const uint16_t resolution = 64);
 		size_t GeneratePreFilteredMap(const manager::AssetId id, const uint16_t resolution = 64);
 	};
 

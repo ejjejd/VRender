@@ -22,6 +22,9 @@ namespace utils
 			HashValue = std::hash<std::string>{}(str);
 		}
 
+		inline HashString(const size_t hashId)
+			: HashValue(hashId) {}
+
 		inline HashString(const char* str)
 			: StringValue(str)
 		{
@@ -54,6 +57,24 @@ namespace utils
 		HashString& operator = (HashString&&) = default;
 		HashString& operator = (const HashString&) = default;
 	};
+
+	struct RangeDataOffset
+	{
+		size_t StartPosition;
+		size_t EndPosition;
+	};
+
+	template<typename T, typename T1>
+	inline void MergeVector(std::vector<T>& v, const std::vector<T1>& v1)
+	{
+		v.insert(v.end(), v1.begin(), v1.end());
+	}
+
+	template<typename T, typename T1>
+	inline void MergeVector(std::vector<T>& v, const std::vector<T1>& v1, const RangeDataOffset rdo)
+	{
+		v.insert(v.end(), v1.begin() + rdo.StartPosition, v1.begin() + rdo.EndPosition);
+	}
 }
 
 //Convert engine path to platform dependent
@@ -73,29 +94,23 @@ namespace manager
 {
 	using AssetId = size_t;
 
-    struct RangeDataOffset
-	{
-		size_t StartPosition;
-		size_t EndPosition;
-	};
-
 	struct MeshInfo
 	{
 		size_t NameOffset;
 
-		RangeDataOffset PositionsRDO;
-		RangeDataOffset NormalsRDO;
-		RangeDataOffset UvsRDO;
+		utils::RangeDataOffset PositionsRDO;
+		utils::RangeDataOffset NormalsRDO;
+		utils::RangeDataOffset UvsRDO;
 
-		RangeDataOffset TangentsRDO;
-		RangeDataOffset BitangentsRDO;
+		utils::RangeDataOffset TangentsRDO;
+		utils::RangeDataOffset BitangentsRDO;
 	};
 
 	struct ImageInfo
 	{
 		size_t SizeOffset;
 
-		RangeDataOffset PixelsRDO;
+		utils::RangeDataOffset PixelsRDO;
 
 		size_t HdrStateOffset;
 	};
@@ -172,6 +187,8 @@ namespace manager
 
 		std::vector<std::string> LoadedDirectories;
 
+		size_t ProcIdsCount = 0;
+
 		bool TryToLoadAsMesh(const utils::HashString& filepath);
 		bool TryToLoadAsImage(const utils::HashString& filepath);
 	public:
@@ -196,7 +213,7 @@ namespace manager
             ImagesData.ClearAll();
 		}
 
-        inline MeshInfo GetMeshData(const utils::HashString& filepath)
+        inline MeshData GetMeshData(const utils::HashString& filepath)
 		{
 			for (const auto& pd : LoadedDirectories)
 			{
@@ -205,14 +222,26 @@ namespace manager
 
 				auto findRes = MeshesOffsetLookup.find(hs.GetHash());
 				if (findRes != MeshesOffsetLookup.end())
-					return findRes->second;
+				{
+					auto& info = findRes->second;
+
+					MeshData data;
+					data.Name = MeshesData.Names[info.NameOffset];
+					utils::MergeVector(data.Positions, MeshesData.Positions, info.PositionsRDO);
+					utils::MergeVector(data.Normals, MeshesData.Normals, info.NormalsRDO);
+					utils::MergeVector(data.UVs, MeshesData.UVs, info.UvsRDO);
+					utils::MergeVector(data.Tangents, MeshesData.Tangents, info.TangentsRDO);
+					utils::MergeVector(data.Bitangents, MeshesData.Bitangents, info.BitangentsRDO);
+
+					return data;
+				}
 			}
 
-			LOGE("Error getting mesh info under path: %s", filepath.GetString().c_str());
-			return MeshInfo{};
+			LOGE("Error getting mesh data under path: %s", filepath.GetString().c_str());
+			return {};
 		}
 
-		inline ImageInfo GetImageData(const utils::HashString& filepath)
+		inline ImageData GetImageData(const utils::HashString& filepath)
 		{
 			for (const auto& pd : LoadedDirectories)
 			{
@@ -221,46 +250,57 @@ namespace manager
 
 				auto findRes = ImagesOffsetLookup.find(hs.GetHash());
 				if (findRes != ImagesOffsetLookup.end())
-					return findRes->second;
+				{
+					auto& info = findRes->second;
+
+					ImageData data;
+					data.Width = ImagesData.Sizes[info.SizeOffset].x;
+					data.Height = ImagesData.Sizes[info.SizeOffset].y;
+					data.Hdr = ImagesData.HdrStates[info.HdrStateOffset];
+					utils::MergeVector(data.PixelsData, ImagesData.Pixels, info.PixelsRDO);
+
+					return data;
+				}
 			}
 
-			LOGE("Error getting image info under path: %s", filepath.GetString().c_str());
-			return ImageInfo{};
-		}
-
-		inline bool IsMeshLoaded(const AssetId id)
-		{
-			auto findRes = MeshesOffsetLookup.find(id);
-			return (findRes != MeshesOffsetLookup.end());
-		}
-
-		inline bool IsImageLoaded(const AssetId id)
-		{
-			auto findRes = ImagesOffsetLookup.find(id);
-			return (findRes != ImagesOffsetLookup.end());
-		}
-
-		AssetId LoadMeshInfo(const std::string& filepath)
-		{
+			LOGE("Error getting image data under path: %s", filepath.GetString().c_str());
 			return {};
 		}
 
-		AssetId LoadImageInfo(const std::string& filepath)
+		inline bool IsMeshLoaded(const utils::HashString& filepath)
 		{
-			return {};
-		}	
+			for (const auto& pd : LoadedDirectories)
+			{
+				utils::HashString hs = (std::filesystem::path(pd)
+										/ std::filesystem::path(filepath.GetString())).string();
 
+				auto findRes = MeshesOffsetLookup.find(hs.GetHash());
+				if (findRes != MeshesOffsetLookup.end())
+					return true;
+			}
+
+			return false;
+		}
+
+		inline bool IsImageLoaded(const utils::HashString& filepath)
+		{
+			for (const auto& pd : LoadedDirectories)
+			{
+				utils::HashString hs = (std::filesystem::path(pd)
+					/ std::filesystem::path(filepath.GetString())).string();
+
+				auto findRes = ImagesOffsetLookup.find(hs.GetHash());
+				if (findRes != ImagesOffsetLookup.end())
+					return true;
+			}
+
+			return false;
+		}
 
 		//This functions needed for procedural content
-
-		inline size_t IncerementMeshCounter()
+		inline AssetId GetProcId()
 		{
-			return {};
-		}
-
-		inline size_t IncrementImageCounter()
-		{
-			return {};
+			return (SIZE_MAX - ProcIdsCount++);
 		}
 	};
 }

@@ -81,7 +81,7 @@ namespace manager
 				imageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 			}
 
-			if (!AM->IsImageLoaded(texture.Image.GetHash())) 
+			if (!AM->IsImageLoaded(texture.Image)) 
 			{
 				imageInfo.Channels = { IC::One, IC::One, IC::One, IC::One };
 
@@ -102,16 +102,16 @@ namespace manager
 			}
 			else
 			{
-				//auto image = AM->GetImageInfo(texture.ImageId);
+				auto image = AM->GetImageData(texture.Image);
 
-				//if (image.Hdr)
-				//	imageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+				if (image.Hdr)
+					imageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
 
 
-				//t.Setup(*App, image.Width, image.Height, imageInfo, texture.TextureParams);
-				//t.Update(image.PixelsData.data(), 4 * (image.Hdr ? sizeof(float) : 1));
-				//t.SetLayout(App->GraphicsQueue, App->CommandPoolGQ,
-				//			vk::layout::SetImageLayoutFromTransferToGraphicsShader);
+				t.Setup(*App, image.Width, image.Height, imageInfo, texture.TextureParams);
+				t.Update(image.PixelsData.data(), 4 * (image.Hdr ? sizeof(float) : 1));
+				t.SetLayout(App->GraphicsQueue, App->CommandPoolGQ,
+							vk::layout::SetImageLayoutFromTransferToGraphicsShader);
 			}
 
 			TexturesLookup[texture.Image.GetHash()] = t;
@@ -909,7 +909,7 @@ namespace manager
 					{
 						for (auto& b : d.Bindings)
 						{
-							auto texAccess = material.GetMaterialTexturesIds()[b.BindId];
+							auto texAccess = material.GetMaterialTextures()[b.BindId];
 							auto texture = TM.GetOrCreate(texAccess, b.ImageType);
 
 							materialTexturesDescriptor.LinkTexture(texture, b.BindId);
@@ -945,61 +945,63 @@ namespace manager
 
 		size_t bindId = 0;
 
+		auto meshData = AM->GetMeshData(mesh->Mesh);
+
 		for (auto i : findShaderInfo->second.Inputs)
 		{
-			//switch (i.LocationId)
-			//{
-			//case ShaderInputPositionLocation:
-			//	{
-			//		vk::Buffer positionBuffer;
-			//		positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Positions[0]), mesh->Info.Positions.size());
-			//		positionBuffer.Update((void*)mesh->Info.Positions.data(), mesh->Info.Positions.size());
+			switch (i.LocationId)
+			{
+			case ShaderInputPositionLocation:
+				{
+					vk::Buffer positionBuffer;
+					positionBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(meshData.Positions[0]), meshData.Positions.size());
+					positionBuffer.Update((void*)meshData.Positions.data(), meshData.Positions.size());
 
-			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputPositionLocation, 0, positionBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputPositionLocation, 0, positionBuffer.GetStride());
 
-			//		buffers.push_back(positionBuffer);
-			//	} break;
-			//case ShaderInputNormalLocation:
-			//	{
-			//		vk::Buffer normalBuffer;
-			//		normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Normals[0]), mesh->Info.Normals.size());
-			//		normalBuffer.Update((void*)mesh->Info.Normals.data(), mesh->Info.Normals.size());
+					buffers.push_back(positionBuffer);
+				} break;
+			case ShaderInputNormalLocation:
+				{
+					vk::Buffer normalBuffer;
+					normalBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(meshData.Normals[0]), meshData.Normals.size());
+					normalBuffer.Update((void*)meshData.Normals.data(), meshData.Normals.size());
 
-			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputNormalLocation, 0, normalBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputNormalLocation, 0, normalBuffer.GetStride());
 
-			//		buffers.push_back(normalBuffer);
-			//	} break;
-			//case ShaderInputUvLocation:
-			//	{
-			//		vk::Buffer uvBuffer;
-			//		uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.UVs[0]), mesh->Info.UVs.size());
-			//		uvBuffer.Update((void*)mesh->Info.UVs.data(), mesh->Info.UVs.size());
+					buffers.push_back(normalBuffer);
+				} break;
+			case ShaderInputUvLocation:
+				{
+					vk::Buffer uvBuffer;
+					uvBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(meshData.UVs[0]), meshData.UVs.size());
+					uvBuffer.Update((void*)meshData.UVs.data(), meshData.UVs.size());
 
-			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputUvLocation, 0, uvBuffer.GetStride());
 
-			//		buffers.push_back(uvBuffer);
-			//	} break;
-			//case ShaderInputTangentLocation:
-			//	{
-			//		vk::Buffer tangentBuffer;
-			//		tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Tangents[0]), mesh->Info.Tangents.size());
-			//		//tangentBuffer.Update((void*)mesh->Info.Tangents.data(), mesh->Info.Tangents.size());
+					buffers.push_back(uvBuffer);
+				} break;
+			case ShaderInputTangentLocation:
+				{
+					vk::Buffer tangentBuffer;
+					tangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(meshData.Tangents[0]), meshData.Tangents.size());
+					tangentBuffer.Update((void*)meshData.Tangents.data(), meshData.Tangents.size());
 
-			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputTangentLocation, 0, tangentBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputTangentLocation, 0, tangentBuffer.GetStride());
 
-			//		buffers.push_back(tangentBuffer);
-			//	} break;
-			//case ShaderInputBitangentLocation:
-			//	{
-			//		vk::Buffer bitangentBuffer;
-			//		bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(mesh->Info.Bitangents[0]), mesh->Info.Bitangents.size());
-			//		//bitangentBuffer.Update((void*)mesh->Info.Bitangents.data(), mesh->Info.Bitangents.size());
+					buffers.push_back(tangentBuffer);
+				} break;
+			case ShaderInputBitangentLocation:
+				{
+					vk::Buffer bitangentBuffer;
+					bitangentBuffer.Setup(*VulkanApp, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(meshData.Bitangents[0]), meshData.Bitangents.size());
+					bitangentBuffer.Update((void*)meshData.Bitangents.data(), meshData.Bitangents.size());
 
-			//		shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputBitangentLocation, 0, bitangentBuffer.GetStride());
+					shader.AddInputBuffer(VK_FORMAT_R32G32B32_SFLOAT, bindId, ShaderInputBitangentLocation, 0, bitangentBuffer.GetStride());
 
-			//		buffers.push_back(bitangentBuffer);
-			//	} break;
-			//}
+					buffers.push_back(bitangentBuffer);
+				} break;
+			}
 
 			++bindId;
 		}
@@ -1043,70 +1045,70 @@ namespace manager
 		shader.Cleanup();
 	}
 
-	size_t RenderManager::GenerateCubemapFromHDR(const manager::AssetId id, const uint16_t resolution)
+	utils::HashString RenderManager::GenerateCubemapFromHDR(const utils::HashString& filepath, const uint16_t resolution)
 	{
-		//vk::TextureParams params;
-		//params.MagFilter = VK_FILTER_LINEAR;
-		//params.MinFilter = VK_FILTER_LINEAR;
-		//params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		//params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		vk::TextureParams params;
+		params.MagFilter = VK_FILTER_LINEAR;
+		params.MinFilter = VK_FILTER_LINEAR;
+		params.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		params.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
-		//vk::TextureImageInfo hdrImageInfo;
-		//hdrImageInfo.Type = VK_IMAGE_TYPE_2D;
-		//hdrImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		//hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
-		//hdrImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		//hdrImageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT
-		//						  | VK_IMAGE_USAGE_SAMPLED_BIT
-		//						  | VK_IMAGE_USAGE_STORAGE_BIT;
-		//hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		vk::TextureImageInfo hdrImageInfo;
+		hdrImageInfo.Type = VK_IMAGE_TYPE_2D;
+		hdrImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		hdrImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+		hdrImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		hdrImageInfo.UsageFlags = VK_IMAGE_USAGE_TRANSFER_DST_BIT
+								  | VK_IMAGE_USAGE_SAMPLED_BIT
+								  | VK_IMAGE_USAGE_STORAGE_BIT;
+		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
 
-		//auto hdrData = AM->GetImageInfo(id);
-		//vk::Texture hdrTexture;
-		///*hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
-		//hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));*/
+		auto hdrData = AM->GetImageData(filepath);
+		vk::Texture hdrTexture;
+		hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
+		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));
 
-		//hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
-		//					 vk::layout::SetImageLayoutFromTransferToComputeRead);
+		hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+							 vk::layout::SetImageLayoutFromTransferToComputeRead);
 
-		//vk::TextureImageInfo cubemapImageInfo;
-		//cubemapImageInfo.Type = VK_IMAGE_TYPE_2D;
-		//cubemapImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		//cubemapImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
-		//cubemapImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		//cubemapImageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-		//cubemapImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
-		//cubemapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		vk::TextureImageInfo cubemapImageInfo;
+		cubemapImageInfo.Type = VK_IMAGE_TYPE_2D;
+		cubemapImageInfo.Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		cubemapImageInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		cubemapImageInfo.ViewAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+		cubemapImageInfo.UsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		cubemapImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
+		cubemapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-		//vk::Texture cubemap;
-		//cubemap.Setup(*VulkanApp, resolution, resolution, cubemapImageInfo, params, 1, 6);
+		vk::Texture cubemap;
+		cubemap.Setup(*VulkanApp, resolution, resolution, cubemapImageInfo, params, 1, 6);
 
-		//cubemap.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
-		//				  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
+		cubemap.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
+						  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
 
-		//vk::TextureDescriptor mapDescriptor;
-		//mapDescriptor.LinkTexture(hdrTexture, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		//mapDescriptor.LinkTexture(cubemap, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		//mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
+		vk::TextureDescriptor mapDescriptor;
+		mapDescriptor.LinkTexture(hdrTexture, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.LinkTexture(cubemap, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		mapDescriptor.Create(*VulkanApp, DescriptorPoolImageStorage);
 
-		//vk::ComputeShader cs;
-		//cs.Setup(*VulkanApp, FromHdrToCubemapShader);
+		vk::ComputeShader cs;
+		cs.Setup(*VulkanApp, FromHdrToCubemapShader);
 
-		//const int workGroups = 16;
-		//vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
-		//					 resolution / workGroups, resolution / workGroups, 6);
+		const int workGroups = 16;
+		vk::RunComputeShader(*VulkanApp, cs, mapDescriptor.GetDescriptorInfo(),
+							 resolution / workGroups, resolution / workGroups, 6);
 
-		//cs.Cleanup();
-		//hdrTexture.Cleanup();
-		//mapDescriptor.Destroy();
+		cs.Cleanup();
+		hdrTexture.Cleanup();
+		mapDescriptor.Destroy();
 
-		size_t newId = AM->IncrementImageCounter();
-		//TM.AddTexture(newId, cubemap);
+		size_t newId = AM->GetProcId();
+		TM.AddTexture(newId, cubemap);
 
 		return newId;
 	}
 
-	size_t RenderManager::GenerateIrradianceMap(const manager::AssetId id, const uint16_t resolution)
+	utils::HashString RenderManager::GenerateIrradianceMap(const utils::HashString& filepath, const uint16_t resolution)
 	{
 		const int maxTileSize = 64;
 
@@ -1216,7 +1218,7 @@ namespace manager
 		mapDescriptor.Destroy();
 
 
-		size_t newId = AM->IncrementImageCounter();
+		size_t newId = AM->GetProcId();
 		TM.AddTexture(newId, map);
 
 		return newId;
@@ -1305,7 +1307,7 @@ namespace manager
 		cs.Cleanup();
 		mapDescriptor.Destroy();
 
-		size_t newId = AM->IncrementImageCounter();
+		size_t newId = AM->GetProcId();
 
 		return newId;
 	}

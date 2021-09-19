@@ -47,7 +47,7 @@ namespace render
 	{
 	public:
 		virtual vk::Shader CreateShader(vk::VulkanApp& app) const = 0;
-		virtual std::vector<MaterialTexture> GetMaterialTexturesIds() const = 0;
+		virtual std::vector<MaterialTexture> GetMaterialTextures() const = 0;
 		virtual size_t GetMaterialInfoStride() const = 0;
 		virtual void* GetMaterialData() const = 0;
 	};
@@ -88,7 +88,7 @@ namespace render
 			return shader;
 		}
 
-		inline std::vector<MaterialTexture> GetMaterialTexturesIds() const override
+		inline std::vector<MaterialTexture> GetMaterialTextures() const override
 		{
 			return { Textures.Albedo, Textures.Metallic, 
 					 Textures.Roughness, Textures.Ao,
@@ -122,7 +122,7 @@ namespace render
 			return shader;
 		}
 
-		inline std::vector<MaterialTexture> GetMaterialTexturesIds() const override
+		inline std::vector<MaterialTexture> GetMaterialTextures() const override
 		{
 			return { HdrTexture };
 		}

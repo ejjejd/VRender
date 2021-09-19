@@ -38,12 +38,6 @@ namespace manager
 		LOGC("Assets loaded in %fms", t.GetElapsedTime());
 	}	
 
-	template<typename T, typename T1>
-	inline void MergeVector(std::vector<T>& v, const std::vector<T1>& v1)
-	{
-		v.insert(v.end(), v1.begin(), v1.end());
-	}
-
 	MeshData ConvertMesh(const aiMesh* assimpMesh)
 	{
 		MeshData mesh;
@@ -113,18 +107,18 @@ namespace manager
 		auto meshData = ConvertMesh(scene->mMeshes[0]);
 
 		MeshesData.Names.push_back(meshData.Name);
-		MergeVector(MeshesData.Positions, meshData.Positions);
-		MergeVector(MeshesData.Normals, meshData.Normals);
-		MergeVector(MeshesData.UVs, meshData.UVs);
-		MergeVector(MeshesData.Tangents, meshData.Tangents);
-		MergeVector(MeshesData.Bitangents, meshData.Bitangents);
+		utils::MergeVector(MeshesData.Positions, meshData.Positions);
+		utils::MergeVector(MeshesData.Normals, meshData.Normals);
+		utils::MergeVector(MeshesData.UVs, meshData.UVs);
+		utils::MergeVector(MeshesData.Tangents, meshData.Tangents);
+		utils::MergeVector(MeshesData.Bitangents, meshData.Bitangents);
 
 
-		info.PositionsRDO.EndPosition = MeshesData.Positions.size() - 1;
-		info.NormalsRDO.EndPosition = MeshesData.Normals.size() - 1;
-		info.UvsRDO.EndPosition = MeshesData.UVs.size() - 1;
-		info.TangentsRDO.EndPosition = MeshesData.Tangents.size() - 1;
-		info.BitangentsRDO.EndPosition = MeshesData.Bitangents.size() -1;
+		info.PositionsRDO.EndPosition = MeshesData.Positions.size();
+		info.NormalsRDO.EndPosition = MeshesData.Normals.size();
+		info.UvsRDO.EndPosition = MeshesData.UVs.size();
+		info.TangentsRDO.EndPosition = MeshesData.Tangents.size();
+		info.BitangentsRDO.EndPosition = MeshesData.Bitangents.size();
 
 		MeshesOffsetLookup[filepath.GetHash()] = info;
 
@@ -170,9 +164,9 @@ namespace manager
 		
 		ImagesData.Sizes.push_back({ data.Width, data.Height });
 		ImagesData.HdrStates.push_back(data.Hdr);
-		MergeVector(ImagesData.Pixels, data.PixelsData);
+		utils::MergeVector(ImagesData.Pixels, data.PixelsData);
 
-		info.PixelsRDO.EndPosition = ImagesData.Pixels.size() - 1;
+		info.PixelsRDO.EndPosition = ImagesData.Pixels.size();
 
 		ImagesOffsetLookup[filepath.GetHash()] = info;
 

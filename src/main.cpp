@@ -9,10 +9,10 @@ int main()
 	engine.AssetManager.LoadAssetsFromFolder("res/assets"_ep);
 
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
-	//hdrMaterial->HdrTexture.ImageId = engine.RenderManager.GenerateCubemapFromHDR(hdrMapId, 2048);
+	hdrMaterial->HdrTexture.Image = engine.RenderManager.GenerateCubemapFromHDR("textures/hdr/Winter_Forest/WinterForest_Ref.hdr"_ep, 2048);
 
 	auto material = std::make_shared<render::PbrMaterial>();
-	material->Textures.Albedo.Image = "textures/helmet/Default_albedo.jpghs"_ep;
+	material->Textures.Albedo.Image = "textures/helmet/Default_albedo.jpg"_ep;
 	material->Textures.Normal.Image = "textures/helmet/Default_normal.jpg"_ep;
 
 	material->Textures.Metallic.Image = "textures/helmet/Default_metalRoughness.jpg"_ep;
@@ -22,9 +22,8 @@ int main()
 	material->Textures.Roughness.Channels = { IC::G, IC::G, IC::G, IC::G };
 
 	material->Textures.Ao.Image = "textures/helmet/Default_AO.jpg"_ep;
-
-	//material->Textures.IrradianceMap.ImageId = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.ImageId, 64);
-
+	
+	//material->Textures.IrradianceMap.Image = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.Image, 64);
 	scene::Node rootNode;
 
 	scene::PointLight pl;
@@ -32,12 +31,12 @@ int main()
 	pl.Color = glm::vec3(250.0f);
 
 	scene::MeshRenderable generalMesh;
-	generalMesh.Mesh = "models/DamagedHelmet.blend";
+	generalMesh.Mesh = "models/DamagedHelmet.blend"_ep;
 	generalMesh.Material = material;
 	generalMesh.Rotation = { 0.0f, 1.0f, 0.0f, glm::pi<float>() };
 
 	scene::MeshRenderable cubemapMesh;
-	cubemapMesh.Mesh = "models/cube.obj";
+	cubemapMesh.Mesh = "models/cube.obj"_ep;
 	cubemapMesh.Material = hdrMaterial;
 	cubemapMesh.Render.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 	cubemapMesh.Render.FacesCullMode = VK_CULL_MODE_FRONT_BIT;

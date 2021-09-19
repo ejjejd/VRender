@@ -17,8 +17,8 @@ namespace app
 	inline const char* g_FontColorModes[] =
 	{
 	   "\033[0m",  //White
-	   "\033[31m", //Red
-	   "\033[33m"  //Yellow
+	   "\033[33m", //Yellow
+	   "\033[31m"  //Red
 	};
 
 	class StandardPrinter : public debug::BasePrinter

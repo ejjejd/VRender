@@ -1135,7 +1135,7 @@ namespace manager
 		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
 		hdrImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-		auto hdrTexture = TM.GetOrCreate({ "", params }, vk::DescriptorImageType::Cubemap);
+		auto hdrTexture = TM.GetOrCreate({ filepath, params }, vk::DescriptorImageType::Cubemap);
 
 		vk::TextureImageInfo mapImageInfo;
 		mapImageInfo.Type = VK_IMAGE_TYPE_2D;

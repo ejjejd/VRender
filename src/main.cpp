@@ -23,7 +23,7 @@ int main()
 
 	material->Textures.Ao.Image = "textures/helmet/Default_AO.jpg"_ep;
 	
-	//material->Textures.IrradianceMap.Image = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.Image, 64);
+	material->Textures.IrradianceMap.Image = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.Image, 64);
 	scene::Node rootNode;
 
 	scene::PointLight pl;

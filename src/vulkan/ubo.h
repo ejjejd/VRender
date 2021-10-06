@@ -1,6 +1,7 @@
 #pragma once
 #include "vrender.h"
 
+#include "pool.h"
 #include "buffer.h"
 #include "descriptor.h"
 
@@ -93,7 +94,7 @@ namespace vk
 				FirstBufferType = ubo.GetType();
 		}
 	public:
-		void Create(VulkanApp& app, const VkDescriptorPool& descriptorPool);
+		void Create(VulkanApp& app, DescriptorPoolManager& pm);
 
 		inline void Destroy() const
 		{

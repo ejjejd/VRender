@@ -10,6 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
 
 set(SOURCE_FILES
+    "src/vulkan/pool.cpp"
+    "src/vulkan/pool.h"
     "src/scene/scene_hi.h"
     "src/vulkan/compute_shader.h"
     "src/vulkan/compute_shader.cpp"

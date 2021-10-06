@@ -1,7 +1,9 @@
 #pragma once
 #include "vrender.h"
-#include "vulkan/image.h"
-#include "vulkan/descriptor.h"
+
+#include "image.h"
+#include "descriptor.h"
+#include "pool.h"
 
 namespace vk
 {	
@@ -80,18 +82,17 @@ namespace vk
 
 		VulkanApp* App;
 	public:
-		void Create(VulkanApp& app, const VkDescriptorPool& descriptorPool);
+		void Create(VulkanApp& app, DescriptorPoolManager& pm, const VkDescriptorType type);
 
 		inline void Destroy() const
 		{
 			CleanupDescriptor(*App, DescriptorInfo);
 		}
 
-		inline void LinkTexture(const vk::Texture& texture, const uint8_t bindId, const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		inline void LinkTexture(const vk::Texture& texture, const uint8_t bindId)
 		{
 			VkDescriptorSetLayoutBinding layoutBinding{};
 			layoutBinding.binding = bindId;
-			layoutBinding.descriptorType = type;
 			layoutBinding.descriptorCount = 1;
 			layoutBinding.pImmutableSamplers = nullptr;
 			layoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT;

@@ -78,16 +78,19 @@ namespace utils
 }
 
 //Convert engine path to platform dependent
-inline std::string operator"" _ep(const char* path, const size_t length)
+inline const char* operator"" _ep(const char* path, const size_t length)
 {
-	auto wstrPath = std::filesystem::path(path).wstring();
-	for (auto& c : wstrPath) //Convert path to one format
+	char* str = new char[length + 1];
+
+	for (size_t i = 0; i <= length; ++i)
 	{
-		if (c == '\\' || c == '/')
-			c = std::filesystem::path::preferred_separator;
+		if (path[i] == '/' || path[i] == '\\')
+			str[i] = std::filesystem::path::preferred_separator; //Assume that the seperator character have the same code in different charsets
+		else
+			str[i] = path[i];
 	}
 
-	return std::filesystem::path(wstrPath).string();
+	return str;
 }
 
 namespace manager

@@ -8,6 +8,7 @@
 #include "vulkan/ubo.h"
 #include "vulkan/texture.h"
 #include "vulkan/helpers.h"
+#include "vulkan/pool.h"
 
 #include "rendering/material.h"
 #include "scene/scene_hi.h"
@@ -119,11 +120,9 @@ namespace manager
 
 		VkSemaphore ImageAvailableSemaphore;
 		VkSemaphore RenderFinishedSemaphore;
+		
+		vk::DescriptorPoolManager DescriptorPoolManager;
 
-		VkDescriptorPool DescriptorPool;
-		VkDescriptorPool DescriptorPoolImage;
-		VkDescriptorPool DescriptorPoolImageStorage;
-	
 
 		vk::UniformBuffer LightUBO;
 		vk::UniformBuffer GlobalUBO;
@@ -172,7 +171,7 @@ namespace manager
 
 		utils::HashString GenerateCubemapFromHDR(const utils::HashString& filepath, const uint16_t resolution = 512);
 		utils::HashString GenerateIrradianceMap(const utils::HashString& filepath, const uint16_t resolution = 64);
-		size_t GeneratePreFilteredMap(const manager::AssetId id, const uint16_t resolution = 64);
+		size_t GeneratePreFilteredMap(const utils::HashString& filepath, const uint16_t resolution = 64);
 	};
 
 }

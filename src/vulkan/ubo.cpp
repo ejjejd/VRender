@@ -19,7 +19,7 @@ namespace vk
 			b.Setup(app, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, stride, elementsCount);
 	}
 
-	void UboDescriptor::Create(VulkanApp& app, const VkDescriptorPool& descriptorPool)
+	void UboDescriptor::Create(VulkanApp& app, DescriptorPoolManager& pm)
 	{
 		App = &app;
 
@@ -37,17 +37,7 @@ namespace vk
 
 		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(copiesCount, DescriptorInfo.DescriptorSetLayout);
 
-		VkDescriptorSetAllocateInfo descriptorAllocInfo{};
-		descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorAllocInfo.descriptorPool = descriptorPool;
-		descriptorAllocInfo.descriptorSetCount = copiesCount;
-		descriptorAllocInfo.pSetLayouts = descriptorLayoutsCopies.data();
-
-
-		DescriptorInfo.DescriptorSets.resize(copiesCount);
-
-		res = vkAllocateDescriptorSets(app.Device, &descriptorAllocInfo, &DescriptorInfo.DescriptorSets[0]);
-		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor set layout!");
+		DescriptorInfo.DescriptorSets = pm.GetAllocatedSets(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorLayoutsCopies);
 
 		for (size_t i = 0; i < UboInfos.BufferInfos.size(); ++i)
 		{

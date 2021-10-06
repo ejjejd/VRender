@@ -64,9 +64,12 @@ namespace vk
 		buffer.Cleanup();
 	}
 
-	void TextureDescriptor::Create(vk::VulkanApp& app, const VkDescriptorPool& descriptorPool)
+	void TextureDescriptor::Create(vk::VulkanApp& app, DescriptorPoolManager& pm, const VkDescriptorType type)
 	{
 		App = &app;
+
+		for (auto& lb : ImageInfos.LayoutBindInfos)
+			lb.descriptorType = type;
 
 		VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
 		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -78,18 +81,8 @@ namespace vk
 
 
 		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(1, DescriptorInfo.DescriptorSetLayout);
-
-		VkDescriptorSetAllocateInfo descriptorAllocInfo{};
-		descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorAllocInfo.descriptorPool = descriptorPool;
-		descriptorAllocInfo.descriptorSetCount = descriptorLayoutsCopies.size();
-		descriptorAllocInfo.pSetLayouts = descriptorLayoutsCopies.data();
-
-
-		DescriptorInfo.DescriptorSets.resize(descriptorLayoutsCopies.size());
-
-		res = vkAllocateDescriptorSets(app.Device, &descriptorAllocInfo, &DescriptorInfo.DescriptorSets[0]);
-		ASSERT(res == VK_SUCCESS, "Couldn't create descriptor set layout!");
+			
+		DescriptorInfo.DescriptorSets = pm.GetAllocatedSets(ImageInfos.LayoutBindInfos[0].descriptorType, descriptorLayoutsCopies);
 
 		for (size_t j = 0; j < ImageInfos.ImageInfos.size(); ++j)
 		{
@@ -98,7 +91,7 @@ namespace vk
 			descriptorWrite.dstSet = DescriptorInfo.DescriptorSets[0];
 			descriptorWrite.dstBinding = ImageInfos.LayoutBindInfos[j].binding;
 			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = ImageInfos.LayoutBindInfos[j].descriptorType;
+			descriptorWrite.descriptorType = type;
 			descriptorWrite.descriptorCount = 1;
 			descriptorWrite.pImageInfo = &ImageInfos.ImageInfos[j];
 

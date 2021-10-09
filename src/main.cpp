@@ -8,8 +8,10 @@ int main()
 
 	engine.AssetManager.LoadAssetsFromFolder("res/assets"_ep);
 
+	engine.RenderManager.SetupIBL("textures/hdr/Winter_Forest/WinterForest_Ref.hdr"_ep);
+	
 	auto hdrMaterial = std::make_shared<render::HdrMaterial>();
-	hdrMaterial->HdrTexture.Image = engine.RenderManager.GenerateCubemapFromHDR("textures/hdr/Winter_Forest/WinterForest_Ref.hdr"_ep, 2048);
+	hdrMaterial->HdrTexture.Image = engine.RenderManager.GetIblCubemap();
 
 	auto material = std::make_shared<render::PbrMaterial>();
 	material->Textures.Albedo.Image = "textures/helmet/Default_albedo.jpg"_ep;
@@ -23,7 +25,7 @@ int main()
 
 	material->Textures.Ao.Image = "textures/helmet/Default_AO.jpg"_ep;
 	
-	material->Textures.IrradianceMap.Image = engine.RenderManager.GenerateIrradianceMap(hdrMaterial->HdrTexture.Image, 64);
+	material->Textures.IrradianceMap.Image = engine.RenderManager.GetIrradianceMap();
 
 	scene::Node rootNode;
 

@@ -118,14 +118,20 @@ namespace manager
 
 		std::vector<VkCommandBuffer> CommandBuffers;
 
-		VkSemaphore ImageAvailableSemaphore;
-		VkSemaphore RenderFinishedSemaphore;
-		
 		vk::DescriptorPoolManager DescriptorPoolManager;
 
+		VkSemaphore ImageAvailableSemaphore;
+		VkSemaphore RenderFinishedSemaphore;
 
 		vk::UniformBuffer LightUBO;
 		vk::UniformBuffer GlobalUBO;
+
+		struct
+		{
+			utils::HashString Cubemap;
+			utils::HashString IrradianceMap;
+			utils::HashString PreFilteredMap;
+		} IblTextures;
 
 		render::Camera ActiveCamera;
 
@@ -135,7 +141,6 @@ namespace manager
 
 		manager::AssetManager* AM;
 		vk::VulkanApp* VulkanApp;
-	
 
 		bool SetupRenderPassases();
 
@@ -151,6 +156,10 @@ namespace manager
 		void UpdateGlobalUBO();
 
 		void Draw(const uint8_t imageId);
+
+		std::optional<utils::HashString> GenerateCubemapFromHDR(const utils::HashString& filepath, const uint16_t resolution);
+		std::optional<utils::HashString> GenerateIrradianceMap(const utils::HashString& filepath, const uint16_t resolution);
+		std::optional<utils::HashString> GeneratePreFilteredMap(const utils::HashString& filepath, const uint16_t resolution);
 	public:
 		void UpdateMeshUBO(const std::vector<scene::MeshRenderable*>& meshes);
 		void UpdateLightUBO(const std::vector<scene::PointLight*>& pointLights,
@@ -169,9 +178,22 @@ namespace manager
 			ActiveCamera = camera;
 		}
 
-		utils::HashString GenerateCubemapFromHDR(const utils::HashString& filepath, const uint16_t resolution = 512);
-		utils::HashString GenerateIrradianceMap(const utils::HashString& filepath, const uint16_t resolution = 64);
-		size_t GeneratePreFilteredMap(const utils::HashString& filepath, const uint16_t resolution = 64);
+		void SetupIBL(const utils::HashString& hdrFilepath);
+
+		inline utils::HashString GetIblCubemap() const
+		{
+			return IblTextures.Cubemap;
+		}
+
+		inline utils::HashString GetIrradianceMap() const
+		{
+			return IblTextures.IrradianceMap;
+		}
+
+		inline utils::HashString GetPreFilteredMap() const
+		{
+			return IblTextures.PreFilteredMap;
+		}
 	};
 
 }

@@ -1012,7 +1012,40 @@ namespace manager
 		shader.Cleanup();
 	}
 
-	utils::HashString RenderManager::GenerateCubemapFromHDR(const utils::HashString& filepath, const uint16_t resolution)
+	void RenderManager::SetupIBL(const utils::HashString& hdrFilepath)
+	{
+		//TODO make resolutions for maps adjustable through global settings
+
+		auto errFunc = []()
+			{ LOGE("Couldn't generate ibl!"); };
+
+		auto cubemap = GenerateCubemapFromHDR(hdrFilepath, 2048);
+		if (!cubemap)
+		{
+			errFunc();
+			return;
+		}
+
+		auto irMap = GenerateIrradianceMap(*cubemap, 64);
+		if (!irMap)
+		{
+			errFunc();
+			return;
+		}
+
+		auto pfMap = GeneratePreFilteredMap(*cubemap, 64);
+		if (!pfMap)
+		{
+			errFunc();
+			return;
+		}
+
+		IblTextures.Cubemap = *cubemap;
+		IblTextures.IrradianceMap = *irMap;
+		IblTextures.PreFilteredMap = *pfMap;
+	}
+
+	std::optional<utils::HashString> RenderManager::GenerateCubemapFromHDR(const utils::HashString& filepath, const uint16_t resolution)
 	{
 		vk::TextureParams params;
 		params.MagFilter = VK_FILTER_LINEAR;
@@ -1031,8 +1064,11 @@ namespace manager
 		hdrImageInfo.Layout = VK_IMAGE_LAYOUT_GENERAL;
 
 		auto hdrData = AM->GetImageData(filepath);
+
 		vk::Texture hdrTexture;
-		hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params);
+		if (!hdrTexture.Setup(*VulkanApp, hdrData.Width, hdrData.Height, hdrImageInfo, params))
+			return std::nullopt;
+
 		hdrTexture.Update(hdrData.PixelsData.data(), 4 * sizeof(float));
 
 		hdrTexture.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
@@ -1048,7 +1084,8 @@ namespace manager
 		cubemapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 		vk::Texture cubemap;
-		cubemap.Setup(*VulkanApp, resolution, resolution, cubemapImageInfo, params, 1, 6);
+		if (!cubemap.Setup(*VulkanApp, resolution, resolution, cubemapImageInfo, params, 1, 6))
+			return std::nullopt;
 
 		cubemap.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
 						  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
@@ -1075,14 +1112,14 @@ namespace manager
 		return newId;
 	}
 
-	utils::HashString RenderManager::GenerateIrradianceMap(const utils::HashString& filepath, const uint16_t resolution)
+	std::optional<utils::HashString> RenderManager::GenerateIrradianceMap(const utils::HashString& filepath, const uint16_t resolution)
 	{
 		const int maxTileSize = 64;
 
 		if (resolution % maxTileSize != 0)
 		{
 			LOGE("Irradiance map resolution must be multiplicity of %d", maxTileSize);
-			return -1;
+			return std::nullopt;
 		}
 
 		vk::TextureParams params;
@@ -1114,7 +1151,8 @@ namespace manager
 		mapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 		vk::Texture map;
-		map.Setup(*VulkanApp, resolution, resolution, mapImageInfo, params, 1, 6);
+		if (!map.Setup(*VulkanApp, resolution, resolution, mapImageInfo, params, 1, 6))
+			return std::nullopt;
 
 		map.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
 					  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);
@@ -1191,7 +1229,7 @@ namespace manager
 		return newId;
 	}
 
-	size_t RenderManager::GeneratePreFilteredMap(const utils::HashString& filepath, const uint16_t resolution)
+	std::optional<utils::HashString> RenderManager::GeneratePreFilteredMap(const utils::HashString& filepath, const uint16_t resolution)
 	{
 		vk::TextureParams params;
 		params.MagFilter = VK_FILTER_LINEAR;
@@ -1211,7 +1249,8 @@ namespace manager
 		mapImageInfo.CreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 		vk::Texture map;
-		map.Setup(*VulkanApp, resolution, resolution, mapImageInfo, params, 1, 6);
+		if(!map.Setup(*VulkanApp, resolution, resolution, mapImageInfo, params, 1, 6))
+			return std::nullopt;
 
 		map.SetLayout(VulkanApp->ComputeQueue, VulkanApp->CommandPoolCQ,
 					  vk::layout::SetCubeImageLayoutFromComputeWriteToGraphicsShader);

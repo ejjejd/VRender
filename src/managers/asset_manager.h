@@ -303,7 +303,7 @@ namespace manager
 		//This functions needed for procedural content
 		inline AssetId GetProcId()
 		{
-			return (SIZE_MAX - ProcIdsCount++);
+			return ((SIZE_MAX - 1) - ProcIdsCount++); //(SIZE_MAX - 1) because without -1 it is the id of undefined textures
 		}
 	};
 }

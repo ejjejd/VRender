@@ -82,6 +82,7 @@ namespace vk
 
 		std::vector<VkDescriptorSetLayout> descriptorLayoutsCopies(1, DescriptorInfo.DescriptorSetLayout);
 			
+
 		DescriptorInfo.DescriptorSets = pm.GetAllocatedSets(ImageInfos.LayoutBindInfos[0].descriptorType, descriptorLayoutsCopies);
 
 		for (size_t j = 0; j < ImageInfos.ImageInfos.size(); ++j)

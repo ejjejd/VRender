@@ -7,8 +7,9 @@
 
 namespace vk
 {
+	//TODO disable layers in release
 #ifdef NDEBUG
-	constexpr bool EnableValidationLayers = false;
+	constexpr bool EnableValidationLayers = true;
 #else
 	constexpr bool EnableValidationLayers = true;
 #endif
@@ -265,7 +266,7 @@ namespace vk
 
 		auto qf = FindVulkanQueueFamilies(app, pd);
 		bool queueFamiliesValid = qf.Graphics != -1 & qf.Present != -1;
-
+		
 		return queueFamiliesValid
 			   && CheckDeviceExtensions(pd)
 			   && swapChainValid

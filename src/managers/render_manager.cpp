@@ -689,7 +689,7 @@ namespace manager
 			{
 				auto descriptorSets = d.DescriptorSets;
 
-				ASSERT(descriptorSets.size() != 0, "Invalid descriptor created!")
+				ASSERT(descriptorSets.size() != 0, "Invalid descriptor created!");
 
 				if (descriptorSets.size() == Framebuffers.size())
 					descriptors.push_back(descriptorSets[imageId]);

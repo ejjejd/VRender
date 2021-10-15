@@ -7,12 +7,13 @@
 
 namespace vk
 {
-	//TODO disable layers in release
+
 #ifdef NDEBUG
-	constexpr bool EnableValidationLayers = true;
+	constexpr bool EnableValidationLayers = false;
 #else
 	constexpr bool EnableValidationLayers = true;
 #endif
+
 	const std::vector<const char*> DesiredInstanceExtensions =
 	{
 		VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME

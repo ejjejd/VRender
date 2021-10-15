@@ -444,6 +444,7 @@ namespace manager
 		return pipelineRes;
 	}
 
+#pragma optimize("", off) //This needed because at least vs is optimize out structure members initialization...
 	std::optional<vk::Pipeline> RenderManager::CreateMainPipeline(vk::Shader& shader,
 																  const std::vector<VkDescriptorSetLayout>& layouts)
 	{
@@ -452,7 +453,7 @@ namespace manager
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-		VkViewport viewport;
+		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
 		viewport.width = (float)VulkanApp->SwapChainExtent.width;
@@ -524,6 +525,7 @@ namespace manager
 
 		return pipelineRes;
 	}
+#pragma optimize("", on)
 
 	bool RenderManager::Setup(vk::VulkanApp& app, AssetManager& am)
 	{

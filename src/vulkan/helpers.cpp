@@ -309,6 +309,7 @@ namespace vk
 		return { { pipelineLayout, pipeline } };
 	}
 
+#pragma optimize("", off) //This needed because at least vs is optimize out structure members initialization...
 	std::optional<Pipeline> CreateGraphicsPipeline(const VulkanApp& app,
 												   const VkRenderPass& renderPass,
 												   const vk::Shader& shader,
@@ -332,8 +333,6 @@ namespace vk
 			return std::nullopt;
 
 
-		VkPipeline pipeline;
-
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.stageCount = shader.GetStages().size();
@@ -350,11 +349,15 @@ namespace vk
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
 
+
+		VkPipeline pipeline;
+
 		if (vkCreateGraphicsPipelines(app.Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
 			return std::nullopt;
 
 		return { { pipelineLayout, pipeline } };
 	}
+#pragma optimize("", on)
 
 	void RunComputeShader(const VulkanApp& app, const vk::ComputeShader& cs, const Descriptor& descriptor, 
 						  const uint16_t workGroupsX, const uint16_t workGroupsY, const uint16_t workGroupsZ)

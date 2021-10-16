@@ -435,16 +435,24 @@ namespace manager
 		dynamicState.dynamicStateCount = dynamicStatesCount;
 		dynamicState.pDynamicStates = pipelineStates;
 
-		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, HdrPass.PassHandler, shader, layouts,
-													  inputAssembly, viewportState, rasterizer, 
-													  multisample, colorBlending, depthState, dynamicState);
+
+		vk::GraphicsStates states;
+		states.Assembly = inputAssembly;
+		states.Viewport = viewportState;
+		states.Rasterizer = rasterizer;
+		states.Multisample = multisample;
+		states.ColorBlending = colorBlending;
+		states.DepthState = depthState;
+		states.DynamicState = dynamicState;
+
+		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, HdrPass.PassHandler, shader, layouts, states);
+
 		if (!pipelineRes)
 			return std::nullopt;
 
 		return pipelineRes;
 	}
 
-#pragma optimize("", off) //This needed because at least vs is optimize out structure members initialization...
 	std::optional<vk::Pipeline> RenderManager::CreateMainPipeline(vk::Shader& shader,
 																  const std::vector<VkDescriptorSetLayout>& layouts)
 	{
@@ -517,15 +525,22 @@ namespace manager
 		VkPipelineDynamicStateCreateInfo dynamicState{};
 		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 
-		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, MainRenderPass, shader, layouts,
-													  inputAssembly, viewportState, rasterizer,
-													  multisample, colorBlending, depthState, dynamicState);
+		vk::GraphicsStates states;
+		states.Assembly = inputAssembly;
+		states.Viewport = viewportState;
+		states.Rasterizer = rasterizer;
+		states.Multisample = multisample;
+		states.ColorBlending = colorBlending;
+		states.DepthState = depthState;
+		states.DynamicState = dynamicState;
+
+		auto pipelineRes = vk::CreateGraphicsPipeline(*VulkanApp, MainRenderPass, shader, layouts, states);
+
 		if (!pipelineRes)
 			return std::nullopt;
 
 		return pipelineRes;
 	}
-#pragma optimize("", on)
 
 	bool RenderManager::Setup(vk::VulkanApp& app, AssetManager& am)
 	{

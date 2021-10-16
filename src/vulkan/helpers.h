@@ -35,6 +35,17 @@ namespace vk
 		VkPipeline Handle;
 	};
 
+	struct GraphicsStates
+	{
+		VkPipelineInputAssemblyStateCreateInfo Assembly;
+		VkPipelineViewportStateCreateInfo Viewport;
+		VkPipelineRasterizationStateCreateInfo Rasterizer;
+		VkPipelineMultisampleStateCreateInfo Multisample;
+		VkPipelineColorBlendStateCreateInfo ColorBlending;
+		VkPipelineDepthStencilStateCreateInfo DepthState;
+		VkPipelineDynamicStateCreateInfo DynamicState;
+	};
+
 	inline void DestoryPipeline(const vk::VulkanApp& app, const Pipeline& pipeline)
 	{
 		vkDestroyPipelineLayout(app.Device, pipeline.Layout, nullptr);
@@ -70,14 +81,8 @@ namespace vk
 	std::optional<Pipeline> CreateGraphicsPipeline(const VulkanApp& app,
 												   const VkRenderPass& renderPass,
 												   const vk::Shader& shader,
-												   const std::vector< VkDescriptorSetLayout>& layouts,
-												   const VkPipelineInputAssemblyStateCreateInfo& inputAssembly,
-												   const VkPipelineViewportStateCreateInfo& viewportState,
-												   const VkPipelineRasterizationStateCreateInfo& rasterizer,
-												   const VkPipelineMultisampleStateCreateInfo& multisample,
-												   const VkPipelineColorBlendStateCreateInfo& colorBlending,
-												   const VkPipelineDepthStencilStateCreateInfo& depthState,
-												   const VkPipelineDynamicStateCreateInfo& dynamicState);
+												   const std::vector<VkDescriptorSetLayout>& layouts,
+												   const GraphicsStates& states);
 
 	void RunComputeShader(const VulkanApp& app, const vk::ComputeShader& cs, const Descriptor& descriptor, 
 					      const uint16_t workGroupsX, const uint16_t workGroupsY, const uint16_t workGroupsZ);

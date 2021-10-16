@@ -309,18 +309,11 @@ namespace vk
 		return { { pipelineLayout, pipeline } };
 	}
 
-#pragma optimize("", off) //This needed because at least vs is optimize out structure members initialization...
 	std::optional<Pipeline> CreateGraphicsPipeline(const VulkanApp& app,
 												   const VkRenderPass& renderPass,
 												   const vk::Shader& shader,
 												   const std::vector< VkDescriptorSetLayout>& layouts,
-												   const VkPipelineInputAssemblyStateCreateInfo& inputAssembly,
-												   const VkPipelineViewportStateCreateInfo& viewportState,
-												   const VkPipelineRasterizationStateCreateInfo& rasterizer,
-												   const VkPipelineMultisampleStateCreateInfo& multisample,
-												   const VkPipelineColorBlendStateCreateInfo& colorBlending,
-												   const VkPipelineDepthStencilStateCreateInfo& depthState,
-												   const VkPipelineDynamicStateCreateInfo& dynamicState)
+												   const GraphicsStates& states)
 	{
 		VkPipelineLayout pipelineLayout;
 
@@ -332,19 +325,19 @@ namespace vk
 		if (vkCreatePipelineLayout(app.Device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 			return std::nullopt;
 
-
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
+		//Volatile keyword is needed because compiler optimize out structure members initialization
+		volatile VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.stageCount = shader.GetStages().size();
 		pipelineInfo.pStages = shader.GetStages().data();
 		pipelineInfo.pVertexInputState = &shader.GetInputState();
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = &multisample;
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDepthStencilState = &depthState;
-		pipelineInfo.pDynamicState = &dynamicState;
+		pipelineInfo.pInputAssemblyState = &states.Assembly;
+		pipelineInfo.pViewportState = &states.Viewport;
+		pipelineInfo.pRasterizationState = &states.Rasterizer;
+		pipelineInfo.pMultisampleState = &states.Multisample;
+		pipelineInfo.pColorBlendState = &states.ColorBlending;
+		pipelineInfo.pDepthStencilState = &states.DepthState;
+		pipelineInfo.pDynamicState = &states.DynamicState;
 		pipelineInfo.layout = pipelineLayout;
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
@@ -352,12 +345,11 @@ namespace vk
 
 		VkPipeline pipeline;
 
-		if (vkCreateGraphicsPipelines(app.Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
+		if (vkCreateGraphicsPipelines(app.Device, VK_NULL_HANDLE, 1, const_cast<VkGraphicsPipelineCreateInfo*>(&pipelineInfo), nullptr, &pipeline) != VK_SUCCESS)
 			return std::nullopt;
 
 		return { { pipelineLayout, pipeline } };
 	}
-#pragma optimize("", on)
 
 	void RunComputeShader(const VulkanApp& app, const vk::ComputeShader& cs, const Descriptor& descriptor, 
 						  const uint16_t workGroupsX, const uint16_t workGroupsY, const uint16_t workGroupsZ)
